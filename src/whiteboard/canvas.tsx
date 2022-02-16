@@ -1,32 +1,73 @@
-import { useRef, type FC, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import { LayerManager } from './layer'
+import { Viewport } from './viewport'
+import {
+  MouseMonitorTool,
+  BoundaryTool,
+  SelectingTool,
+  VectorTool,
+} from './interaction'
+import { pane } from './pane'
 
-export interface CanvasProps {
-  id?: string;
-  render?: (canvas: HTMLCanvasElement) => void;
+
+export const setupViewportPlugins = (
+  layerManager: LayerManager,
+  viewport: Viewport,
+) => {
+  const plugins = viewport.viewport.plugins
+
+  plugins.add(
+    MouseMonitorTool.name,
+    new MouseMonitorTool(viewport.viewport, {
+      pane,
+    }),
+  )
+
+  plugins.add(
+    BoundaryTool.name,
+    new BoundaryTool(viewport.viewport, {
+      pane,
+    }),
+  )
+
+  plugins.add(
+    SelectingTool.name,
+    new SelectingTool(viewport.viewport, {
+      layerManager,
+    }),
+  )
+
+  plugins.add(
+    VectorTool.name,
+    new VectorTool(viewport.viewport, {
+      pane,
+      renderer: viewport.app.renderer,
+    }),
+  )
 }
 
-export const Canvas: FC<CanvasProps> = (props) => {
-  const {
-    id,
-    render,
-  } = props
 
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+export const Canvas = () => {
+  const divRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!canvasRef.current) return
+    if (!divRef.current) return
+    const layerManager = new LayerManager()
+    const viewport = new Viewport({
+      container: divRef.current,
+    })
 
-    render?.(canvasRef.current)
+    setupViewportPlugins(layerManager, viewport)
+
     return () => {
-      canvasRef.current!.remove()
+      viewport.destroy()
     }
   }, [])
 
   return (
-    <canvas
+    <div
       className="w-full h-full"
-      id={id}
-      ref={canvasRef}
+      ref={divRef}
     />
   )
 }

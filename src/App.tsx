@@ -1,18 +1,9 @@
-import paper, { view, Path, Point, Color } from 'paper'
-import { Canvas, drawPath } from './whiteboard'
+// import { Canvas } from './playground/canvas'
+import { Canvas } from './whiteboard'
 
 function App() {
-  const render = (canvas: HTMLCanvasElement) => {
-    console.log('TCL ~ App ~ canvas', canvas)
-    	// Create an empty project and a view for the canvas:
-		paper.setup(canvas)
-    drawPath()
-  }
-
   return (
-    <Canvas
-      render={render}
-    />
+    <Canvas />
   )
 }
 
