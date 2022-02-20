@@ -6,26 +6,35 @@ import {
 
 export interface PathDrawProps {
   path: VectorPath;
+  width?: number;
   color?: number;
 }
 
-export class EditingPathDraw {
+export enum DefaultPathColor {
+  highlight = 0x18a0fb,
+  normal = 0xb0b0b0,
+}
+
+export class PathDraw {
   public path: VectorPath
   public color: number
+  public width: number
   public container: Graphics
 
   constructor(props: PathDrawProps) {
     const {
       path,
-      color = 0x18a0fb,
+      width = 1,
+      color = DefaultPathColor.highlight,
     } = props
 
     this.path = path
+    this.width = width
     this.color = color
     this.container = new Graphics()
   }
 
-  public draw() {
+  public draw({ width, color }: { width?: number, color?: number } = {}) {
     this.container.clear()
 
     if (!this.path.anchors.length) {
@@ -36,8 +45,8 @@ export class EditingPathDraw {
 
     this.container
       .lineStyle({
-        width: 1,
-        color: this.color,
+        width: width ?? this.width,
+        color: color ?? this.color,
       })
       .moveTo(first.position.x, first.position.y)
 
@@ -56,10 +65,12 @@ export class EditingPathDraw {
   }
 
   public clear() {
+    this.path.anchors = []
     this.container.clear()
   }
 
   public destroy() {
+    this.path.anchors = []
     this.container.destroy()
   }
 }

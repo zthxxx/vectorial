@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import paper from 'paper'
 import { LayerManager } from './layer'
 import { Viewport } from './viewport'
 import {
@@ -8,6 +9,11 @@ import {
   VectorTool,
 } from './interaction'
 import { pane } from './pane'
+
+// @ts-ignore
+paper.setup()
+// @ts-ignore
+paper.project.draw = () => {}
 
 
 export const setupViewportPlugins = (
@@ -24,9 +30,10 @@ export const setupViewportPlugins = (
   )
 
   plugins.add(
-    BoundaryTool.name,
-    new BoundaryTool(viewport.viewport, {
+    VectorTool.name,
+    new VectorTool(viewport.viewport, {
       pane,
+      renderer: viewport.app.renderer,
     }),
   )
 
@@ -38,12 +45,12 @@ export const setupViewportPlugins = (
   )
 
   plugins.add(
-    VectorTool.name,
-    new VectorTool(viewport.viewport, {
+    BoundaryTool.name,
+    new BoundaryTool(viewport.viewport, {
       pane,
-      renderer: viewport.app.renderer,
     }),
   )
+
 }
 
 

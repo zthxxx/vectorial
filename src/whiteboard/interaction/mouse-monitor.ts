@@ -21,7 +21,7 @@ export class MouseMonitorTool extends Plugin {
     this.pane = pane
 
     this.mouseBlade = this.pane.addMonitor(this, 'mousePoint', {
-      label: 'mouse',
+      label: 'Mouse',
       interval: 0,
     })
   }

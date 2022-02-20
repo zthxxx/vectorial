@@ -8,6 +8,10 @@ export const Canvas = () => {
   useEffect(() => {
     if (!canvasRef.current) return
     paper.setup(canvasRef.current)
+    // paper.project.draw = () => {
+    //   console.log('paper project draw called')
+    // }
+
     drawPath()
   }, [])
 

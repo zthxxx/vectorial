@@ -1,9 +1,8 @@
 
 import type { Viewport } from 'pixi-viewport'
 import { Plugin } from 'pixi-viewport'
-import { Container } from '@pixi/display'
 import { Graphics } from '@pixi/graphics'
-import { Circle, Rectangle } from '@pixi/math'
+import { Rectangle } from '@pixi/math'
 import type { Pane, InputBindingApi } from 'tweakpane'
 
 
@@ -14,6 +13,7 @@ export interface BoundaryToolProps {
 export class BoundaryTool extends Plugin {
   private pane: Pane
   public boundaryVisible: boolean = false
+  public color: number = 0x18a0fb
   private boundaryBlade: InputBindingApi<unknown, boolean>
   private layer: Graphics
 
@@ -31,7 +31,7 @@ export class BoundaryTool extends Plugin {
     viewport.addChild(this.layer)
 
     this.boundaryBlade = pane.addInput(this, 'boundaryVisible', {
-      label: 'boundary',
+      label: 'Boundary',
     })
     this.boundaryBlade.on('change', ({ value }) => {
       this.changeVisibility(value)
@@ -49,32 +49,45 @@ export class BoundaryTool extends Plugin {
 
   public drawBoundary() {
     const viewport = this.parent
+    const center = {
+      x: viewport.screenWidth / 2,
+      y: viewport.screenHeight / 2,
+    }
+    const crossSize = 5
+    const boundary = new Rectangle(
+      0,
+      0,
+      viewport.screenWidth,
+      viewport.screenHeight,
+    )
+    this.layer
+      .lineStyle({
+        width: 2,
+        color: 0xffffff,
+      })
+      .drawShape(boundary)
+      .lineStyle({
+        width: 1,
+        color: this.color,
+      })
+      .drawShape(boundary)
 
     this.layer
       .lineStyle({
-        width: 1,
-        color: 0x18a0fb,
+        width: 2,
+        color: 0xffffff,
       })
-      .drawShape(
-        new Rectangle(
-          0,
-          0,
-          viewport.screenWidth,
-          viewport.screenHeight,
-        ),
-      )
-
-    this.layer
+      .moveTo(center.x - crossSize, center.y)
+      .lineTo(center.x + crossSize, center.y)
+      .moveTo(center.x, center.y - crossSize)
+      .lineTo(center.x, center.y + crossSize)
       .lineStyle({
         width: 1,
-        color: 0x18a0fb,
+        color: this.color,
       })
-      .drawShape(
-        new Circle(
-          viewport.screenWidth / 2,
-          viewport.screenHeight / 2,
-          4,
-        ),
-      )
+      .moveTo(center.x - crossSize, center.y)
+      .lineTo(center.x + crossSize, center.y)
+      .moveTo(center.x, center.y - crossSize)
+      .lineTo(center.x, center.y + crossSize)
   }
 }

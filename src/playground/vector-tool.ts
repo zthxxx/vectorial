@@ -1,5 +1,5 @@
 import type paper from 'paper'
-import { view, Path, Point, Color, Tool } from 'paper'
+import { view, Path, Point, Color, Tool, Segment } from 'paper'
 
 export interface VectorToolProps {
   path?: paper.Path;
@@ -37,6 +37,8 @@ export class VectorTool {
   }
 
   private onMouseDown(event: paper.ToolEvent) {
+    if (this.limit()) return
+
     if (!this.path) {
       this.initPoint(event)
     }
@@ -66,24 +68,39 @@ export class VectorTool {
     this.handleOut.strokeColor = new Color('#00a4ff')
   }
 
+  private limit(): boolean {
+    return (this.path?.segments.length ?? 0) > 5
+  }
+
   private onMouseUp(event: paper.ToolEvent) {
-    this.path?.cubicCurveTo(event.point, event.point, event.point)
+    if (this.limit()) return
+
+    this.path?.add(new Segment(
+      event.point,
+    ))
   }
 
   private onMouseMove(event: paper.ToolEvent) {
+    if (this.limit()) {
+      const hit = this.path?.hitTest(event.point)
+      return
+    }
+
     if (this.path) {
-      this.path.lastSegment.point = event.point
+      this.path.segments.at(-1)!.point = event.point
     }
   }
 
   private onMouseDrag(event: paper.ToolEvent) {
-    		
+
+    if (this.limit()) return
+
     const d = event.point.subtract(this.anchor!.position)
-    
-    this.path!.lastSegment.handleOut = this.anchor!.position
+
+    this.path!.lastSegment.handleOut = d
     this.handleOut!.position = event.point
     this.tangent!.lastSegment.point = event.point
-    
+
     if (!event.altKey) {
       const handleInPt = this.anchor!.position.subtract(d)
 

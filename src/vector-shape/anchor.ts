@@ -6,22 +6,22 @@ export class VectorAnchor {
   public handlerType: HandlerType = HandlerType.None
 
   /**
-   * delta position from anchor point to ‘curve-into control handle point
+   * delta position from anchor point to ‘incoming' control handle point
    */
   public inHandler: Vector | undefined
   /**
-   * delta position from anchor point to ‘curve-out’ control handle point
+   * delta position from anchor point to ‘outgoing’ control handle point
    */
   public outHandler: Vector | undefined
   public radius: number = 0
 
   constructor(
-    position: Vector = { x: 0, y: 0 },
+    { x, y }: Vector = { x: 0, y: 0 },
     handlerType: HandlerType = HandlerType.None,
     { inHandler, outHandler }: { inHandler?: Vector, outHandler?: Vector } = {},
     radius: number = 0,
   ) {
-    this.position = position
+    this.position = { x, y }
     this.handlerType = handlerType
     this.inHandler = inHandler
     this.outHandler = outHandler

@@ -1,6 +1,5 @@
 import type { Renderer, Texture } from '@pixi/core'
 import { Container } from '@pixi/display'
-import { ParticleContainer } from '@pixi/particle-container'
 import { Graphics } from '@pixi/graphics'
 import { Sprite } from '@pixi/sprite'
 import { Circle, Rectangle } from '@pixi/math'
@@ -50,7 +49,7 @@ export const createAnchorTexture = (renderer: Renderer): AnchorTextures => {
       .beginFill(mainColor)
       .lineStyle({
         width: 1,
-        color: 0xfefefe,
+        color: 0xffffff,
       })
       .drawShape(new Circle(0, 0, 4))
   )
@@ -111,19 +110,16 @@ export class AnchorDraw {
   public renderer: Renderer
   public vectorAnchor: VectorAnchor
   public container: Container
-  private anchor?: Sprite
-  private inHandler?: Sprite
-  private outHandler?: Sprite
+  public anchor?: Sprite
+  public inHandler?: Sprite
+  public outHandler?: Sprite
   private handlerLine: Graphics
 
   constructor({ renderer, vectorAnchor }: AnchorDrawProps) {
     this.renderer = renderer
     this.vectorAnchor = vectorAnchor
-    // this.container = new ParticleContainer(10, {
-    //   vertices: true,
-    //   rotation: true,
-    // })
     this.container = new Container()
+    this.container.interactive = true
 
     this.handlerLine = new Graphics()
     this.container.addChild(this.handlerLine)
@@ -142,6 +138,7 @@ export class AnchorDraw {
 
     if (this.anchor && this.anchor.texture !== texture) {
       this.container.removeChild(this.anchor)
+      this.anchor.destroy()
       this.anchor = undefined
     }
 
@@ -151,6 +148,7 @@ export class AnchorDraw {
     }
 
     this.anchor.position.set(x, y)
+    this.anchor.visible = true
   }
 
   public drawNormalAnchor() {
@@ -180,6 +178,7 @@ export class AnchorDraw {
 
     if (handler && handler.texture !== texture) {
       this.container.removeChild(handler)
+      handler.destroy()
       this[handlerType] = undefined
     }
 
@@ -191,6 +190,7 @@ export class AnchorDraw {
 
     const position = add(vectorAnchor.position, vectorAnchor[handlerType]!)
     this[handlerType]!.position.set(position.x, position.y)
+    this[handlerType]!.visible = true
   }
 
   public drawNormalHandler(direction: HandlerDirection) {
@@ -231,15 +231,32 @@ export class AnchorDraw {
   }
 
   public clearHandler() {
-    this.inHandler?.destroy()
-    this.inHandler = undefined
-    this.outHandler?.destroy()
-    this.outHandler = undefined
+    if (this.inHandler) {
+      this.inHandler.visible = false
+    }
+    if (this.outHandler) {
+      this.outHandler.visible = false
+    }
+
     this.handlerLine.clear()
   }
 
-  public destroy() {
+  public clear() {
+    if (this.anchor) {
+      this.anchor.visible = false
+    }
     this.clearHandler()
+  }
+
+  public destroy() {
+    this.clear()
+    this.anchor?.destroy()
+    this.inHandler?.destroy()
+    this.outHandler?.destroy()
+    this.handlerLine.clear()
+    this.anchor = undefined
+    this.inHandler = undefined
+    this.outHandler = undefined
     this.container.destroy()
   }
 }
