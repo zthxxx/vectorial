@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import paper from 'paper'
 import { LayerManager } from './layer'
 import { Viewport } from './viewport'
 import {
@@ -9,11 +8,6 @@ import {
   VectorTool,
 } from './interaction'
 import { pane } from './pane'
-
-// @ts-ignore
-paper.setup()
-// @ts-ignore
-paper.project.draw = () => {}
 
 
 export const setupViewportPlugins = (

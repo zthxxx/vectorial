@@ -42,7 +42,6 @@ specifiers:
   '@types/react-dom': ^17.0.10
   '@vitejs/plugin-react': ^1.0.7
   autoprefixer: ^10.4.2
-  kld-intersections: ^0.7.0
   nanoid: ^3.3.1
   paper: ^0.12.15
   pixi-viewport: ^4.34.4
@@ -93,7 +92,6 @@ dependencies:
   '@pixi/text-bitmap': 6.2.2_1850d39ac09788f576136fe1422aec25
   '@pixi/ticker': 6.2.2_@pixi+settings@6.2.2
   '@pixi/utils': 6.2.2_ad095b7aec4969ed69d5eaf12d12848b
-  kld-intersections: 0.7.0
   nanoid: 3.3.1
   paper: 0.12.15
   pixi-viewport: 4.34.4_1fe34640a50dbfa2a2b59919b311a347
@@ -1514,30 +1512,6 @@ packages:
     dependencies:
       minimist: 1.2.5
     dev: true
-
-  /kld-affine/2.1.1:
-    resolution: {integrity: sha512-NIS9sph8ZKdnQxZa5TcggaFs/Qr9zX3brFlGwE0+0Z4EzFIvAFuqLSwNeU4GkEpaX8ndh3ggGmWV7BPPcS3vjQ==}
-    engines: {node: '>= 10.15.3'}
-    dev: false
-
-  /kld-intersections/0.7.0:
-    resolution: {integrity: sha512-/KuBU7Y5bRPGfc0yQ3QIoXPKqOQ6cBWDRl1XVMMa3pm4V6Ydbgy9e2fZoRxlSIU0gZSBt1c6gWLOzSGKbU8I3A==}
-    engines: {node: '>= 10.15.3'}
-    dependencies:
-      kld-affine: 2.1.1
-      kld-path-parser: 0.2.1
-      kld-polynomial: 0.3.0
-    dev: false
-
-  /kld-path-parser/0.2.1:
-    resolution: {integrity: sha512-C1EqY6vzqv5tdKeMF31L+JXq97n5zo67LiSEhZf4sPq8YeM+8ytp/qMGSKN8VdSPvFa6h1SR35aF4+T2JtxZww==}
-    engines: {node: '>= 10.15.3'}
-    dev: false
-
-  /kld-polynomial/0.3.0:
-    resolution: {integrity: sha512-PEfxjQ6tsxL9DHBIhM2UZsSes0GI+OIMjbE0kj60jr80Biq/xXl1eGfnyzmfoackAMdKZtw2060L09HdjkPP5w==}
-    engines: {node: '>= 10.15.3'}
-    dev: false
 
   /lilconfig/2.0.4:
     resolution: {integrity: sha512-bfTIN7lEsiooCocSISTWXkiWJkRqtL9wYtYy+8EK3Y41qh3mpwPU0ycTOgjdY9ErwXCc8QyrQp82bdL0Xkm9yA==}

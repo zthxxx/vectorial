@@ -1,76 +1,97 @@
+import type paper from 'paper'
+import {
+  Point as PaperPoint,
+  Segment as PaperSegment,
+} from 'paper'
 import { Vector, HandlerType } from './types'
-import { add, len, mirrorVector, mirrorVectorAngle } from './math'
+import {
+  len,
+  mirrorVector,
+  mirrorVectorAngle,
+} from './math'
 
 export class VectorAnchor {
-  public position: Vector
+  public segment: paper.Segment
   public handlerType: HandlerType = HandlerType.None
-
-  /**
-   * delta position from anchor point to ‘incoming' control handle point
-   */
-  public inHandler: Vector | undefined
-  /**
-   * delta position from anchor point to ‘outgoing’ control handle point
-   */
-  public outHandler: Vector | undefined
   public radius: number = 0
 
   constructor(
     { x, y }: Vector = { x: 0, y: 0 },
     handlerType: HandlerType = HandlerType.None,
+    /**
+     * delta position from anchor point to 'incoming' / 'outgoing' control handle point
+     */
     { inHandler, outHandler }: { inHandler?: Vector, outHandler?: Vector } = {},
     radius: number = 0,
   ) {
-    this.position = { x, y }
     this.handlerType = handlerType
-    this.inHandler = inHandler
-    this.outHandler = outHandler
     this.radius = radius
+    this.segment = new PaperSegment({
+      point: new PaperPoint(x, y),
+      handleIn: inHandler && new PaperPoint(inHandler),
+      handleOut: outHandler && new PaperPoint(outHandler),
+    })
   }
 
-  public setPositon({ x, y }: Vector) {
-    this.position = { x, y }
+  public get position(): Vector {
+    const { x, y } = this.segment.point
+    return { x, y }
   }
 
-  public setInHandler(inHandler: Vector) {
-    this.inHandler = inHandler
+  public set position({ x, y }: Vector) {
+    this.segment.point = new PaperPoint({ x, y })
+  }
 
-    if (this.handlerType === HandlerType.Mirror) {
-      this.outHandler = mirrorVector(inHandler)
+  public get inHandler(): Vector | undefined {
+    const { x, y } = this.segment.handleIn
+    if (!x && !y) return
+    return { x, y }
+  }
+
+  public get outHandler(): Vector | undefined {
+    const { x, y } = this.segment.handleOut
+    if (!x && !y) return
+    return { x, y }
+  }
+
+  public set inHandler(inHandler: Vector | undefined) {
+    if (!inHandler) {
+      this.segment.handleIn = new PaperPoint(0, 0)
+      this.handlerType = this.outHandler ? HandlerType.Free : HandlerType.None
+      return
     }
 
-    if (this.handlerType === HandlerType.MirrorAngle) {
+    this.segment.handleIn = new PaperPoint(inHandler)
+
+    if (this.handlerType === HandlerType.Mirror) {
+      this.segment.handleOut = new PaperPoint(mirrorVector(inHandler))
+    }
+
+    if (this.handlerType === HandlerType.Align) {
       const inHandlerLen = this.outHandler
         ? len(this.outHandler)
-        : len(this.inHandler)
-      this.outHandler = mirrorVectorAngle(inHandler, inHandlerLen)
+        : len(this.inHandler!)
+      this.segment.handleOut = new PaperPoint(mirrorVectorAngle(inHandler, inHandlerLen))
     }
   }
 
-  public setOutHandler(outHandler: Vector) {
-    this.outHandler = outHandler
+  public set outHandler(outHandler: Vector | undefined) {
+    if (!outHandler) {
+      this.segment.handleOut = new PaperPoint(0, 0)
+      this.handlerType = this.inHandler ? HandlerType.Free : HandlerType.None
+      return
+    }
+    this.segment.handleOut = new PaperPoint(outHandler)
 
     if (this.handlerType === HandlerType.Mirror) {
-      this.inHandler = mirrorVector(outHandler)
+      this.segment.handleIn = new PaperPoint(mirrorVector(outHandler))
     }
 
-    if (this.handlerType === HandlerType.MirrorAngle) {
+    if (this.handlerType === HandlerType.Align) {
       const inHandlerLen = this.inHandler
         ? len(this.inHandler)
-        : len(this.outHandler)
-      this.inHandler = mirrorVectorAngle(outHandler, inHandlerLen)
+        : len(this.outHandler!)
+      this.segment.handleIn = new PaperPoint(mirrorVectorAngle(outHandler, inHandlerLen))
     }
-  }
-
-  public moveInHandler(delta: Vector) {
-    const { inHandler, position } = this
-
-    this.setInHandler(add(inHandler ?? position, delta))
-  }
-
-  public moveOutHandler(delta: Vector) {
-    const { outHandler, position } = this
-
-    this.setInHandler(add(outHandler ?? position, delta))
   }
 }

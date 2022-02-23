@@ -4,11 +4,10 @@ import { Plugin } from 'pixi-viewport'
 import { Container } from '@pixi/display'
 import { Graphics } from '@pixi/graphics'
 import type { InteractionEvent } from '@pixi/interaction'
-import { ShapeInfo, Intersection } from 'kld-intersections'
 import {
-  Point,
-  Segment,
-  Path,
+  Point as PaperPoint,
+  Segment as PaperSegment,
+  Path as PaperPath,
   Color,
 } from 'paper'
 import {
@@ -30,6 +29,7 @@ import {
   sub,
   len,
   Vector,
+  PathHitType,
 } from "../../vector-shape"
 import {
   AnchorDraw,
@@ -61,6 +61,7 @@ export class VectorTool extends Plugin {
   private pathDraw: PathDraw
   private anchorDraws: AnchorDraw[] = []
   private mouseBox: Graphics
+  private interactivePath: paper.Path
 
   constructor(parent: Viewport, props: VectorToolProps) {
     const {
@@ -85,6 +86,11 @@ export class VectorTool extends Plugin {
     this.indicativePath = new PathDraw({
       path: new VectorPath(),
     })
+    this.interactivePath = new PaperPath({
+      strokeWidth: 10,
+      strokeColor: new Color(0x000),
+    })
+
     this.mouseBox = new Graphics()
     this.container.addChild(this.pathDraw.container)
     this.container.addChild(this.indicativePath.container)
@@ -112,7 +118,7 @@ export class VectorTool extends Plugin {
                 move: {
                   target: 'indicating',
                   actions: (_, { mouse }: EventWithData) => {
-                    this.indicative.vectorAnchor.setPositon(mouse)
+                    this.indicative.vectorAnchor.position = mouse
                     this.indicative.drawNormalAnchor()
                     this.drawIndicativePath([
                       this.vectorPath.anchors.at(-1),
@@ -126,8 +132,12 @@ export class VectorTool extends Plugin {
                     this.anchorDraws.at(-1)?.drawNormalAnchor()
                     this.anchorDraws.at(-2)?.clearHandler()
                     this.indicative.drawSelectedAnchor()
+
                     this.vectorPath.addAnchor(this.indicative.vectorAnchor)
                     this.anchorDraws.push(this.indicative)
+                    this.interactivePath.add(
+                      new PaperSegment(new PaperPoint(this.indicative.vectorAnchor.position))
+                    )
                   },
                 },
               },
@@ -203,86 +213,19 @@ export class VectorTool extends Plugin {
               target: 'selecting',
               actions: [
                 (_, { mouse }: EventWithData) => {
-                  const path = new Path({
-                    strokeWidth: 10,
-                    strokeColor: new Color(0x000),
-                    segments: this.vectorPath.anchors.map(anchor => new Segment({
-                      point: new Point(anchor.position),
-                      handleIn: anchor.inHandler && new Point(anchor.inHandler),
-                      handleOut: anchor.outHandler && new Point(anchor.outHandler),
-                    })),
-                  })
-
-                  const hit = path.hitTest(new Point(mouse))
+                  const hit = this.vectorPath.hitTest(mouse)
                   this.indicative.clear()
+                  this.indicativePath.clear()
                   if (hit) {
-                    this.indicative.vectorAnchor = new VectorAnchor(hit.point)
-                    if (hit.type === 'segment') {
+                    const { type, point, ends } = hit
+                    this.indicative.vectorAnchor = point
+                    if (type === PathHitType.Anchor) {
                       this.indicative.drawHighlightAnchor()
-                    } else {
-
-                    this.indicative.drawNormalAnchor()
                     }
-                  }
-                },
-                (_, { mouse }: EventWithData) => {
-                  return
-                  // this.mouseBox
-                  //   .clear()
-                  //   .lineStyle({ width: 1, color: 0x18a0fb, })
-                  //   .drawRect(
-                  //     mouse.x - 2,
-                  //     mouse.y - 2,
-                  //     4,
-                  //     4,
-                  //   )
-
-                  const segments = []
-                  this.vectorPath.anchors.reduce((prev, curr) => {
-                    segments.push(ShapeInfo.cubicBezier(
-                      prev.position.x,
-                      prev.position.y,
-                      prev.position.x + (prev.outHandler?.x ?? 0),
-                      prev.position.y + (prev.outHandler?.y ?? 0),
-                      curr.position.x + (curr.inHandler?.x ?? 0),
-                      curr.position.y + (curr.inHandler?.y ?? 0),
-                      curr.position.x,
-                      curr.position.y
-                    ))
-                    return curr
-                  })
-
-                  const path = new ShapeInfo(ShapeInfo.PATH, segments)
-                  const mouseBox = ShapeInfo.rectangle(
-                    mouse.x - 3,
-                    mouse.y - 3,
-                    6,
-                    6,
-                  )
-                  const intersection = Intersection.intersect(path, mouseBox)
-                  this.indicative.clear()
-                  if (intersection.points.length) {
-                    const intersectionPoint = intersection.points.reduce((prev, curr) => {
-                      if (curr.x < prev.x) { return curr }
-                      return prev
-                    })
-
-                    this.indicative.vectorAnchor = new VectorAnchor(intersectionPoint)
-                    this.indicative.drawNormalAnchor()
-                  }
-
-
-                },
-                (_, { mouse }: EventWithData) => {
-                  return false
-                  const interaction = this.parent.options.interaction!
-
-                  const hover = this.anchorDraws.find(anchorDraw => (
-                    interaction.hitTest(mouse, anchorDraw.container)
-                  ))
-
-                  if (hover) {
-                    hover.drawSelectedAnchor()
+                    if (type === PathHitType.Stroke) {
+                      this.indicative.drawNormalAnchor()
+                      this.drawIndicativePath(ends)
+                    }
                   }
                 },
               ],
@@ -334,7 +277,7 @@ export class VectorTool extends Plugin {
   public drawIndicative(mouse: Vector) {
     const anchor = this.indicative.vectorAnchor
     anchor.handlerType = HandlerType.Mirror
-    anchor.setOutHandler(sub(mouse, anchor.position))
+    anchor.outHandler = sub(mouse, anchor.position)
     this.indicative.drawNormalHandler('in')
     this.indicative.drawNormalHandler('out')
     this.indicative.drawHandlerLine()

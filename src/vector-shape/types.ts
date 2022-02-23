@@ -7,5 +7,5 @@ export enum HandlerType {
   None = 'None',
   Free = 'Free',
   Mirror = 'Mirror',
-  MirrorAngle = 'MirrorAngle',
+  Align = 'Align',
 }
