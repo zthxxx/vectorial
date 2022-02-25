@@ -6,7 +6,7 @@ import { Circle, Rectangle } from '@pixi/math'
 import {
   VectorAnchor,
   add,
-} from "../../vector-shape"
+} from 'vectorial'
 
 
 export interface AnchorTextures {

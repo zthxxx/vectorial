@@ -1,0 +1,40 @@
+{
+  "name": "vectorial",
+  "version": "0.0.0",
+  "description": "vectorial curve path and shape",
+  "private": true,
+  "sideEffects": false,
+  "keywords": [
+    "bezier",
+    "vector",
+    "boolean operation",
+    "whiteboard"
+  ],
+  "license": "MIT",
+  "author": "zthxxx",
+  "repository": "https://github.com/zthxxx/vectorial/tree/master/packages/vectorial",
+  "homepage": "https://vectorial.zthxxx.me",
+  "bugs": {
+    "url": "https://github.com/zthxxx/vectorial/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "main": "es",
+  "module": "es",
+  "types": "es",
+  "files": [
+    "README.md",
+    "src",
+    "es"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "scripts": {},
+  "dependencies": {
+    "paper": "^0.12.15"
+  },
+  "devDependencies": {}
+}

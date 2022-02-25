@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import type { VectorShape } from '../../vector-shape'
+import type { VectorShape } from 'vectorial'
 
 
 export interface LayerProps {

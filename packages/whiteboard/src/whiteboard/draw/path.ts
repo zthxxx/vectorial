@@ -2,7 +2,7 @@
 import { Graphics } from '@pixi/graphics'
 import {
   VectorPath,
-} from "../../vector-shape"
+} from 'vectorial'
 
 export interface PathDrawProps {
   path: VectorPath;

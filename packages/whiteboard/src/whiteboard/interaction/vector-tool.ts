@@ -30,7 +30,7 @@ import {
   len,
   Vector,
   PathHitType,
-} from "../../vector-shape"
+} from 'vectorial'
 import {
   AnchorDraw,
   PathDraw,
