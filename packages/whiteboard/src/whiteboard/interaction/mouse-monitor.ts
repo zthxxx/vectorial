@@ -1,15 +1,15 @@
 import type { Viewport } from 'pixi-viewport'
 import { Plugin } from 'pixi-viewport'
 import type { InteractionEvent } from '@pixi/interaction'
-import type { Pane, MonitorBindingApi } from 'tweakpane'
+import type { FolderApi, MonitorBindingApi } from 'tweakpane'
 
 
 export interface MovePluginProps {
-  pane: Pane;
+  pane: FolderApi;
 }
 
 export class MouseMonitorTool extends Plugin {
-  private pane: Pane
+  private pane: FolderApi
   public mousePoint: string = '(0, 0)'
   private mouseBlade: MonitorBindingApi<string>
 

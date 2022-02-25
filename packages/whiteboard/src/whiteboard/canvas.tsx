@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, RefObject } from 'react'
 import { LayerManager } from './layer'
 import { Viewport } from './viewport'
 import {
+  EventManager,
   MouseMonitorTool,
   BoundaryTool,
   SelectingTool,
@@ -16,10 +17,12 @@ export const setupViewportPlugins = (
 ) => {
   const plugins = viewport.viewport.plugins
 
+  const misePane = pane.addFolder({ title: 'Mise' })
+
   plugins.add(
     MouseMonitorTool.name,
     new MouseMonitorTool(viewport.viewport, {
-      pane,
+      pane: misePane,
     }),
   )
 
@@ -41,21 +44,24 @@ export const setupViewportPlugins = (
   plugins.add(
     BoundaryTool.name,
     new BoundaryTool(viewport.viewport, {
-      pane,
+      pane: misePane,
     }),
   )
 
+  plugins.add(
+    EventManager.name,
+    new EventManager(viewport.viewport, {
+      pane,
+    })
+  )
 }
 
-
-export const Canvas = () => {
-  const divRef = useRef<HTMLDivElement>(null)
-
+export const useSetupCanvas = (containerRef: RefObject<HTMLDivElement>) => {
   useEffect(() => {
-    if (!divRef.current) return
+    if (!containerRef.current) return
     const layerManager = new LayerManager()
     const viewport = new Viewport({
-      container: divRef.current,
+      container: containerRef.current,
     })
 
     setupViewportPlugins(layerManager, viewport)
@@ -64,6 +70,12 @@ export const Canvas = () => {
       viewport.destroy()
     }
   }, [])
+}
+
+export const Canvas = () => {
+  const divRef = useRef<HTMLDivElement>(null)
+
+  useSetupCanvas(divRef)
 
   return (
     <div

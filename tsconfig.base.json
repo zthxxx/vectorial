@@ -31,7 +31,7 @@
     "noUnusedLocals": true,
     "skipLibCheck": true,
     "sourceMap": false,
-    "jsx": "react",
+    "jsx": "react-jsx",
     "allowJs": true,
     // https://www.typescriptlang.org/tsconfig#composite
     "composite": false,

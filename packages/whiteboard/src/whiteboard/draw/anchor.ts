@@ -119,7 +119,6 @@ export class AnchorDraw {
     this.renderer = renderer
     this.vectorAnchor = vectorAnchor
     this.container = new Container()
-    this.container.interactive = true
 
     this.handlerLine = new Graphics()
     this.container.addChild(this.handlerLine)

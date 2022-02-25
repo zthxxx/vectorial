@@ -3,15 +3,15 @@ import type { Viewport } from 'pixi-viewport'
 import { Plugin } from 'pixi-viewport'
 import { Graphics } from '@pixi/graphics'
 import { Rectangle } from '@pixi/math'
-import type { Pane, InputBindingApi } from 'tweakpane'
+import type { FolderApi, InputBindingApi } from 'tweakpane'
 
 
 export interface BoundaryToolProps {
-  pane: Pane;
+  pane: FolderApi;
 }
 
 export class BoundaryTool extends Plugin {
-  private pane: Pane
+  private pane: FolderApi
   public boundaryVisible: boolean = false
   public color: number = 0x18a0fb
   private boundaryBlade: InputBindingApi<unknown, boolean>
@@ -60,6 +60,8 @@ export class BoundaryTool extends Plugin {
       viewport.screenWidth,
       viewport.screenHeight,
     )
+
+    // draw center cross
     this.layer
       .lineStyle({
         width: 2,
@@ -72,6 +74,7 @@ export class BoundaryTool extends Plugin {
       })
       .drawShape(boundary)
 
+    // draw boundary arround
     this.layer
       .lineStyle({
         width: 2,
