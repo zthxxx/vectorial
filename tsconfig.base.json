@@ -18,9 +18,9 @@
     "moduleResolution": "node",
     "target": "esnext",
     "lib": [
-      "dom.iterable",
-      "dom",
-      "esnext",
+      "DOM.Iterable",
+      "DOM",
+      "ESNext",
     ],
     "resolveJsonModule": true,
     "emitDecoratorMetadata": true,

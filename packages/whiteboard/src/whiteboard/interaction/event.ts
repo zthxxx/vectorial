@@ -12,6 +12,7 @@ import {
 } from 'rxjs/operators'
 import type { FolderApi, MonitorBindingApi } from 'tweakpane'
 
+
 export enum MouseButton {
   Left,
   Middle,
@@ -30,7 +31,7 @@ export enum MouseTriggerType {
   Wheel = 'Wheel',
 }
 
-type ModifierKey = 'Ctrl' | 'Alt' | 'Shift' | 'Meta'
+export type ModifierKey = 'Ctrl' | 'Alt' | 'Shift' | 'Meta'
 
 export class InteractionEvent {
   /**
@@ -125,6 +126,30 @@ export class InteractionEvent {
     event.downMouse = new Set(this.downMouse)
     return event
   }
+
+  public match({ modifiers, keys, mouse }: {
+    modifiers?: ModifierKey[],
+    keys?: string[],
+    mouse?: MouseButton[],
+  }): boolean {
+    if (!modifiers && !keys && !mouse) {
+      return false
+    }
+
+    if (modifiers && !isSameSet(this.modifiers, new Set(modifiers))) {
+      return false
+    }
+
+    if (keys && !isSameSet(this.downKeys, new Set(keys))) {
+      return false
+    }
+
+    if (mouse && !isSameSet(this.downMouse, new Set(mouse))) {
+      return false
+    }
+
+    return true
+  }
 }
 
 export interface EventManagerProps {
@@ -133,7 +158,7 @@ export interface EventManagerProps {
 
 export class EventManager extends Plugin {
   private _lastEvent?: InteractionEvent
-  public subject$: Subject<InteractionEvent>
+  public interactionEvent$: Subject<InteractionEvent>
   private modifierBlade: MonitorBindingApi<string>
   private mouseEventBlade: MonitorBindingApi<string>
   private keyEventBlade: MonitorBindingApi<string>
@@ -143,6 +168,10 @@ export class EventManager extends Plugin {
     key: string;
   }
 
+  /**
+   * modifyer key code defined in `KeyboardEvent.code`
+   * https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code/code_values
+   */
   static modifierKeys = new Set([
     'ControlLeft',
     'ControlRight',
@@ -180,7 +209,7 @@ export class EventManager extends Plugin {
       interval: 0,
     })
 
-    this.subject$ = new Subject()
+    this.interactionEvent$ = new Subject<InteractionEvent>()
     const eventPipe = merge<(InteractionEvent | undefined)[]>(
       fromEvent(window, 'mousedown').pipe(map(this.handleMouseEvent)),
       fromEvent(window, 'mousemove').pipe(map(this.handleMouseEvent)),
@@ -192,9 +221,9 @@ export class EventManager extends Plugin {
       filter(Boolean),
     )
 
-    eventPipe.subscribe(this.subject$)
+    eventPipe.subscribe(this.interactionEvent$)
 
-    this.subject$
+    this.interactionEvent$
       .pipe(
         tap(this.setLastEvent),
         tap(this.updatePane),
@@ -225,12 +254,15 @@ export class EventManager extends Plugin {
       mouse,
     } = event
     this.paneState.modifier = `${[...modifiers].join(', ')}`
-    this.paneState.mouse = `(${[...downMouse].map(code => MouseButton[code]).join(', ')})${
-      mouse ? ` | ${mouse.type.toLocaleLowerCase()}` : ''
-    }`
-    this.paneState.key = `(${[...downKeys].join(', ')})${
-      key ? ` | ${key.type.toLocaleLowerCase()}` : ''
-    }`
+
+    this.paneState.mouse = [
+      mouse ? `(${mouse.type.toLocaleLowerCase()}) ` : '',
+      [...downMouse].map(code => MouseButton[code]).join(', '),
+    ].join('')
+    this.paneState.key = [
+      key ? `(${key.type.toLocaleLowerCase()}) ` : '',
+      [...downKeys].join(', '),
+    ].join('')
     this.modifierBlade.refresh()
     this.mouseEventBlade.refresh()
     this.keyEventBlade.refresh()

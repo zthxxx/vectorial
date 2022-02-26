@@ -94,4 +94,16 @@ export class VectorAnchor {
       this.segment.handleIn = new PaperPoint(mirrorVectorAngle(outHandler, inHandlerLen))
     }
   }
+
+  public clone(): VectorAnchor {
+    return new VectorAnchor(
+      this.position,
+      this.handlerType,
+      {
+        inHandler: this.inHandler,
+        outHandler: this.outHandler,
+      },
+      this.radius,
+    )
+  }
 }

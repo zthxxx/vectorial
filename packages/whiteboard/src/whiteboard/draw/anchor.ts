@@ -1,4 +1,4 @@
-import type { Renderer, Texture } from '@pixi/core'
+import { Renderer, Texture } from '@pixi/core'
 import { Container } from '@pixi/display'
 import { Graphics } from '@pixi/graphics'
 import { Sprite } from '@pixi/sprite'
@@ -10,12 +10,16 @@ import {
 
 
 export interface AnchorTextures {
-  normalAnchor: Texture;
-  highlightAnchor: Texture;
-  selectedAnchor: Texture;
-  normalHandlerPoint: Texture;
-  highlightHandlerPoint: Texture;
-  selectedHandlerPoint: Texture;
+  anchor: {
+    normal: Texture;
+    highlight: Texture;
+    selected: Texture;
+  };
+  handlerPoint: {
+    normal: Texture;
+    highlight: Texture;
+    selected: Texture;
+  };
 }
 
 export type HandlerDirection = 'in' | 'out'
@@ -84,7 +88,7 @@ export const createAnchorTexture = (renderer: Renderer): AnchorTextures => {
       .drawShape(new Rectangle(0, 0, 4, 4))
   )
 
-  const textures = {
+  const textures = [
     normalAnchor,
     highlightAnchor,
     selectedAnchor,
@@ -92,28 +96,50 @@ export const createAnchorTexture = (renderer: Renderer): AnchorTextures => {
     normalHandlerPoint,
     highlightHandlerPoint,
     selectedHandlerPoint,
+  ]
+
+  textures.forEach(texture => texture.defaultAnchor.set(0.5))
+
+  return {
+    anchor: {
+      normal: normalAnchor,
+      highlight: highlightAnchor,
+      selected: selectedAnchor,
+    },
+    handlerPoint: {
+      normal: normalHandlerPoint,
+      highlight: highlightHandlerPoint,
+      selected: selectedHandlerPoint,
+    },
   }
-
-  Object.values(textures).forEach(texture => texture.defaultAnchor.set(0.5))
-
-  return textures
 }
 
 
 export interface AnchorDrawProps {
-  renderer: Renderer;
   vectorAnchor: VectorAnchor;
+  renderer?: Renderer;
 }
 
 export class AnchorDraw {
   static _textures?: AnchorTextures
-  public renderer: Renderer
+  static renderer?: Renderer
+
   public vectorAnchor: VectorAnchor
   public container: Container
   public anchor?: Sprite
   public inHandler?: Sprite
   public outHandler?: Sprite
   private handlerLine: Graphics
+
+  /**
+   * anchor style apply for draw call,
+   * if no style, it will be clear
+   */
+  public style?: {
+    anchor?: 'normal' | 'highlight' | 'selected';
+    inHandler?: 'normal' | 'highlight' | 'selected';
+    outHandler?: 'normal' | 'highlight' | 'selected';
+  }
 
   constructor({ renderer, vectorAnchor }: AnchorDrawProps) {
     this.renderer = renderer
@@ -130,6 +156,20 @@ export class AnchorDraw {
     }
 
     return AnchorDraw._textures
+  }
+
+  get renderer(): Renderer {
+    if (!AnchorDraw.renderer) {
+      AnchorDraw.renderer = new Renderer()
+    }
+
+    return AnchorDraw.renderer
+  }
+
+  set renderer(renderer: Renderer | undefined) {
+    if (renderer) {
+      AnchorDraw.renderer = renderer
+    }
   }
 
   public drawAnchor(texture: Texture) {
@@ -151,15 +191,15 @@ export class AnchorDraw {
   }
 
   public drawNormalAnchor() {
-    this.drawAnchor(this.textures.normalAnchor)
+    this.drawAnchor(this.textures.anchor.normal)
   }
 
   public drawHighlightAnchor() {
-    this.drawAnchor(this.textures.highlightAnchor)
+    this.drawAnchor(this.textures.anchor.highlight)
   }
 
   public drawSelectedAnchor() {
-    this.drawAnchor(this.textures.selectedAnchor)
+    this.drawAnchor(this.textures.anchor.selected)
   }
 
   public drawHandler(direction: HandlerDirection, texture: Texture) {
@@ -181,7 +221,7 @@ export class AnchorDraw {
       this[handlerType] = undefined
     }
 
-    if (!handler) {
+    if (!this[handlerType]) {
       this[handlerType] = new Sprite(texture)
       this[handlerType]!.rotation = Math.PI / 4
       this.container.addChild(this[handlerType]!)
@@ -193,19 +233,20 @@ export class AnchorDraw {
   }
 
   public drawNormalHandler(direction: HandlerDirection) {
-    this.drawHandler(direction, this.textures.normalHandlerPoint)
+    this.drawHandler(direction, this.textures.handlerPoint.normal)
   }
 
   public drawHighlightHandler(direction: HandlerDirection) {
-    this.drawHandler(direction, this.textures.highlightHandlerPoint)
+    this.drawHandler(direction, this.textures.handlerPoint.highlight)
   }
 
   public drawSelectedHandler(direction: HandlerDirection) {
-    this.drawHandler(direction, this.textures.selectedHandlerPoint)
+    this.drawHandler(direction, this.textures.handlerPoint.selected)
   }
 
   public drawHandlerLine() {
     const lineColor = 0xb0b0b0
+    const { style } = this
     const { x, y } = this.vectorAnchor.position
     const { inHandler, outHandler } = this.vectorAnchor
 
@@ -216,16 +257,22 @@ export class AnchorDraw {
         color: lineColor,
       })
 
-    if (inHandler) {
+    if (inHandler && style?.inHandler) {
       this.handlerLine
         .moveTo(x, y)
         .lineTo(inHandler.x + x, inHandler.y + y)
     }
 
-    if (outHandler) {
+    if (outHandler && style?.outHandler) {
       this.handlerLine
         .moveTo(x, y)
         .lineTo(outHandler.x + x, outHandler.y + y)
+    }
+  }
+
+  public clearAnchor() {
+    if (this.anchor) {
+      this.anchor.visible = false
     }
   }
 
@@ -240,10 +287,24 @@ export class AnchorDraw {
     this.handlerLine.clear()
   }
 
-  public clear() {
-    if (this.anchor) {
-      this.anchor.visible = false
+  public draw() {
+    const { style, textures } = this
+    this.clear()
+
+    if (!style) {
+      return
     }
+    const { anchor, inHandler, outHandler } = style
+
+    if (anchor) this.drawAnchor(textures.anchor[anchor])
+    if (inHandler) this.drawHandler('in', textures.handlerPoint[inHandler])
+    if (outHandler) this.drawHandler('out', textures.handlerPoint[outHandler])
+
+    this.drawHandlerLine()
+  }
+
+  public clear() {
+    this.clearAnchor()
     this.clearHandler()
   }
 

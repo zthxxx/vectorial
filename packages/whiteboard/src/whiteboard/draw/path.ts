@@ -6,8 +6,10 @@ import {
 
 export interface PathDrawProps {
   path: VectorPath;
-  width?: number;
-  color?: number;
+  style?: {
+    width?: number;
+    color?: number;
+  };
 }
 
 export enum DefaultPathColor {
@@ -17,27 +19,43 @@ export enum DefaultPathColor {
 
 export class PathDraw {
   public path: VectorPath
-  public color: number
-  public width: number
   public container: Graphics
+
+  /**
+   * anchor style apply for draw call,
+   * if no style, it will be clear
+   */
+   public style?: {
+    width: number;
+    color: number;
+  }
 
   constructor(props: PathDrawProps) {
     const {
       path,
-      width = 1,
-      color = DefaultPathColor.highlight,
+      style: {
+        width = 1,
+        color = DefaultPathColor.normal,
+      } = {},
     } = props
 
     this.path = path
-    this.width = width
-    this.color = color
+    this.style = {
+      width,
+      color,
+    }
     this.container = new Graphics()
   }
 
-  public draw({ width, color }: { width?: number, color?: number } = {}) {
-    this.container.clear()
+  public draw() {
+    const { style } = this
+    this.clear()
 
-    if (!this.path.anchors.length) {
+    if (
+      !style
+      || style.width <= 0
+      || this.path.anchors.length < 2
+    ) {
       return
     }
 
@@ -45,13 +63,17 @@ export class PathDraw {
 
     this.container
       .lineStyle({
-        width: width ?? this.width,
-        color: color ?? this.color,
+        width: style.width,
+        color: style.color,
       })
       .moveTo(first.position.x, first.position.y)
 
+    const anchors = this.path.closed
+      ? [...this.path.anchors, first]
+      : this.path.anchors
+
     // pixi graphics draw bezier curve
-    this.path.anchors.reduce((prev, curr) => {
+    anchors.reduce((prev, curr) => {
       this.container.bezierCurveTo(
         prev.position.x + (prev.outHandler?.x ?? 0),
         prev.position.y + (prev.outHandler?.y ?? 0),
@@ -65,7 +87,6 @@ export class PathDraw {
   }
 
   public clear() {
-    this.path.anchors = []
     this.container.clear()
   }
 

@@ -17,7 +17,12 @@ export const setupViewportPlugins = (
 ) => {
   const plugins = viewport.viewport.plugins
 
-  const misePane = pane.addFolder({ title: 'Mise' })
+  const misePane = pane.addFolder({ title: 'Misc' })
+
+  const eventManager = new EventManager(viewport.viewport, {
+    pane,
+  })
+  const { interactionEvent$ } = eventManager
 
   plugins.add(
     MouseMonitorTool.name,
@@ -27,10 +32,17 @@ export const setupViewportPlugins = (
   )
 
   plugins.add(
+    EventManager.name,
+    eventManager,
+  )
+
+  plugins.add(
     VectorTool.name,
     new VectorTool(viewport.viewport, {
-      pane,
+      canvas: viewport.canvas,
+      pane: misePane,
       renderer: viewport.app.renderer,
+      interactionEvent$,
     }),
   )
 
@@ -48,12 +60,6 @@ export const setupViewportPlugins = (
     }),
   )
 
-  plugins.add(
-    EventManager.name,
-    new EventManager(viewport.viewport, {
-      pane,
-    })
-  )
 }
 
 export const useSetupCanvas = (containerRef: RefObject<HTMLDivElement>) => {
