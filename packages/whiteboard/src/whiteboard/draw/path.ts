@@ -7,8 +7,9 @@ import {
 export interface PathDrawProps {
   path: VectorPath;
   style?: {
-    width?: number;
-    color?: number;
+    fillColor?: number;
+    strokeWidth?: number;
+    strokeColor?: number;
   };
 }
 
@@ -26,24 +27,19 @@ export class PathDraw {
    * if no style, it will be clear
    */
    public style?: {
-    width: number;
-    color: number;
+    fillColor?: number;
+    strokeWidth?: number;
+    strokeColor?: number;
   }
 
   constructor(props: PathDrawProps) {
     const {
       path,
-      style: {
-        width = 1,
-        color = DefaultPathColor.normal,
-      } = {},
+      style,
     } = props
 
     this.path = path
-    this.style = {
-      width,
-      color,
-    }
+    this.style = style
     this.container = new Graphics()
   }
 
@@ -53,7 +49,7 @@ export class PathDraw {
 
     if (
       !style
-      || style.width <= 0
+      || (!style.strokeWidth && !style.fillColor)
       || this.path.anchors.length < 2
     ) {
       return
@@ -61,12 +57,19 @@ export class PathDraw {
 
     const first = this.path.anchors[0]
 
-    this.container
-      .lineStyle({
-        width: style.width,
-        color: style.color,
+    if (style.strokeWidth) {
+      this.container.lineStyle({
+        width: style.strokeWidth,
+        color: style.strokeColor,
       })
-      .moveTo(first.position.x, first.position.y)
+    }
+
+    // only closed path can be fill
+    if (style.fillColor && this.path.closed) {
+      this.container.beginFill(style.fillColor)
+    }
+
+    this.container.moveTo(first.position.x, first.position.y)
 
     const anchors = this.path.closed
       ? [...this.path.anchors, first]
@@ -84,6 +87,10 @@ export class PathDraw {
       )
       return curr
     })
+
+    if (this.path.closed) {
+      this.container.closePath()
+    }
   }
 
   public clear() {

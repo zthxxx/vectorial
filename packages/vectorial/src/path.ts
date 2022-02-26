@@ -1,7 +1,6 @@
 import type paper from 'paper'
 import {
   Point as PaperPoint,
-  Segment as PaperSegment,
   Path as PaperPath,
   Color,
 } from 'paper'
@@ -17,11 +16,23 @@ export enum PathHitType {
   Fill = 'Fill',
 }
 
-export interface PathHitResult {
-  type: PathHitType,
-  point: VectorAnchor;
-  ends: [VectorAnchor, VectorAnchor];
-}
+export type PathHitResult =
+  | {
+    type: PathHitType.Anchor | PathHitType.InHandler | PathHitType.OutHandler;
+    point: VectorAnchor;
+    ends: [VectorAnchor, VectorAnchor];
+  }
+  | {
+    type: PathHitType.Stroke;
+    point: VectorAnchor;
+    ends: [VectorAnchor, VectorAnchor];
+    /** bezier curve parameter t */
+    t: number;
+  }
+  | {
+    type: PathHitType.Fill;
+    point: VectorAnchor;
+  }
 
 export class VectorPath {
   private _anchors: VectorAnchor[] = []
@@ -73,43 +84,73 @@ export class VectorPath {
     this.segmentMap.set(anchor.segment, anchor)
   }
 
+  public removeAnchor(anchor: VectorAnchor) {
+    const index = this.anchors.indexOf(anchor)
+    if (index === -1) return
+    this.removeAnchorAt(index)
+  }
 
-  public hitTest(point: Vector): PathHitResult | undefined {
+  public removeAnchorAt(index: number) {
+    const anchor = this.anchors[index]
+    if (!anchor) return
+    this.anchors.splice(index, 1)
+    this.path.removeSegment(index)
+    this.segmentMap.delete(anchor.segment)
+  }
+
+  public clear() {
+    this.segmentMap.clear()
+    this.path.removeSegments()
+    this.closed = false
+    this._anchors = []
+  }
+
+  public clone(): VectorPath {
+    return new VectorPath(this.anchors, this.closed)
+  }
+
+  public hitAnchorTest(point: Vector): PathHitResult | undefined {
     const { closed } = this
+    const first = this.anchors.at(0)
+    const last = this.anchors.at(-1)
+
+    for (let index = 0; index < this.anchors.length; index++) {
+      const anchor = this.anchors[index]
+      if (anchor.isAnchorNear(point)) {
+        return {
+          type: PathHitType.Anchor,
+          point: anchor,
+          ends: [
+            this.anchors[index - 1] ?? (closed ? last : first),
+            this.anchors[index + 1] ?? (closed ? first : last),
+          ],
+        }
+      }
+    }
+  }
+
+  public hitPathTest(point: Vector): PathHitResult | undefined {
+    const { closed } = this
+
     /**
      * http://paperjs.org/reference/path/#hittest-point
      * https://github.com/paperjs/paper.js/blob/v0.12.15/src/path/Path.js#L1699-L1721
      */
     const hitResult: paper.HitResult | undefined = this.path.hitTest(
       new PaperPoint(point),
-      //// BUG with hit handles
-      // {
-      //   handles: true,
-      // },
+      {
+        stroke: true,
+        segments: false,
+        // BUG with paperjs hit handles
+        handles: false,
+        fill: false,
+      },
     )
     if (!hitResult) return
 
-    const typeMap: { [key: string]: PathHitType } = {
-      segment: PathHitType.Anchor,
-      'handle-in': PathHitType.InHandler,
-      'handle-out': PathHitType.OutHandler,
-    }
-
     const first = this.anchors.at(0)
     const last = this.anchors.at(-1)
-    if (hitResult.type in typeMap) {
-      const hitSegment: paper.Segment = hitResult.segment
-      const anchor = this.segmentMap.get(hitResult.segment)!
 
-      return {
-        type: typeMap[hitResult.type],
-        point: anchor,
-        ends: [
-          this.anchors[hitSegment.index - 1] ?? (closed ? last : first),
-          this.anchors[hitSegment.index + 1] ?? (closed ? first : last),
-        ],
-      }
-    }
     if (hitResult.type === 'stroke') {
       const { point, location } = hitResult
       return {
@@ -119,14 +160,8 @@ export class VectorPath {
           this.anchors[location.index],
           this.anchors[location.index + 1] ?? (closed ? first : last),
         ],
+        t: location.time,
       }
     }
-  }
-
-  public clear() {
-    this.segmentMap.clear()
-    this.path.removeSegments()
-    this.closed = false
-    this._anchors = []
   }
 }

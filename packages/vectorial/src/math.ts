@@ -33,6 +33,9 @@ export const len = (vector: Vector): number => (
   sqrt(pow2(vector.x) + pow2(vector.y))
 )
 
+export const isNear = (a: Vector, b: Vector, padding: number = 8) =>
+  len(sub(a, b)) < padding
+
 export const mirrorVector = (vector: Vector): Vector => scale(vector, -1)
 
 export const mirrorVectorAngle = (vector: Vector, length: number): Vector => {

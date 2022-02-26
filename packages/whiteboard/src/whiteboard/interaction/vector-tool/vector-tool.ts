@@ -23,6 +23,7 @@ import {
 import {
   AnchorDraw,
   PathDraw,
+  DefaultPathColor,
 } from '../../draw'
 import type { InteractionEvent } from '../event'
 import {
@@ -97,6 +98,11 @@ export class VectorTool extends Plugin {
     this.vectorPath = new VectorPath()
     this.pathDraw = new PathDraw({
       path: this.vectorPath,
+      style: {
+        strokeWidth: 1,
+        strokeColor: DefaultPathColor.normal,
+        fillColor: 0xd0d0d0
+      },
     })
     // aviod initial point display
     this.lastMousePosition = {
@@ -110,7 +116,8 @@ export class VectorTool extends Plugin {
     this.indicativePath = new PathDraw({
       path: new VectorPath(),
       style: {
-        color: 0xb0b0b0,
+        strokeWidth: 1,
+        strokeColor: DefaultPathColor.highlight,
       },
     })
 

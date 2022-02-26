@@ -6,13 +6,18 @@ import {
 import { Vector, HandlerType } from './types'
 import {
   len,
+  add,
+  isNear,
   mirrorVector,
   mirrorVectorAngle,
 } from './math'
 
 export class VectorAnchor {
   public segment: paper.Segment
-  public handlerType: HandlerType = HandlerType.None
+  public handlerType: HandlerType
+  /**
+   * point radius in polygen path
+   */
   public radius: number = 0
 
   constructor(
@@ -105,5 +110,17 @@ export class VectorAnchor {
       },
       this.radius,
     )
+  }
+
+  public isAnchorNear(point: Vector): boolean {
+    return isNear(point, this.position)
+  }
+
+  public isInHandlerNear(point: Vector): boolean {
+    return Boolean(this.inHandler && isNear(point, add(this.position, this.inHandler)))
+  }
+
+  public isOutHandlerNear(point: Vector): boolean {
+    return Boolean(this.outHandler && isNear(point, add(this.position, this.outHandler)))
   }
 }

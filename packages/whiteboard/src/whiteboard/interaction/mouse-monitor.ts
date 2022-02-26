@@ -10,7 +10,7 @@ export interface MovePluginProps {
 
 export class MouseMonitorTool extends Plugin {
   private pane: FolderApi
-  public mousePoint: string = '(0, 0)'
+  public mousePoint: string = ''
   private mouseBlade: MonitorBindingApi<string>
 
   constructor(parent: Viewport, options: MovePluginProps) {
