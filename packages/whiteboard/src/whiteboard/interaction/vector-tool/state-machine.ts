@@ -1,7 +1,14 @@
-import type { Subject, Subscription } from 'rxjs'
+import {
+  Subject,
+  Subscription,
+  of,
+  iif,
+  EMPTY,
+} from 'rxjs'
 import {
   tap,
   filter,
+  mergeMap,
 } from 'rxjs/operators'
 import {
   createMachine,
@@ -18,6 +25,7 @@ import {
   len,
   Vector,
   PathHitType,
+  PathHitResult,
 } from 'vectorial'
 import {
   icon,
@@ -183,9 +191,31 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
 
 type StateAction = ActionFunction<StateContext, StateEvent>
 
+const setCanvasCursor = (canvas: HTMLCanvasElement, icon?: string): void => {
+  canvas.parentElement!.style.cursor = icon ? `url('${icon}'), auto` : 'default'
+}
+
 const unsubscribeAll: StateAction = ({ subscription }) => {
   while(subscription.length) subscription.pop()!.unsubscribe()
 }
+
+const normalizeMouseEvent = (event: MouseEvent, vectorPath?: VectorPath): {
+  hit?: PathHitResult;
+  isMove: boolean;
+  isClickDown: boolean;
+  isClickUp: boolean;
+} => ({
+  hit: vectorPath?.hitTest(event.mouse),
+  isMove: event.mouse.type == MouseTriggerType.Move,
+  isClickDown: (
+    event.mouse.type === MouseTriggerType.Down
+    && event.match({ mouse: [MouseButton.Left] })
+  ),
+  isClickUp: (
+    event.mouse.type === MouseTriggerType.Up
+    && !event.downMouse.size
+  ),
+})
 
 const enterCreating: StateAction = ({
   canvas,
@@ -193,7 +223,7 @@ const enterCreating: StateAction = ({
   lastMousePosition,
   changes,
 }) => {
-  canvas.parentElement!.style.cursor = `url('${icon.pen}'), auto`
+  setCanvasCursor(canvas, icon.pen)
   indicativeAnchor.vectorAnchor.position = lastMousePosition
   changes.push([indicativeAnchor, { anchor: 'normal', inHandler: undefined, outHandler: undefined }])
 
@@ -203,7 +233,7 @@ const enterCreating: StateAction = ({
 /**
  * https://developer.mozilla.org/en-US/docs/Web/CSS/cursor#values
  */
-const exitCreating: StateAction = ({ canvas }) => { canvas.parentElement!.style.cursor = 'default' }
+const exitCreating: StateAction = ({ canvas }) => setCanvasCursor(canvas)
 
 const enterIndicating: StateAction = ({
   interactionEvent$,
@@ -214,30 +244,32 @@ const enterIndicating: StateAction = ({
   subscription.push(
     interactionEvent$.pipe(
       filter(event => Boolean(event.mouse)),
-      filter((event: MouseEvent) => {
-        const hit = vectorPath.hitTest(event.mouse)
-        if (!hit) return true
+      mergeMap((event: MouseEvent) => {
+        const { hit, isMove, isClickDown } = normalizeMouseEvent(event, vectorPath)
 
-        if (
-          event.mouse.type === MouseTriggerType.Down
-          && event.match({ mouse: [MouseButton.Left] })
-          && hit.type === PathHitType.Anchor
-          && hit.point === vectorPath.anchors[0]
-        ) {
-          machine?.send({ type: 'closePath' })
-        } else {
-          machine?.send({ type: 'hover' })
-        }
-
-        return false
+        return iif(
+          () => Boolean(hit),
+          iif(
+            () => (
+              isClickDown
+              && hit!.type === PathHitType.Anchor
+              && hit!.point === vectorPath.anchors[0]
+            ),
+            of<StateMouseEvent>({ type: 'closePath', event }),
+            of<StateMouseEvent>({ type: 'hover', event }),
+          ),
+          iif(
+            () => isMove,
+            of<StateMouseEvent>({ type: 'move', event }),
+            iif(
+              () => isClickDown,
+              of<StateMouseEvent>({ type: 'create', event }),
+              EMPTY,
+            ),
+          )
+        )
       }),
-      filter((event: MouseEvent) => {
-        if (event.mouse.type !== MouseTriggerType.Move) return true
-        machine?.send({ type: 'move', event })
-        return false
-      }),
-      filter((event: MouseEvent) => event.match({ mouse: [MouseButton.Left] })),
-      tap((event: MouseEvent) => { machine?.send({ type: 'create', event }) }),
+      tap((event: StateMouseEvent) => { machine?.send(event) }),
     ).subscribe(),
   )
 }
@@ -249,7 +281,7 @@ const indicatingMove: StateAction = ({
   indicativePath,
   changes,
 }, { event }: StateMouseEvent) => {
-  canvas.parentElement!.style.cursor = `url('${icon.pen}'), auto`
+  setCanvasCursor(canvas, icon.pen)
   indicativeAnchor.vectorAnchor.position = event.mouse
   indicativeAnchor.vectorAnchor.inHandler = undefined
   indicativeAnchor.vectorAnchor.outHandler = undefined
@@ -260,7 +292,7 @@ const indicatingMove: StateAction = ({
   indicativePath.path.anchors = [
     vectorPath.anchors.at(-1),
     indicativeAnchor.vectorAnchor,
-  ].filter(Boolean) as VectorAnchor[]
+  ]
   changes.push([indicativePath, { width: 1, color: DefaultPathColor.highlight }])
 }
 
@@ -305,7 +337,7 @@ const indicativeHover: StateAction = ({
     return
   }
 
-  canvas.parentElement!.style.cursor = 'default'
+  setCanvasCursor(canvas)
   const { type, point, ends } = hit
   indicativeAnchor.vectorAnchor = point.clone()
 
@@ -313,12 +345,11 @@ const indicativeHover: StateAction = ({
     case (PathHitType.Anchor):{
       const first = vectorPath.anchors.at(0)
       const last = vectorPath.anchors.at(-1)
-      changes.push([indicativeAnchor, { anchor: 'highlight', inHandler: 'normal', outHandler: 'normal' }])
-      if (
-        hit.point === first
-        && vectorPath.anchors.length >= 2
-      ) {
-        indicativePath.path.anchors = [last!, first]
+      changes.push([indicativeAnchor, { anchor: 'highlight', inHandler: undefined, outHandler: undefined }])
+
+      // endpoint hover to indicate close path
+      if (hit.point === first && vectorPath.anchors.length >= 2) {
+        indicativePath.path.anchors = [last, first]
         changes.push([indicativePath, { width: 1, color: DefaultPathColor.highlight }])
       } else {
         changes.push([indicativePath, undefined])
@@ -360,20 +391,26 @@ const enterCondition: StateAction = ({
   subscription.push(
     interactionEvent$.pipe(
       filter(event => Boolean(event.mouse)),
-      tap((event: MouseEvent) => {
-        if (event.mouse.type === MouseTriggerType.Move)
-          machine?.send({ type: 'move', event })
+      mergeMap((event: MouseEvent) => {
+        const { isMove, isClickUp } = normalizeMouseEvent(event)
+
+        return iif(
+          () => isMove,
+          of<StateMouseEvent>({ type: 'move', event }),
+          iif(
+            () => isClickUp,
+            of<StateMouseEvent>({ type: 'release', event }),
+            EMPTY,
+          )
+        )
       }),
-      tap((event: MouseEvent) => {
-        if (event.mouse.type === MouseTriggerType.Up && !event.downMouse.size)
-          machine?.send({ type: 'release', event })
-      }),
+      tap((event: StateMouseEvent) => { machine?.send(event) }),
     ).subscribe(),
   )
 }
 
 const isDeadDrag = (prev: Vector, next: Vector): boolean =>
-  len(sub(prev, next)) < 5
+  len(sub(prev, next)) < 8
 
 const adjustingMove: StateAction = ({
   vectorPath,
@@ -400,7 +437,7 @@ const adjustingMove: StateAction = ({
   indicativePath.path.anchors = [
     vectorPath.anchors.at(-1),
     indicativeAnchor.vectorAnchor,
-  ].filter(Boolean) as VectorAnchor[]
+  ]
   changes.push([indicativePath, { width: 1, color: DefaultPathColor.highlight }])
 }
 
@@ -429,14 +466,20 @@ const enterTwoStepsConfirm: StateAction = ({
   subscription.push(
     interactionEvent$.pipe(
       filter(event => Boolean(event.mouse)),
-      tap((event: MouseEvent) => {
-        if (event.mouse.type === MouseTriggerType.Move)
-          machine?.send({ type: 'move', event })
+      mergeMap((event: MouseEvent) => {
+        const { isMove, isClickDown } = normalizeMouseEvent(event)
+
+        return iif(
+          () => isMove,
+          of<StateMouseEvent>({ type: 'move', event }),
+          iif(
+            () => isClickDown,
+            of<StateMouseEvent>({ type: 'confirm', event }),
+            EMPTY,
+          )
+        )
       }),
-      tap((event: MouseEvent) => {
-        if (event.mouse.type === MouseTriggerType.Down && event.match({ mouse: [MouseButton.Left] }))
-          machine?.send({ type: 'confirm', event })
-      }),
+      tap((event: StateMouseEvent) => { machine?.send(event) }),
     ).subscribe(),
   )
 }
@@ -469,10 +512,20 @@ const enterIdle: StateAction = ({
 }) => {
   subscription.push(
     interactionEvent$.pipe(
-      filter(event => Boolean(event.mouse) && event.mouse!.type === MouseTriggerType.Move),
-      tap((event: MouseEvent) => {
-        machine?.send({ type: 'move', event })
+      filter(event => Boolean(event.mouse)),
+      mergeMap((event: MouseEvent) => {
+        const { isMove, isClickDown } = normalizeMouseEvent(event)
+        return iif(
+          () => isMove,
+          of<StateMouseEvent>({ type: 'move', event }),
+          iif(
+            () => isClickDown,
+            of<StateMouseEvent>({ type: 'select', event }),
+            EMPTY,
+          )
+        )
       }),
+      tap((event: StateMouseEvent) => { machine?.send(event) }),
     ).subscribe(),
   )
 }

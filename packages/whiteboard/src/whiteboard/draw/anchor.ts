@@ -35,7 +35,8 @@ export const createAnchorTexture = (renderer: Renderer): AnchorTextures => {
         width: 1,
         color: mainColor,
       })
-      .drawShape(new Circle(0, 0, 3))
+      .drawShape(new Circle(0, 0, 3.5)),
+    { resolution: 2 },
   )
 
   const highlightAnchor = renderer.generateTexture(
@@ -45,7 +46,8 @@ export const createAnchorTexture = (renderer: Renderer): AnchorTextures => {
         width: 1,
         color: tinyColor,
       })
-      .drawShape(new Circle(0, 0, 3))
+      .drawShape(new Circle(0, 0, 3.5)),
+    { resolution: 2 },
   )
 
   const selectedAnchor = renderer.generateTexture(
@@ -55,7 +57,8 @@ export const createAnchorTexture = (renderer: Renderer): AnchorTextures => {
         width: 1,
         color: 0xffffff,
       })
-      .drawShape(new Circle(0, 0, 4))
+      .drawShape(new Circle(0, 0, 4.5)),
+    { resolution: 2 },
   )
 
   const normalHandlerPoint = renderer.generateTexture(

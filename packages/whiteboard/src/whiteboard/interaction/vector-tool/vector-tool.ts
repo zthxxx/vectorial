@@ -117,8 +117,8 @@ export class VectorTool extends Plugin {
     const anchorDrawsLayer = new Container()
 
     this.container.addChild(this.pathDraw.container)
-    this.container.addChild(anchorDrawsLayer)
     this.container.addChild(this.indicativePath.container)
+    this.container.addChild(anchorDrawsLayer)
     this.container.addChild(this.indicativeAnchor.container)
 
     this.anchorDraws = new DrawsMap([], anchorDrawsLayer)

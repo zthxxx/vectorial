@@ -45,9 +45,11 @@ export class VectorPath {
     return this._anchors
   }
 
-  public set anchors(anchors: VectorAnchor[]) {
+  public set anchors(anchors: (VectorAnchor | undefined)[]) {
     this.clear()
-    anchors.forEach(anchor => this.addAnchor(anchor))
+    anchors
+      .filter(Boolean)
+      .forEach(anchor => this.addAnchor(anchor!))
   }
 
   public get closed(): boolean {
