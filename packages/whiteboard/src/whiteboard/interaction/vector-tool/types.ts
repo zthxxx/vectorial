@@ -44,7 +44,8 @@ export interface StateContext {
   indicativeAnchor: AnchorDraw;
   indicativePath: PathDraw;
 
-  selected: Array<[VectorAnchor, ('anchor' | 'inHandler' | 'outHandler')[]]>;
+  dragBase?: Vector;
+  selected: PathHitResult[];
   changes: Array<
     | [AnchorDraw | undefined, AnchorDraw['style']]
     | [PathDraw | undefined, PathDraw['style']]

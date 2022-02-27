@@ -194,11 +194,6 @@ export class EventManager extends Plugin {
 
     const paneFolder = pane.addFolder({ title: 'Last Event' })
 
-    this.modifierBlade = paneFolder.addMonitor(this.paneState, 'modifier', {
-      label: 'Modifier',
-      interval: 0,
-    })
-
     this.mouseEventBlade = paneFolder.addMonitor(this.paneState, 'mouse', {
       label: 'Mouse',
       interval: 0,
@@ -206,6 +201,11 @@ export class EventManager extends Plugin {
 
     this.keyEventBlade = paneFolder.addMonitor(this.paneState, 'key', {
       label: 'Keyboard',
+      interval: 0,
+    })
+
+    this.modifierBlade = paneFolder.addMonitor(this.paneState, 'modifier', {
+      label: 'Modifier',
       interval: 0,
     })
 

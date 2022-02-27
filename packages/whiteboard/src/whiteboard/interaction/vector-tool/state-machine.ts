@@ -27,6 +27,12 @@ import {
 import {
   enterEditing,
   enterSelecting,
+  selectingSelect,
+  selectingUnselect,
+  enterDeadZoneChecking,
+  enterAdjusting,
+  adjustingAdjust,
+  enterMarqueeing,
 } from './editing'
 
 
@@ -95,7 +101,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
             entry: enterTwoStepsConfirm,
             exit: unsubscribeAll,
             after: {
-              200: 'indicating',
+              400: 'indicating',
             },
             on: {
               move: 'indicating',
@@ -135,16 +141,65 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
               move: {
                 actions: hoverIndicate,
               },
+              select: {
+                target: 'deadZoneChecking',
+                actions: selectingSelect,
+              },
+              marquee: {
+                target: 'marqueeing',
+                actions: selectingSelect,
+              }
             },
           },
-          adjusting: {},
-          marquee: {},
+          deadZoneChecking: {
+            entry: enterDeadZoneChecking,
+            exit: unsubscribeAll,
+            on: {
+              adjust: {
+                target: 'adjusting',
+                actions: adjustingAdjust,
+              },
+              unselect: {
+                target: 'selecting',
+                actions: selectingUnselect,
+              },
+              cancel: {
+                target: 'selecting',
+              }
+            },
+          },
+          adjusting: {
+            entry: enterAdjusting,
+            exit: unsubscribeAll,
+            on: {
+              adjust: {
+                actions: adjustingAdjust,
+              },
+              done: {
+                target: 'selecting',
+              }
+            },
+          },
+          marqueeing: {
+            entry: enterMarqueeing,
+            exit: unsubscribeAll,
+            on: {
+              marquee: {
+
+              },
+              marqueeDone: {
+                target: 'selecting',
+              },
+            },
+          },
         },
         on: {
           creating: 'creating',
           done: 'done',
         }
       },
-      done: {},
+      done: {
+        type: 'final',
+      },
     },
   })

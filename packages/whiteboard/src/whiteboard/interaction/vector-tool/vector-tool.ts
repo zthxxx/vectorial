@@ -26,9 +26,11 @@ import {
   DefaultPathColor,
 } from '../../draw'
 import type { InteractionEvent } from '../event'
-import {
+import type {
   StateContext,
   VectorToolService,
+} from './types'
+import {
   createVectorToolMachine,
 } from './state-machine'
 
@@ -176,7 +178,7 @@ export class VectorTool extends Plugin {
 
   public drawChanges(context: StateContext) {
     while (context.changes.length) {
-      const [item, style] = context.changes.pop() as StateContext['changes'][number]
+      const [item, style] = context.changes.shift() as StateContext['changes'][number]
       if (!item) continue
       item.style = style
         ? { ...item.style, ...style }

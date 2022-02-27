@@ -124,14 +124,14 @@ export const indicatingMove: StateAction = ({
   changes.push([indicativePath, { strokeWidth: 1, strokeColor: DefaultPathColor.highlight }])
 }
 
-export const indicatingCreate: StateAction = ({
-  indicativeAnchor,
-  vectorPath,
-  anchorDraws,
-  changes,
-}, { event }: StateMouseEvent) => {
+export const indicatingCreate: StateAction = (context, { event }: StateMouseEvent) => {
+  const {
+    indicativeAnchor,
+    vectorPath,
+    anchorDraws,
+    changes,
+  } = context
   const { anchors } = vectorPath
-  const { vectorAnchor } = indicativeAnchor
   changes.push(
     [
       anchorDraws.get(anchors.at(-1)!),
@@ -143,6 +143,11 @@ export const indicatingCreate: StateAction = ({
     ],
   )
 
+  context.dragBase = {
+    x: event.mouse.x,
+    y: event.mouse.y,
+  }
+  const { vectorAnchor } = indicativeAnchor
   vectorAnchor.position = event.mouse
   vectorAnchor.inHandler = undefined
   vectorAnchor.outHandler = undefined
@@ -154,34 +159,45 @@ export const hoverIndicate: StateAction = ({
   vectorPath,
   indicativeAnchor,
   indicativePath,
+  anchorDraws,
   changes,
 }, { hit }: StateMouseEvent) => {
+  setCanvasCursor(canvas)
+
   if (!hit) {
     changes.push([indicativeAnchor, undefined])
     changes.push([indicativePath, undefined])
     return
   }
 
-  setCanvasCursor(canvas)
   indicativeAnchor.vectorAnchor = hit.point.clone()
 
   switch (hit.type) {
-    case (PathHitType.Anchor):{
-      changes.push([indicativeAnchor, { anchor: 'highlight', inHandler: undefined, outHandler: undefined }])
+    case (PathHitType.Anchor): {
+      const isSelected = anchorDraws.get(hit.point)!.style?.anchor === 'selected'
+      changes.push([indicativeAnchor, {
+        anchor: isSelected ? 'selected' : 'highlight',
+        inHandler: undefined,
+        outHandler: undefined,
+      }])
+
       changes.push([indicativePath, undefined])
       break
     }
-    case (PathHitType.InHandler):{
-      changes.push([indicativeAnchor, { inHandler: 'highlight' }])
+    case (PathHitType.InHandler): {
+      const isSelected = anchorDraws.get(hit.point)!.style?.inHandler === 'selected'
+      changes.push([indicativeAnchor, { inHandler: isSelected ? 'selected' : 'highlight' }])
       changes.push([indicativePath, undefined])
       break
     }
     case (PathHitType.OutHandler): {
-      changes.push([indicativeAnchor, { outHandler: 'highlight' }])
+      const isSelected = anchorDraws.get(hit.point)!.style?.outHandler === 'selected'
+      changes.push([indicativeAnchor, { outHandler: isSelected ? 'selected' : 'highlight' }])
       changes.push([indicativePath, undefined])
       break
     }
     case (PathHitType.Stroke): {
+      setCanvasCursor(canvas, icon.pen)
       indicativePath.path.anchors = hit.ends
       changes.push(
         [indicativeAnchor, { anchor: 'normal', inHandler: undefined, outHandler: undefined }],
@@ -297,13 +313,14 @@ export const adjustingMove: StateAction = ({
   changes.push([indicativePath, { strokeWidth: 1, strokeColor: DefaultPathColor.highlight }])
 }
 
-export const adjustingRelease: StateAction = ({
-  vectorPath,
-  anchorDraws,
-  indicativeAnchor,
-  indicativePath,
-  changes,
-}) => {
+export const adjustingRelease: StateAction = (context) => {
+  const {
+    vectorPath,
+    anchorDraws,
+    indicativeAnchor,
+    indicativePath,
+    changes,
+  } = context
   const vectorAnchor = indicativeAnchor.vectorAnchor.clone()
   const anchorDraw = new AnchorDraw({ vectorAnchor })
   vectorPath.addAnchor(vectorAnchor)
@@ -312,22 +329,28 @@ export const adjustingRelease: StateAction = ({
 
   changes.push([indicativeAnchor, undefined])
   changes.push([indicativePath, undefined])
+  context.dragBase = undefined
 }
 
 export const enterTwoStepsConfirm: StateAction = ({
   interactionEvent$,
   subscription,
+  vectorPath,
   machine,
 }) => {
   subscription.push(
     interactionEvent$.pipe(
       filter(event => Boolean(event.mouse)),
       mergeMap((event: MouseEvent) => {
-        const { isMove, isClickDown } = normalizeMouseEvent(event)
+        const { anchorHit, isMove, isClickDown } = normalizeMouseEvent(event, vectorPath)
 
         return iif(
           () => isMove,
-          of<StateMouseEvent>({ type: 'move', event }),
+          iif(
+            () => !anchorHit,
+            of<StateMouseEvent>({ type: 'move', event }),
+            EMPTY,
+          ),
           iif(
             () => isClickDown,
             of<StateMouseEvent>({ type: 'confirm', event }),
