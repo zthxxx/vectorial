@@ -15,6 +15,9 @@ import {
   MouseTriggerType,
   MouseButton,
 } from '../event'
+import {
+  AnchorDraw,
+} from '../../draw'
 import type {
   MouseEvent,
   StateContext,
@@ -96,6 +99,48 @@ export const normalizeMouseEvent = (
 export const isDeadDrag = (prev: Vector, next: Vector): boolean =>
   len(sub(prev, next)) < 8
 
+
+export const getResetStyleChanges = (
+  anchorDraws: StateContext['anchorDraws'],
+): StateContext['changes'] => {
+  const changes: StateContext['changes'] = []
+  for (const anchorDraw of anchorDraws.values()) {
+    changes.push([anchorDraw, { anchor: 'normal', inHandler: undefined, outHandler: undefined }])
+  }
+  return changes
+}
+
+export const getSelectedStyleChanges = (
+  selected: StateContext['selected'],
+  anchorDraws: StateContext['anchorDraws'],
+): StateContext['changes'] => {
+  const selectedSet = new Set<AnchorDraw>()
+  const changes: StateContext['changes'] = []
+
+  for (const hit of selected) {
+    if (!('ends' in hit)) return []
+    const anchorDraw = anchorDraws.get(hit.point)!
+    selectedSet.add(anchorDraw)
+    changes.push([anchorDraw, {
+      anchor: hit.type === PathHitType.Anchor ? 'selected' : 'normal',
+      inHandler: hit.type === PathHitType.InHandler ? 'selected' : 'normal',
+      outHandler: hit.type === PathHitType.OutHandler ? 'selected' : 'normal',
+    }])
+  }
+
+  for (const hit of selected) {
+    if (!('ends' in hit)) return []
+    hit.ends.forEach(anchor => {
+      const anchorDraw = anchorDraws.get(anchor)!
+      if (selectedSet.has(anchorDraw)) return
+      changes.push([anchorDraw, { anchor: 'normal', inHandler: 'normal', outHandler: 'normal' }])
+    })
+  }
+
+  return changes
+}
+
+
 /**
  * @TODO: need a more precise algorithm
  */
@@ -161,3 +206,4 @@ export const setAnchorHandlerOnPath = (
     next.inHandler = scale(next.inHandler, 1 - t)
   }
 }
+

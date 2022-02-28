@@ -21,7 +21,7 @@ import {
   enterAdjustOrCondition,
   adjustingMove,
   adjustingRelease,
-  enterTwoStepsConfirm,
+  enterCreatedConfirming,
   createDone,
 } from './creating'
 import {
@@ -92,6 +92,9 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
                 target: '#editing.selectConfirming',
                 actions: selectingInsertAnchor
               },
+              cancel: {
+                target: 'done',
+              },
             },
           },
           condition: {
@@ -103,13 +106,13 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
                 actions: adjustingMove,
               },
               release: {
-                target: 'twoStepsConfirm',
+                target: 'createdConfirming',
                 actions: adjustingRelease,
               }
             }
           },
-          twoStepsConfirm: {
-            entry: enterTwoStepsConfirm,
+          createdConfirming: {
+            entry: enterCreatedConfirming,
             exit: unsubscribeAll,
             after: {
               400: 'indicating',
