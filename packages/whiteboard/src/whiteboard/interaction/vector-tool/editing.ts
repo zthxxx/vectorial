@@ -31,13 +31,16 @@ import type {
 import {
   normalizeMouseEvent,
   isDeadDrag,
+  toggleAnchorHandler,
+  setAnchorHandlerOnPath,
 } from './utils'
 
-export const enterEditing: StateAction = ({
-  indicativeAnchor,
-  indicativePath,
-  changes,
-}) => {
+export const enterEditing: StateAction = (context) => {
+  const {
+    indicativeAnchor,
+    indicativePath,
+    changes,
+  } = context
   changes.push([indicativeAnchor, undefined])
   changes.push([indicativePath, undefined])
 }
@@ -52,24 +55,30 @@ export const enterSelecting: StateAction = ({
   subscription.push(
     interactionEvent$.pipe(
       filter(event => Boolean(event.mouse)),
-      mergeMap((event: MouseEvent) => {
+      mergeMap((event: MouseEvent) => defer(() => {
         const {
           handlerHit,
           anchorHit,
           pathHit,
           isClickDown,
         } = normalizeMouseEvent(event, vectorPath, anchorDraws)
+
         const hit: PathHitResult | undefined = handlerHit ?? anchorHit ?? pathHit
-        return iif(
-          () => Boolean(isClickDown),
-          iif(
-            () => Boolean(hit),
-            of<StateMouseEvent>({ type: 'select', event, hit }),
-            of<StateMouseEvent>({ type: 'marquee', event }),
-          ),
-          of<StateMouseEvent>({ type: 'move', event, hit }),
-        )
-      }),
+
+        if (isClickDown) {
+          if (!hit) {
+            return of<StateMouseEvent>({ type: 'marquee', event })
+          } else if (anchorHit ?? handlerHit) {
+            return of<StateMouseEvent>({ type: 'select', event, hit: anchorHit ?? handlerHit })
+          } else if (pathHit) {
+            return of<StateMouseEvent>({ type: 'insertAnchor', event, hit: pathHit })
+          } else {
+            return EMPTY
+          }
+        } else {
+          return of<StateMouseEvent>({ type: 'move', event, hit })
+        }
+      })),
       tap((event: StateMouseEvent) => { machine?.send(event) }),
     ).subscribe(),
   )
@@ -105,6 +114,11 @@ export const selectingSelect: StateAction = (context, stateEvent: StateMouseEven
       if (isSelected) {
         return
       }
+      /**
+       * for selectConfirming,
+       * if not hit anchor, that means anchor is new appended to selected;
+       * if hit an anchor, that means the anchor need be judge to unselect;
+       */
       stateEvent.hit = undefined
 
       if (isMultiSelect) {
@@ -135,7 +149,49 @@ export const selectingSelect: StateAction = (context, stateEvent: StateMouseEven
   changes.push(...getSelectedStyleChanges(selected, anchorDraws))
 }
 
-export const enterDeadZoneChecking: StateAction = (
+export const selectingInsertAnchor: StateAction = (context, { hit }: StateMouseEvent) => {
+  const {
+    anchorDraws,
+    vectorPath,
+    selected,
+    changes,
+  } = context
+
+  if (hit?.type !== PathHitType.Stroke) return
+
+  vectorPath.addAnchorAt(hit.point, hit.curveIndex + 1)
+  const anchorDraw = new AnchorDraw({ vectorAnchor: hit.point })
+  anchorDraws.set(hit.point, anchorDraw)
+
+  setAnchorHandlerOnPath(hit)
+  context.dragBase = { ...hit.point.position }
+
+  selected.splice(0, selected.length, {
+    ...hit,
+    type: PathHitType.Anchor,
+  })
+  changes.push(...getResetStyleChanges(anchorDraws))
+  changes.push(...getSelectedStyleChanges(selected, anchorDraws))
+}
+
+export const selectingResumeCreating: StateAction = (
+  context,
+  { hit }: StateMouseEvent,
+) => {
+  const {
+    anchorDraws,
+    selected,
+    changes,
+  } = context
+
+  if (hit?.type !== PathHitType.Anchor) return
+  context.creatingBase = hit.point
+  selected.splice(0, selected.length, hit)
+  changes.push(...getResetStyleChanges(anchorDraws))
+  changes.push(...getSelectedStyleChanges(selected, anchorDraws))
+}
+
+export const enterSelectConfirming: StateAction = (
   context,
   { hit }: StateMouseEvent,
 ) => {
@@ -143,8 +199,8 @@ export const enterDeadZoneChecking: StateAction = (
     interactionEvent$,
     subscription,
     machine,
+    vectorPath,
   } = context
-
   subscription.push(
     interactionEvent$.pipe(
       filter(event => Boolean(event.mouse)),
@@ -152,7 +208,8 @@ export const enterDeadZoneChecking: StateAction = (
         const {
           isDrag,
           isClickUp,
-        } = normalizeMouseEvent(event)
+          anchorHit,
+        } = normalizeMouseEvent(event, vectorPath)
 
         // dragBase will always be existed, code only for defense and type guard
         if (!context.dragBase) {
@@ -163,9 +220,30 @@ export const enterDeadZoneChecking: StateAction = (
           return of<StateMouseEvent>({ type: 'adjust', event })
 
         } else if (isClickUp) {
+          if (
+            event.match({ modifiers: ['Meta'] })
+            && [
+              PathHitType.Anchor,
+              PathHitType.InHandler,
+              PathHitType.OutHandler,
+            ].includes(hit?.type as PathHitType)
+          ) {
+            return of<StateMouseEvent>({ type: 'toggleHandler', event, hit })
+          }
+          if (
+            !vectorPath.closed
+            && !event.shiftKey
+            && anchorHit
+            && (
+              anchorHit.point === vectorPath.anchors.at(0)
+              || anchorHit.point === vectorPath.anchors.at(-1)
+            )
+          ) {
+            return of<StateMouseEvent>({ type: 'resumeCreating', event, hit: anchorHit })
+          }
           /**
            * if not hit anchor, that means anchor is new appended to selected;
-           * if hit anchor, that means the anchor need be judge to unselect;
+           * if hit an anchor, that means the anchor need be judge to unselect;
            */
           if (hit?.type === PathHitType.Anchor) {
             return of<StateMouseEvent>({ type: 'unselect', event, hit })
@@ -182,7 +260,7 @@ export const enterDeadZoneChecking: StateAction = (
   )
 }
 
-export const selectingUnselect: StateAction = ({
+export const confirmingUnselect: StateAction = ({
   changes,
   anchorDraws,
   selected,
@@ -201,6 +279,50 @@ export const selectingUnselect: StateAction = ({
   changes.push(...getResetStyleChanges(anchorDraws))
   changes.push(...getSelectedStyleChanges(selected, anchorDraws))
 }
+
+
+export const confirmingToggleHander: StateAction = ({
+  changes,
+  anchorDraws,
+  selected,
+}, { hit }: StateMouseEvent) => {
+  // hit will always be existed, code only for defense and type guard
+  if (!hit) return
+
+  switch (hit.type) {
+    case (PathHitType.Anchor): {
+      const anchor = hit.point
+      if (anchor.inHandler && anchor.outHandler) {
+        anchor.handlerType = HandlerType.None
+      } else (
+        toggleAnchorHandler(hit as PathHitResult & { type: PathHitType.Anchor })
+      )
+      selected.splice(0, selected.length, hit)
+      break
+    }
+    case (PathHitType.InHandler): {
+      hit.point.inHandler = undefined
+      selected.splice(0, selected.length, {
+        ...hit,
+        type: PathHitType.Anchor,
+      })
+      break
+    }
+    case (PathHitType.OutHandler): {
+      hit.point.outHandler = undefined
+      selected.splice(0, selected.length, {
+        ...hit,
+        type: PathHitType.Anchor,
+      })
+      break
+    }
+  }
+
+  changes.push(...getResetStyleChanges(anchorDraws))
+  changes.push(...getSelectedStyleChanges(selected, anchorDraws))
+}
+
+
 
 export const getResetStyleChanges = (
   anchorDraws: StateContext['anchorDraws'],

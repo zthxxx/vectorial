@@ -48,12 +48,14 @@ export class VectorAnchor {
   }
 
   public get inHandler(): Vector | undefined {
+    if (this.handlerType === HandlerType.None) return
     const { x, y } = this.segment.handleIn
     if (!x && !y) return
     return { x, y }
   }
 
   public get outHandler(): Vector | undefined {
+    if (this.handlerType === HandlerType.None) return
     const { x, y } = this.segment.handleOut
     if (!x && !y) return
     return { x, y }

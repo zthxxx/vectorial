@@ -1,11 +1,15 @@
 
 import {
+  add,
   sub,
   len,
+  scale,
+  empty,
   Vector,
   VectorPath,
   PathHitType,
   PathHitResult,
+  HandlerType,
 } from 'vectorial'
 import {
   MouseTriggerType,
@@ -91,3 +95,69 @@ export const normalizeMouseEvent = (
 
 export const isDeadDrag = (prev: Vector, next: Vector): boolean =>
   len(sub(prev, next)) < 8
+
+/**
+ * @TODO: need a more precise algorithm
+ */
+export const toggleAnchorHandler = (anchorHit: PathHitResult & { type: PathHitType.Anchor }) => {
+  const anchor = anchorHit.point
+  const [prev, next] = anchorHit.ends
+  const direction = sub(
+    add(next.position, next.inHandler ?? empty()),
+    add(prev.position, prev.outHandler ?? empty()),
+  )
+  const length = len(sub(
+    add(next.position, next.inHandler ?? empty()),
+    anchor.position,
+  )) * 0.4
+
+  anchor.handlerType = HandlerType.Mirror
+  anchor.outHandler = scale(direction, length / len(direction))
+}
+
+export const setAnchorHandlerOnPath = (
+  pathHit: PathHitResult & { type: PathHitType.Stroke },
+) => {
+  const {
+    point: anchor,
+    ends: [prev, next],
+    t,
+  } = pathHit
+
+  anchor.handlerType = HandlerType.Free
+
+  const p1 = prev.position
+  const p2 = add(prev.position, prev.outHandler ?? empty())
+  const p3 = add(next.position, next.inHandler ?? empty())
+  const p4 = next.position
+
+  const quadraticBezierPoint = (p1: Vector, p2: Vector, p3: Vector, t: number) => add(
+    scale(p1, Math.pow(1 - t, 2)),
+    add(
+      scale(p2, 2 * t * (1 - t)),
+      scale(p3, Math.pow(t, 2)),
+    ),
+  )
+
+  /**
+   * point tangent on cubic bezier curve is the same 't' position of quadratic bezier
+   */
+  const incoming: Vector = quadraticBezierPoint(p1, p2, p3, t)
+  const outgoing: Vector = quadraticBezierPoint(p2, p3, p4, t)
+  anchor.inHandler = sub(incoming, anchor.position)
+  anchor.outHandler = sub(outgoing, anchor.position)
+  anchor.handlerType = HandlerType.Align
+
+  if (prev.outHandler) {
+    if (prev.handlerType === HandlerType.Mirror) {
+      prev.handlerType = HandlerType.Align
+    }
+    prev.outHandler = scale(prev.outHandler, t)
+  }
+  if (next.inHandler) {
+    if (next.handlerType === HandlerType.Mirror) {
+      next.handlerType = HandlerType.Align
+    }
+    next.inHandler = scale(next.inHandler, 1 - t)
+  }
+}

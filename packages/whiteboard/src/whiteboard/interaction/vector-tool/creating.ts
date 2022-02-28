@@ -1,7 +1,9 @@
 import {
   of,
   iif,
+  defer,
   EMPTY,
+  ObservableInput,
 } from 'rxjs'
 import {
   tap,
@@ -13,6 +15,7 @@ import {
   HandlerType,
   sub,
   PathHitType,
+  PathHitResult,
 } from 'vectorial'
 import {
   icon,
@@ -55,17 +58,19 @@ export const enterCreating: StateAction = ({
  */
 export const exitCreating: StateAction = ({ canvas }) => setCanvasCursor(canvas)
 
-export const enterIndicating: StateAction = ({
-  interactionEvent$,
-  subscription,
-  anchorDraws,
-  vectorPath,
-  machine,
-}) => {
+export const enterIndicating: StateAction = (context) => {
+  const {
+    interactionEvent$,
+    subscription,
+    anchorDraws,
+    vectorPath,
+    machine,
+  } = context
+
   subscription.push(
     interactionEvent$.pipe(
       filter(event => Boolean(event.mouse)),
-      mergeMap((event: MouseEvent) => {
+      mergeMap((event: MouseEvent) => defer<ObservableInput<StateMouseEvent>>(() => {
         const {
           handlerHit,
           anchorHit,
@@ -73,29 +78,34 @@ export const enterIndicating: StateAction = ({
           isMove,
           isClickDown,
         } = normalizeMouseEvent(event, vectorPath, anchorDraws)
+        const hit: PathHitResult | undefined = handlerHit ?? anchorHit ?? pathHit
+        const isReverse = context.creatingBase !== vectorPath.anchors.at(-1)
+        const closeTarget = isReverse ? vectorPath.anchors.at(-1) : vectorPath.anchors.at(0)
 
-        return iif(
-          () => Boolean(handlerHit || anchorHit || pathHit),
-          iif(
-            () => anchorHit?.point === vectorPath.anchors[0],
-            iif(
-              () => isClickDown,
-              of<StateMouseEvent>({ type: 'closePath', event, hit: anchorHit }),
-              of<StateMouseEvent>({ type: 'closingHover', event, hit: anchorHit }),
-            ),
-            of<StateMouseEvent>({ type: 'hover', event, hit: handlerHit ?? anchorHit ?? pathHit }),
-          ),
-          iif(
-            () => isMove,
-            of<StateMouseEvent>({ type: 'move', event }),
-            iif(
-              () => isClickDown,
-              of<StateMouseEvent>({ type: 'create', event }),
-              EMPTY,
-            ),
-          )
-        )
-      }),
+        if (isClickDown) {
+          if (anchorHit && anchorHit?.point === closeTarget) {
+            return of({ type: 'closePath', event, hit: anchorHit })
+          } else if (anchorHit ?? handlerHit) {
+            return of({ type: 'select', event, hit: anchorHit ?? handlerHit })
+          } else if (pathHit) {
+            return of({ type: 'insertAnchor', event, hit: pathHit })
+          } else {
+            return of({ type: 'create', event })
+          }
+        } else if (isMove) {
+          if (
+            anchorHit
+            && anchorHit?.point === closeTarget
+          ) {
+            return of({ type: 'closingHover', event, hit: anchorHit })
+          } else if (hit) {
+            return of({ type: 'hover', event, hit })
+          } else {
+            return of({ type: 'move', event })
+          }
+        }
+        return EMPTY
+      })),
       tap((event: StateMouseEvent) => { machine?.send(event) }),
     ).subscribe(),
   )
@@ -103,9 +113,10 @@ export const enterIndicating: StateAction = ({
 
 export const indicatingMove: StateAction = ({
   canvas,
-  vectorPath,
   indicativeAnchor,
   indicativePath,
+  vectorPath,
+  creatingBase,
   changes,
 }, { event }: StateMouseEvent) => {
   const { vectorAnchor } = indicativeAnchor
@@ -113,14 +124,16 @@ export const indicatingMove: StateAction = ({
   vectorAnchor.position = event.mouse
   vectorAnchor.inHandler = undefined
   vectorAnchor.outHandler = undefined
+
   changes.push([
     indicativeAnchor,
     { anchor: 'normal', inHandler: undefined, outHandler: undefined },
   ])
-  indicativePath.path.anchors = [
-    vectorPath.anchors.at(-1),
-    vectorAnchor,
-  ]
+
+  const isReverse = creatingBase !== vectorPath.anchors.at(-1)
+  indicativePath.path.anchors = isReverse
+    ? [vectorAnchor, creatingBase]
+    : [creatingBase, vectorAnchor]
   changes.push([indicativePath, { strokeWidth: 1, strokeColor: DefaultPathColor.highlight }])
 }
 
@@ -130,15 +143,18 @@ export const indicatingCreate: StateAction = (context, { event }: StateMouseEven
     vectorPath,
     anchorDraws,
     changes,
+    creatingBase,
   } = context
   const { anchors } = vectorPath
+  const isReverse = creatingBase !== anchors.at(-1)
+
   changes.push(
     [
-      anchorDraws.get(anchors.at(-1)!),
+      anchorDraws.get(anchors.at(isReverse ? 0 : -1)!),
       { anchor: 'normal' },
     ],
     [
-      anchorDraws.get(anchors.at(-2)!),
+      anchorDraws.get(anchors.at(isReverse ? 1 : -2)!),
       { anchor: 'normal', inHandler: undefined, outHandler: undefined },
     ],
   )
@@ -221,6 +237,7 @@ export const indicatingClosingHover: StateAction = ({
   vectorPath,
   indicativeAnchor,
   indicativePath,
+  creatingBase,
   changes,
 }, { hit }: StateMouseEvent) => {
   // hit will always be existed, code only for defense and type guard
@@ -231,11 +248,14 @@ export const indicatingClosingHover: StateAction = ({
 
   const first = vectorPath.anchors.at(0)
   const last = vectorPath.anchors.at(-1)
+
+  const isReverse = creatingBase !== last
+
   changes.push([indicativeAnchor, { anchor: 'highlight', inHandler: undefined, outHandler: undefined }])
   // endpoint hover to indicate close path
   if (
     !vectorPath.closed
-    && hit.point === first
+    && hit.point === (isReverse ? last : first)
     && vectorPath.anchors.length >= 2
   ) {
     indicativePath.path.anchors = [last, first]
@@ -285,9 +305,10 @@ export const enterAdjustOrCondition: StateAction = ({
 
 export const adjustingMove: StateAction = ({
   lastMousePosition,
-  vectorPath,
   indicativeAnchor,
   indicativePath,
+  vectorPath,
+  creatingBase,
   changes,
 }, { event }: StateMouseEvent | StateKeyEvent) => {
   if (isDeadDrag(
@@ -305,11 +326,11 @@ export const adjustingMove: StateAction = ({
   anchor.outHandler = sub(lastMousePosition, anchor.position)
 
   changes.push([indicativeAnchor, { anchor: 'selected', inHandler: 'normal', outHandler: 'normal' }])
+  const isReverse = creatingBase !== vectorPath.anchors.at(-1)
+  indicativePath.path.anchors = isReverse
+    ? [anchor, creatingBase]
+    : [creatingBase, anchor]
 
-  indicativePath.path.anchors = [
-    vectorPath.anchors.at(-1),
-    indicativeAnchor.vectorAnchor,
-  ]
   changes.push([indicativePath, { strokeWidth: 1, strokeColor: DefaultPathColor.highlight }])
 }
 
@@ -319,12 +340,23 @@ export const adjustingRelease: StateAction = (context) => {
     anchorDraws,
     indicativeAnchor,
     indicativePath,
+    creatingBase,
     changes,
   } = context
+
+  const isReverse = creatingBase !== vectorPath.anchors.at(-1)
+
   const vectorAnchor = indicativeAnchor.vectorAnchor.clone()
   const anchorDraw = new AnchorDraw({ vectorAnchor })
-  vectorPath.addAnchor(vectorAnchor)
+  if (isReverse) {
+    vectorPath.addAnchorAt(vectorAnchor, 0)
+    // vectorPath.addAnchor(vectorAnchor)
+  } else {
+    vectorPath.addAnchor(vectorAnchor)
+  }
   anchorDraws.set(vectorAnchor, anchorDraw)
+
+  context.creatingBase = vectorAnchor
   changes.push([anchorDraw, { anchor: 'selected', inHandler: 'normal', outHandler: 'normal' }])
 
   changes.push([indicativeAnchor, undefined])
@@ -363,23 +395,30 @@ export const enterTwoStepsConfirm: StateAction = ({
   )
 }
 
-export const createDone: StateAction = ({
-  indicativeAnchor,
-  indicativePath,
-  vectorPath,
-  anchorDraws,
-  changes,
-}) => {
+export const createDone: StateAction = (context) => {
+  const {
+    indicativeAnchor,
+    indicativePath,
+    vectorPath,
+    anchorDraws,
+    creatingBase,
+    changes,
+  } = context
+  const { anchors } = vectorPath
+  const isReverse = creatingBase !== anchors.at(-1)
+
   changes.push(
     [
-      anchorDraws.get(vectorPath.anchors.at(-1)!),
+      anchorDraws.get(anchors.at(isReverse ? 0 : -1)!),
       { anchor: 'normal', inHandler: undefined, outHandler: undefined },
     ],
     [
-      anchorDraws.get(vectorPath.anchors.at(-2)!),
+      anchorDraws.get(anchors.at(isReverse ? 1 : -2)!),
       { anchor: 'normal', inHandler: undefined, outHandler: undefined },
     ],
   )
+
   changes.push([indicativeAnchor, undefined])
   changes.push([indicativePath, undefined])
+  context.creatingBase = undefined
 }

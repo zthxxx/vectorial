@@ -44,8 +44,23 @@ export interface StateContext {
   indicativeAnchor: AnchorDraw;
   indicativePath: PathDraw;
 
-  dragBase?: Vector;
+  /**
+   * selected anchors or handler,
+   * only anchors could be multi-selected
+   */
   selected: PathHitResult[];
+
+  /**
+   * mouse drag begin position
+   * NOTE: maybe reset by `context.dragBase = ...`
+   */
+  dragBase?: Vector;
+  /**
+   * create path point next of creatingBase
+   * NOTE: maybe reset by `context.creatingBase = ...`
+   */
+  creatingBase?: VectorAnchor;
+
   changes: Array<
     | [AnchorDraw | undefined, AnchorDraw['style']]
     | [PathDraw | undefined, PathDraw['style']]

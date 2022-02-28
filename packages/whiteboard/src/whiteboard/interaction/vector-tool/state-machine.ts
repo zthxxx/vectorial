@@ -28,11 +28,14 @@ import {
   enterEditing,
   enterSelecting,
   selectingSelect,
-  selectingUnselect,
-  enterDeadZoneChecking,
+  selectingResumeCreating,
+  enterSelectConfirming,
+  confirmingUnselect,
+  confirmingToggleHander,
   enterAdjusting,
   adjustingAdjust,
   enterMarqueeing,
+  selectingInsertAnchor,
 } from './editing'
 
 
@@ -55,6 +58,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
         ],
       },
       creating: {
+        id: 'creating',
         initial: 'indicating',
         entry: enterCreating,
         exit: exitCreating,
@@ -80,7 +84,14 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
                 target: 'done',
                 actions: indicatingClosePath,
               },
-              // select: 'selecting.selected',
+              select: {
+                target: '#editing.selectConfirming',
+                actions: selectingSelect,
+              },
+              insertAnchor: {
+                target: '#editing.selectConfirming',
+                actions: selectingInsertAnchor
+              },
             },
           },
           condition: {
@@ -131,6 +142,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
         onDone: 'editing',
       },
       editing: {
+        id: 'editing',
         entry: enterEditing,
         initial: 'selecting',
         states: {
@@ -142,8 +154,12 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
                 actions: hoverIndicate,
               },
               select: {
-                target: 'deadZoneChecking',
+                target: 'selectConfirming',
                 actions: selectingSelect,
+              },
+              insertAnchor: {
+                target: 'selectConfirming',
+                actions: selectingInsertAnchor
               },
               marquee: {
                 target: 'marqueeing',
@@ -151,8 +167,8 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
               }
             },
           },
-          deadZoneChecking: {
-            entry: enterDeadZoneChecking,
+          selectConfirming: {
+            entry: enterSelectConfirming,
             exit: unsubscribeAll,
             on: {
               adjust: {
@@ -161,7 +177,15 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
               },
               unselect: {
                 target: 'selecting',
-                actions: selectingUnselect,
+                actions: confirmingUnselect,
+              },
+              resumeCreating: {
+                target: '#creating.indicating',
+                actions: selectingResumeCreating,
+              },
+              toggleHandler: {
+                target: 'selecting',
+                actions: confirmingToggleHander,
               },
               cancel: {
                 target: 'selecting',

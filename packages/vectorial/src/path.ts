@@ -26,8 +26,9 @@ export type PathHitResult =
     type: PathHitType.Stroke;
     point: VectorAnchor;
     ends: [VectorAnchor, VectorAnchor];
-    /** bezier curve parameter t */
+    /** bezier curve parameter t, range: 0-1*/
     t: number;
+    curveIndex: number;
   }
   | {
     type: PathHitType.Fill;
@@ -79,7 +80,7 @@ export class VectorPath {
     const { length } = this.anchors
     const index = insertIndex ?? length
 
-    this.anchors.splice(insertIndex ?? length, 0, anchor)
+    this.anchors.splice(index, 0, anchor)
     this.path.insert(index, anchor.segment)
     this.segmentMap.set(anchor.segment, anchor)
   }
@@ -161,6 +162,7 @@ export class VectorPath {
           this.anchors[location.index + 1] ?? (closed ? first : last),
         ],
         t: location.time,
+        curveIndex: location.index,
       }
     }
   }
