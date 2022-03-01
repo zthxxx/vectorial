@@ -1,8 +1,18 @@
-
-import { Graphics } from '@pixi/graphics'
+import { CanvasTextureAllocator } from '@pixi-essentials/texture-allocator'
+import type { Path, SVGSceneContext } from '@pixi-essentials/svg'
+import { SVGPathNode, FILL_RULE} from '@pixi-essentials/svg'
 import {
   VectorPath,
 } from 'vectorial'
+
+// https://github.dev/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGScene.ts#L120-L121
+const atlas = new CanvasTextureAllocator(2048, 2048)
+const sceneContext: SVGSceneContext = {
+  atlas,
+  disableHrefSVGLoading: true,
+  disableRootPopulation: true,
+}
+
 
 export interface PathDrawProps {
   path: VectorPath;
@@ -20,7 +30,7 @@ export enum DefaultPathColor {
 
 export class PathDraw {
   public path: VectorPath
-  public container: Graphics
+  public container: SVGPathNode
 
   /**
    * anchor style apply for draw call,
@@ -40,7 +50,7 @@ export class PathDraw {
 
     this.path = path
     this.style = style
-    this.container = new Graphics()
+    this.container = new SVGPathNode(sceneContext)
   }
 
   public draw() {
@@ -90,6 +100,17 @@ export class PathDraw {
 
     if (this.path.closed) {
       this.container.closePath()
+    }
+
+    // https://github.com/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGPathNode.ts#L331-L336
+    // @ts-ignore
+    const currentPath: Path = this.container.currentPath2
+    if (currentPath) {
+      currentPath.fillRule = FILL_RULE.EVENODD
+      // @ts-ignore
+      this.container.drawShape(currentPath);
+      // @ts-ignore
+      this.container.currentPath2 = null
     }
   }
 

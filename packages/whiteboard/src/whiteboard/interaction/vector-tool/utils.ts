@@ -4,7 +4,7 @@ import {
   sub,
   len,
   scale,
-  empty,
+  emptyVector,
   Vector,
   VectorPath,
   PathHitType,
@@ -148,11 +148,11 @@ export const toggleAnchorHandler = (anchorHit: PathHitResult & { type: PathHitTy
   const anchor = anchorHit.point
   const [prev, next] = anchorHit.ends
   const direction = sub(
-    add(next.position, next.inHandler ?? empty()),
-    add(prev.position, prev.outHandler ?? empty()),
+    add(next.position, next.inHandler ?? emptyVector()),
+    add(prev.position, prev.outHandler ?? emptyVector()),
   )
   const length = len(sub(
-    add(next.position, next.inHandler ?? empty()),
+    add(next.position, next.inHandler ?? emptyVector()),
     anchor.position,
   )) * 0.4
 
@@ -172,8 +172,8 @@ export const setAnchorHandlerOnPath = (
   anchor.handlerType = HandlerType.Free
 
   const p1 = prev.position
-  const p2 = add(prev.position, prev.outHandler ?? empty())
-  const p3 = add(next.position, next.inHandler ?? empty())
+  const p2 = add(prev.position, prev.outHandler ?? emptyVector())
+  const p3 = add(next.position, next.inHandler ?? emptyVector())
   const p4 = next.position
 
   const quadraticBezierPoint = (p1: Vector, p2: Vector, p3: Vector, t: number) => add(

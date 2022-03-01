@@ -53,6 +53,11 @@ export class InteractionEvent {
      * key event trigger type
      */
     type: KeyTriggerType;
+    /**
+     * keyboard press/release key code
+     * https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code/code_values
+     */
+    trigger: string;
   }
   public mouse?: {
     /**
@@ -65,6 +70,10 @@ export class InteractionEvent {
      * mouse event trigger type
      */
     type: MouseTriggerType;
+    /**
+     * mouse event (include release) trigger button
+     */
+    trigger: MouseButton;
   }
 
   constructor() {
@@ -318,6 +327,7 @@ export class EventManager extends Plugin {
       x,
       y,
       type: eventType,
+      trigger: button,
     }
 
     return event
@@ -342,6 +352,7 @@ export class EventManager extends Plugin {
       x: deltaX,
       y: deltaY,
       type: MouseTriggerType.Wheel,
+      trigger: MouseButton.Middle,
     }
 
     return event
@@ -369,6 +380,7 @@ export class EventManager extends Plugin {
       } else {
         event.key = {
           type: type === 'keydown' ? KeyTriggerType.Down : KeyTriggerType.Up,
+          trigger: code
         }
         return event
       }
@@ -397,6 +409,7 @@ export class EventManager extends Plugin {
 
     event.key = {
       type: eventType,
+      trigger: code
     }
 
     return event

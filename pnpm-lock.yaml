@@ -18,6 +18,8 @@ importers:
 
   packages/whiteboard:
     specifiers:
+      '@pixi-essentials/svg': 1.1.5
+      '@pixi-essentials/texture-allocator': 1.0.5
       '@pixi/accessibility': ^6.2.2
       '@pixi/app': ^6.2.2
       '@pixi/compressed-textures': ^6.2.2
@@ -74,6 +76,8 @@ importers:
       vite: ^2.8.6
       xstate: ^4.30.6
     dependencies:
+      '@pixi-essentials/svg': 1.1.5_f092e5b9587684893d5139a60e9249b5
+      '@pixi-essentials/texture-allocator': 1.0.5_dd156e7df4b7d636c4bab0ee5813c0b9
       '@pixi/accessibility': 6.2.2_a59d48126e433003ecdd4a11f71f377b
       '@pixi/app': 6.2.2_35724f23c6d806dda8ecae1f597cf732
       '@pixi/compressed-textures': 6.2.2_8b36d7d0921ffa552a3713b1f57e8fd7
@@ -437,6 +441,77 @@ packages:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.13.0
     dev: true
+
+  /@pixi-essentials/area-allocator/1.0.3_@pixi+math@6.2.2:
+    resolution: {integrity: sha512-gkml0EId/VToYUN8GNlYfKxkoABZ8I+5pK3ubg2QzWwxK+T8TGmwnwCmkeWXmah2RVX/OKhiVHaM+sEfDlQj9w==}
+    peerDependencies:
+      '@pixi/math': ^6.0.0
+    dependencies:
+      '@pixi/math': 6.2.2
+    dev: false
+
+  /@pixi-essentials/cull/1.1.0_6280bdf806c2bf41c62233fb580089a6:
+    resolution: {integrity: sha512-/IrobYs+ECZoYxGnmCbUBIcye0XX9ZRmeO9SLtOGI0DtsF+/r13OrGX42XUo8L76LMWurv78b5LdYxX33NrUNQ==}
+    peerDependencies:
+      '@pixi/display': ^6.0.0
+      '@pixi/math': ^6.0.0
+    dependencies:
+      '@pixi/display': 6.2.2_97280a21d60dfe87200d0f359e84acf3
+      '@pixi/math': 6.2.2
+    dev: false
+
+  /@pixi-essentials/gradients/0.0.4_1d725b01e50d670a720d21347277abce:
+    resolution: {integrity: sha512-A/JJ6GpqqW/Z8yleFoAdq/2ag/0tjh8ecb3blAJ9jknND4MZieXXJ3jDj75szLzX3pAokHoG0Y5AZeB3+2OgYA==}
+    peerDependencies:
+      '@pixi/core': ^6.0.0
+      '@pixi/math': ^6.0.0
+      '@pixi/sprite': ^6.0.0
+    dependencies:
+      '@pixi/core': 6.2.2_9cc94c53ca4c5a532386ea713d60bc2a
+      '@pixi/math': 6.2.2
+      '@pixi/sprite': 6.2.2_1dd0b7f0e8d1751d16768f6c0f59b67c
+    dev: false
+
+  /@pixi-essentials/svg/1.1.5_f092e5b9587684893d5139a60e9249b5:
+    resolution: {integrity: sha512-UHHtA123j3I3NBiISm+afHzmK0IyDamDxP34UZuhve1fRBFqqtWg+9qKpEW20qK7rpvJ+7DHfoESXVwSXhoDmg==}
+    peerDependencies:
+      '@pixi/core': ^6.0.0
+      '@pixi/display': ^6.0.0
+      '@pixi/filter-color-matrix': ^6.0.0
+      '@pixi/graphics': ^6.0.0
+      '@pixi/math': ^6.0.0
+      '@pixi/sprite': ^6.0.0
+      '@pixi/text': ^6.0.0
+    dependencies:
+      '@pixi-essentials/cull': 1.1.0_6280bdf806c2bf41c62233fb580089a6
+      '@pixi-essentials/gradients': 0.0.4_1d725b01e50d670a720d21347277abce
+      '@pixi-essentials/texture-allocator': 1.0.5_dd156e7df4b7d636c4bab0ee5813c0b9
+      '@pixi/core': 6.2.2_9cc94c53ca4c5a532386ea713d60bc2a
+      '@pixi/display': 6.2.2_97280a21d60dfe87200d0f359e84acf3
+      '@pixi/filter-color-matrix': 6.2.2_@pixi+core@6.2.2
+      '@pixi/graphics': 6.2.2_dd1a36550feaaf1942b9bda3a9881318
+      '@pixi/math': 6.2.2
+      '@pixi/sprite': 6.2.2_1dd0b7f0e8d1751d16768f6c0f59b67c
+      '@pixi/text': 6.2.2_115ef4e19323ded464b6dd268e93f5a0
+      d-path-parser: 1.0.0
+      libtess: 1.2.2
+      tinycolor2: 1.4.2
+    transitivePeerDependencies:
+      - '@pixi/constants'
+    dev: false
+
+  /@pixi-essentials/texture-allocator/1.0.5_dd156e7df4b7d636c4bab0ee5813c0b9:
+    resolution: {integrity: sha512-F5edtHOJE+YyfxBe9j9YCLMoD+jknKqgJEWoH96nxiIbOkWNFyeBXfcPTszBWGtpFhBEspjyPowexuWCCuXFxw==}
+    peerDependencies:
+      '@pixi/constants': ^6.0.0
+      '@pixi/core': ^6.0.0
+      '@pixi/math': ^6.0.0
+    dependencies:
+      '@pixi-essentials/area-allocator': 1.0.3_@pixi+math@6.2.2
+      '@pixi/constants': 6.2.2
+      '@pixi/core': 6.2.2_9cc94c53ca4c5a532386ea713d60bc2a
+      '@pixi/math': 6.2.2
+    dev: false
 
   /@pixi/accessibility/6.2.2_a59d48126e433003ecdd4a11f71f377b:
     resolution: {integrity: sha512-/mXRXCw67bmPY/OZ1Y1p747h3SSg7eqacIChAUJohjbcJK0R2EJRD2uVTspVIUpHPJA0ECNGBpKqk0C1Yzkj2w==}
@@ -1108,6 +1183,10 @@ packages:
     resolution: {integrity: sha512-sa6P2wJ+CAbgyy4KFssIb/JNMLxFvKF1pCYCSXS8ZMuqZnMsrxqI2E5sPyoTpxoPU/gVZMzr2zjOfg8GIZOMsw==}
     dev: true
 
+  /d-path-parser/1.0.0:
+    resolution: {integrity: sha1-h7+0G0TFWWK0775doxUCte6LCrc=}
+    dev: false
+
   /debug/4.3.3:
     resolution: {integrity: sha512-/zxw5+vh1Tfv+4Qn7a5nsbcJKPaSvCDhojn6FEl9vupwK2VCSDtEiEtqr8DFtzYFOdz63LBkxec7DYuc2jon6Q==}
     engines: {node: '>=6.0'}
@@ -1530,6 +1609,10 @@ packages:
       minimist: 1.2.5
     dev: true
 
+  /libtess/1.2.2:
+    resolution: {integrity: sha1-Fz61KhpXoCOP5I8F0SJFB0SX+Jg=}
+    dev: false
+
   /lilconfig/2.0.4:
     resolution: {integrity: sha512-bfTIN7lEsiooCocSISTWXkiWJkRqtL9wYtYy+8EK3Y41qh3mpwPU0ycTOgjdY9ErwXCc8QyrQp82bdL0Xkm9yA==}
     engines: {node: '>=10'}
@@ -1896,6 +1979,10 @@ packages:
     transitivePeerDependencies:
       - ts-node
     dev: true
+
+  /tinycolor2/1.4.2:
+    resolution: {integrity: sha512-vJhccZPs965sV/L2sU4oRQVAos0pQXwsvTLkWYdqJ+a8Q5kPFzJTuOFwy7UniPli44NKQGAglksjvOcpo95aZA==}
+    dev: false
 
   /to-fast-properties/2.0.0:
     resolution: {integrity: sha1-3F5pjL0HkmW8c+A3doGk5Og/YW4=}

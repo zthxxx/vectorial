@@ -21,7 +21,7 @@ import {
   enterAdjustOrCondition,
   adjustingMove,
   adjustingRelease,
-  enterCreatedConfirming,
+  enterDoubleClickConfirming,
   createDone,
 } from './creating'
 import {
@@ -106,13 +106,13 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
                 actions: adjustingMove,
               },
               release: {
-                target: 'createdConfirming',
+                target: 'doubleClickConfirming',
                 actions: adjustingRelease,
               }
             }
           },
-          createdConfirming: {
-            entry: enterCreatedConfirming,
+          doubleClickConfirming: {
+            entry: enterDoubleClickConfirming,
             exit: unsubscribeAll,
             after: {
               400: 'indicating',
@@ -140,7 +140,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
           },
           done: {
             type: 'final',
-          }
+          },
         },
         onDone: 'editing',
       },
@@ -167,7 +167,10 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
               marquee: {
                 target: 'marqueeing',
                 actions: selectingSelect,
-              }
+              },
+              cancel: {
+                target: 'done',
+              },
             },
           },
           selectConfirming: {
@@ -215,15 +218,29 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
 
               },
               marqueeDone: {
-                target: 'selecting',
+                target: 'doubleClickConfirming',
               },
             },
           },
+          doubleClickConfirming: {
+            entry: enterDoubleClickConfirming,
+            exit: unsubscribeAll,
+            after: {
+              400: 'selecting',
+            },
+            on: {
+              move: 'selecting',
+              confirm: {
+                target: 'done',
+                actions: createDone,
+              },
+            },
+          },
+          done: {
+            type: 'final',
+          },
         },
-        on: {
-          creating: 'creating',
-          done: 'done',
-        }
+        onDone: 'done',
       },
       done: {
         type: 'final',

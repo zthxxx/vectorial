@@ -19,7 +19,7 @@ import {
 } from '../utils'
 
 
-export const enterCreatedConfirming: StateAction = ({
+export const enterDoubleClickConfirming: StateAction = ({
   interactionEvent$,
   subscription,
   vectorPath,

@@ -6,6 +6,7 @@ import {
 import {
   tap,
   filter,
+  skipUntil,
   mergeMap,
 } from 'rxjs/operators'
 import {
@@ -16,8 +17,12 @@ import {
 import {
   AnchorDraw,
 } from '../../../draw'
+import {
+  KeyTriggerType,
+} from '../../event'
 import type {
   MouseEvent,
+  KeyEvent,
   StateMouseEvent,
   StateAction,
 } from '../types'
@@ -64,6 +69,23 @@ export const enterSelecting: StateAction = ({
         }
       })),
       tap((event: StateMouseEvent) => { machine?.send(event) }),
+    ).subscribe(),
+
+
+    interactionEvent$.pipe(
+      filter(event => Boolean(event.key)),
+      skipUntil(interactionEvent$.pipe(
+        filter(event => Boolean(event.key)),
+        filter((event: KeyEvent) => (
+          event.key.type === KeyTriggerType.Down
+          && event.match({ keys: ['Escape'] })
+        )),
+      )),
+      filter((event: KeyEvent) => (
+        event.key.type === KeyTriggerType.Up
+        && event.match({ keys: [] })
+      )),
+      tap(() => { machine?.send({ type: 'cancel' }) }),
     ).subscribe(),
   )
 }

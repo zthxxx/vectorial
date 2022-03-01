@@ -1,8 +1,7 @@
-export interface Vector {
-  x: number;
-  y: number;
-}
-
+export type {
+  Vector,
+  Matrix,
+} from './math'
 export enum HandlerType {
   None = 'None',
   Free = 'Free',

@@ -1,5 +1,5 @@
 import type {
-  Subject,
+  Observable,
   Subscription,
 } from 'rxjs'
 import type {
@@ -35,7 +35,7 @@ export type StateEvent = EventObject | StateMouseEvent | StateKeyEvent
 export interface StateContext {
   canvas: HTMLCanvasElement;
   machine?: VectorToolService;
-  interactionEvent$: Subject<InteractionEvent>;
+  interactionEvent$: Observable<InteractionEvent>;
   subscription: Subscription[];
   lastMousePosition: Vector;
 

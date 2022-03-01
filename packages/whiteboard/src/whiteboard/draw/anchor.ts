@@ -120,7 +120,7 @@ export const createAnchorTexture = (renderer: Renderer): AnchorTextures => {
 
 export interface AnchorDrawProps {
   vectorAnchor: VectorAnchor;
-  renderer?: Renderer;
+  style?: AnchorDraw['style'];
 }
 
 export class AnchorDraw {
@@ -144,9 +144,9 @@ export class AnchorDraw {
     outHandler?: 'normal' | 'highlight' | 'selected';
   }
 
-  constructor({ renderer, vectorAnchor }: AnchorDrawProps) {
-    this.renderer = renderer
+  constructor({ vectorAnchor, style }: AnchorDrawProps) {
     this.vectorAnchor = vectorAnchor
+    this.style = style
     this.container = new Container()
 
     this.handlerLine = new Graphics()
@@ -155,24 +155,13 @@ export class AnchorDraw {
 
   get textures(): AnchorTextures {
     if (!AnchorDraw._textures) {
-      AnchorDraw._textures = createAnchorTexture(this.renderer)
+      if (!AnchorDraw.renderer) {
+        AnchorDraw.renderer = new Renderer()
+      }
+      AnchorDraw._textures = createAnchorTexture(AnchorDraw.renderer)
     }
 
     return AnchorDraw._textures
-  }
-
-  get renderer(): Renderer {
-    if (!AnchorDraw.renderer) {
-      AnchorDraw.renderer = new Renderer()
-    }
-
-    return AnchorDraw.renderer
-  }
-
-  set renderer(renderer: Renderer | undefined) {
-    if (renderer) {
-      AnchorDraw.renderer = renderer
-    }
   }
 
   public drawAnchor(texture: Texture) {

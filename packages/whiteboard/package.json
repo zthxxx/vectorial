@@ -30,6 +30,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@pixi-essentials/svg": "1.1.5",
+    "@pixi-essentials/texture-allocator": "1.0.5",
     "@pixi/accessibility": "^6.2.2",
     "@pixi/app": "^6.2.2",
     "@pixi/compressed-textures": "^6.2.2",

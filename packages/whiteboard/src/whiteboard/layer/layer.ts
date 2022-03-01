@@ -27,15 +27,20 @@ export class LayerManager {
   public layerMap: {
     [id: string]: Layer
   } = {}
+  public layers: Layer[]
+  public selected: Set<Layer['id']>
 
-  constructor(layers?: Layer[]) {
-    layers?.forEach(layer => {
+  constructor(layers: Layer[] = []) {
+    this.layers = layers
+    this.layers.forEach(layer => {
       this.add(layer)
     })
+    this.selected = new Set()
   }
 
   public add(layer: Layer) {
     this.layerMap[layer.id] = layer
+    this.layers.unshift(layer)
   }
 
   public remove(layer: Layer) {

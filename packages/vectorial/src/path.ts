@@ -4,8 +4,17 @@ import {
   Path as PaperPath,
   Color,
 } from 'paper'
-import type { Vector } from './types'
+import type { Vector, Matrix } from './types'
 import { VectorAnchor } from './anchor'
+import {
+  emptyVector,
+  toTranslation,
+  toRotation,
+  toScale,
+  multiply,
+  applyInverse,
+  applyMatrix,
+} from './math'
 
 
 export enum PathHitType {
@@ -35,26 +44,50 @@ export type PathHitResult =
     point: VectorAnchor;
   }
 
+export class VectorPathProps {
+  anchors?: VectorAnchor[];
+  closed?: boolean;
+  position?: Vector;
+  /** degrees */
+  rotation?: number;
+  scale?: Vector;
+}
+
 export class VectorPath {
-  private _anchors: VectorAnchor[] = []
-  private _closed: boolean = false
+  public position: Vector;
+  /**
+   * euler rotation degree,
+   * rotation point is the center of the self
+   */
+  public rotation: number;
+  public scale: Vector;
   public path: paper.Path
   public segmentMap: Map<paper.Segment, VectorAnchor>
+  private _anchors: VectorAnchor[] = []
+  private _closed: boolean = false
+  private _transformTag?: string
+  private _transformMatrix?: Matrix
 
-  constructor(anchors: VectorAnchor[] = [], closed: boolean = false) {
+  constructor({
+    anchors = [],
+    closed = false,
+    position = emptyVector(),
+    rotation = 0,
+    scale = { x: 1, y: 1 },
+  }: VectorPathProps = {}) {
     this._anchors = anchors
     this._closed = closed
+    this.position = position
+    this.rotation = rotation
+    this.scale = scale
+
     this.path = new PaperPath({
+      segments: anchors.map(anchor => anchor.segment),
       /** stroke style only for hitTest interaction */
       strokeWidth: 10,
       strokeColor: new Color(0x000),
-      segments: anchors.map(anchor => anchor.segment),
     })
     this.segmentMap = new Map(anchors.map(anchor => [anchor.segment, anchor]))
-  }
-
-  public get anchors(): Array<VectorAnchor> {
-    return this._anchors
   }
 
   public set anchors(anchors: (VectorAnchor | undefined)[]) {
@@ -70,6 +103,81 @@ export class VectorPath {
   public set closed(closed: boolean) {
     this._closed = closed
     this.path.closed = closed
+  }
+
+  public get bounds(): paper.Rectangle {
+    return this.path.bounds
+  }
+
+  public get center(): Vector {
+    return this.bounds.center
+  }
+
+  public get width(): number {
+    return this.bounds.width
+  }
+
+  public get height(): number {
+    return this.bounds.height
+  }
+
+  public get anchors(): Array<VectorAnchor> {
+    return this._anchors
+  }
+
+  public get translationMatrix(): Matrix {
+    return toTranslation(this.position.x, this.position.y)
+  }
+
+  /**
+   * center rotation
+   */
+  public get rotationMatrix(): Matrix {
+    const { width, height } = this.bounds
+    return multiply(
+      multiply(
+        toTranslation(width / 2, height / 2),
+        toRotation(this.rotation),
+      ),
+      toTranslation(-width / 2, -height / 2),
+    )
+  }
+
+  public get scaleMatrix(): Matrix {
+    return toScale(this.scale.x, this.scale.y)
+  }
+
+  private getTransformTag(): string {
+    const { width, height } = this.bounds
+    return [
+      this.position.x,
+      this.position.y,
+      this.rotation,
+      this.scale.x,
+      this.scale.y,
+      width,
+      height,
+    ].join(',')
+  }
+
+  public get transformMatrix(): Matrix {
+    const currentTag = this.getTransformTag()
+    if (
+      this._transformMatrix
+      && this._transformTag === currentTag
+    ) {
+      return this._transformMatrix
+    }
+
+    this._transformTag = currentTag
+    this._transformMatrix = multiply(
+      multiply(
+        this.translationMatrix,
+        this.rotationMatrix,
+      ),
+      this.scaleMatrix,
+    )
+    return this._transformMatrix
   }
 
   public addAnchor(anchor: VectorAnchor) {
@@ -107,10 +215,34 @@ export class VectorPath {
   }
 
   public clone(): VectorPath {
-    return new VectorPath(this.anchors, this.closed)
+    return new VectorPath({
+      anchors: this.anchors,
+      closed: this.closed,
+      position: { ...this.position },
+      scale: { ...this.scale },
+      rotation: this.rotation,
+    })
   }
 
-  public hitAnchorTest(point: Vector): PathHitResult | undefined {
+  /**
+   * @param point - parent coordinate position
+   * @returns point - local coordinate position
+   */
+  public toLocalPoint(point: Vector): Vector {
+    return applyInverse(point, this.transformMatrix)
+  }
+
+
+  /**
+   * @param point - local coordinate position
+   * @returns point - parent view coordinate position
+   */
+   public toParentPoint(point: Vector): Vector {
+    return applyMatrix(point, this.transformMatrix)
+  }
+
+  public hitAnchorTest(viewPoint: Vector): PathHitResult | undefined {
+    const point = this.toLocalPoint(viewPoint)
     const { closed } = this
     const first = this.anchors.at(0)
     const last = this.anchors.at(-1)
@@ -130,7 +262,8 @@ export class VectorPath {
     }
   }
 
-  public hitPathTest(point: Vector): PathHitResult | undefined {
+  public hitPathTest(viewPoint: Vector): PathHitResult | undefined {
+    const point = this.toLocalPoint(viewPoint)
     const { closed } = this
 
     /**

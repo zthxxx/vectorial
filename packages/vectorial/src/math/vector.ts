@@ -2,7 +2,7 @@ import type { Vector } from './types'
 
 const { sqrt, pow } = Math
 
-export const empty = (): Vector => ({ x: 0, y: 0 })
+export const emptyVector = (): Vector => ({ x: 0, y: 0 })
 
 export const add = (source: Vector, value: Vector): Vector => ({
   x: source.x + value.x,
