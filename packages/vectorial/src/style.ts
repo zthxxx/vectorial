@@ -1,4 +1,3 @@
-import type paper from 'paper'
 import { Color } from 'paper'
 
 

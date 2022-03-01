@@ -1,16 +1,14 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../tsconfig.build.json",
   "compilerOptions": {
     "rootDir": "src",
     "baseUrl": ".",
+    "outDir": "es",
     "paths": {
+      "vectorial": ["src"],
     },
   },
   "include": [
     "src",
-    "vite-env.d.ts",
-  ],
-  "references": [
-    { "path": "../vectorial" },
   ],
 }

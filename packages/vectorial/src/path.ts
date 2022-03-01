@@ -1,4 +1,3 @@
-import type paper from 'paper'
 import {
   Point as PaperPoint,
   Path as PaperPath,
