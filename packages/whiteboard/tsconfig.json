@@ -4,13 +4,11 @@
     "rootDir": "src",
     "baseUrl": ".",
     "paths": {
+      "vectorial": ["../vectorial/src"],
     },
   },
   "include": [
     "src",
     "vite-env.d.ts",
-  ],
-  "references": [
-    { "path": "../vectorial" },
-  ],
+  ]
 }

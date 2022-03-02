@@ -3,9 +3,10 @@ import {
   Path as PaperPath,
   Color,
 } from 'paper'
-import type { Vector, Matrix } from './types'
+import type { Vector, Matrix, Rect } from './types'
 import { VectorAnchor } from './anchor'
 import {
+  add,
   emptyVector,
   toTranslation,
   toRotation,
@@ -49,7 +50,7 @@ export class VectorPathProps {
   position?: Vector;
   /** degrees */
   rotation?: number;
-  scale?: Vector;
+  resize?: Vector;
 }
 
 export class VectorPath {
@@ -59,7 +60,7 @@ export class VectorPath {
    * rotation point is the center of the self
    */
   public rotation: number;
-  public scale: Vector;
+  public resize: Vector;
   public path: paper.Path
   public segmentMap: Map<paper.Segment, VectorAnchor>
   private _anchors: VectorAnchor[] = []
@@ -72,19 +73,21 @@ export class VectorPath {
     closed = false,
     position = emptyVector(),
     rotation = 0,
-    scale = { x: 1, y: 1 },
+    resize = { x: 1, y: 1 },
   }: VectorPathProps = {}) {
     this._anchors = anchors
     this._closed = closed
     this.position = position
     this.rotation = rotation
-    this.scale = scale
+    this.resize = resize
 
     this.path = new PaperPath({
       segments: anchors.map(anchor => anchor.segment),
-      /** stroke style only for hitTest interaction */
+      /** stroke and fill style only for hitTest interaction */
       strokeWidth: 10,
       strokeColor: new Color(0x000),
+      fillColor: new Color(0x000),
+      fillRule: 'evenodd',
     })
     this.segmentMap = new Map(anchors.map(anchor => [anchor.segment, anchor]))
   }
@@ -104,12 +107,12 @@ export class VectorPath {
     this.path.closed = closed
   }
 
-  public get bounds(): paper.Rectangle {
+  public get bounds(): Rect {
     return this.path.bounds
   }
 
   public get center(): Vector {
-    return this.bounds.center
+    return this.path.bounds.center
   }
 
   public get width(): number {
@@ -142,8 +145,8 @@ export class VectorPath {
     )
   }
 
-  public get scaleMatrix(): Matrix {
-    return toScale(this.scale.x, this.scale.y)
+  public get resizeMatrix(): Matrix {
+    return toScale(this.resize.x, this.resize.y)
   }
 
   private getTransformTag(): string {
@@ -152,8 +155,8 @@ export class VectorPath {
       this.position.x,
       this.position.y,
       this.rotation,
-      this.scale.x,
-      this.scale.y,
+      this.resize.x,
+      this.resize.y,
       width,
       height,
     ].join(',')
@@ -174,7 +177,7 @@ export class VectorPath {
         this.translationMatrix,
         this.rotationMatrix,
       ),
-      this.scaleMatrix,
+      this.resizeMatrix,
     )
     return this._transformMatrix
   }
@@ -218,7 +221,7 @@ export class VectorPath {
       anchors: this.anchors,
       closed: this.closed,
       position: { ...this.position },
-      scale: { ...this.scale },
+      resize: { ...this.resize },
       rotation: this.rotation,
     })
   }
@@ -297,5 +300,42 @@ export class VectorPath {
         curveIndex: location.index,
       }
     }
+  }
+
+  public hitFillTest(viewPoint: Vector):
+   | (PathHitResult & { type: PathHitType.Fill })
+   | undefined
+  {
+    if (!this.closed) return
+
+    const point = this.toLocalPoint(viewPoint)
+
+    const hitResult: paper.HitResult | undefined = this.path.hitTest(
+      new PaperPoint(point),
+      {
+        stroke: false,
+        segments: false,
+        handles: false,
+        fill: true,
+      },
+    )
+    if (!hitResult) return
+
+    if (hitResult.type === 'fill') {
+      return {
+        type: PathHitType.Fill,
+        point: new VectorAnchor(point),
+      }
+    }
+  }
+
+  /**
+   *
+   * @TODO temporary, need to use translationMatrix to change position
+   */
+  public move(delta: Vector) {
+    this.anchors.forEach(anchor => {
+      anchor.position = add(anchor.position, delta)
+    })
   }
 }

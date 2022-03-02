@@ -1,5 +1,6 @@
 export type {
   Vector,
+  Rect,
   Matrix,
 } from './math'
 

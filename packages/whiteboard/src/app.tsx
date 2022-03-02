@@ -1,5 +1,5 @@
-// import { Canvas } from './playground/canvas'
-import { Canvas } from './whiteboard'
+// import { Canvas } from '../playground/canvas'
+import { Canvas } from './canvas'
 
 function App() {
   return (

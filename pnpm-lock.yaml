@@ -27,6 +27,7 @@ importers:
 
   packages/whiteboard:
     specifiers:
+      '@figma/plugin-typings': 1.43.0
       '@pixi-essentials/svg': 1.1.5
       '@pixi-essentials/texture-allocator': 1.0.5
       '@pixi/accessibility': ^6.2.2
@@ -70,6 +71,7 @@ importers:
       '@types/react-dom': ^17.0.13
       '@vitejs/plugin-react': ^1.2.0
       autoprefixer: ^10.4.2
+      localforage: 1.10.0
       nanoid: ^3.3.1
       paper: ^0.12.15
       pixi-viewport: ^4.34.4
@@ -122,6 +124,7 @@ importers:
       '@pixi/text-bitmap': 6.2.2_1850d39ac09788f576136fe1422aec25
       '@pixi/ticker': 6.2.2_@pixi+settings@6.2.2
       '@pixi/utils': 6.2.2_ad095b7aec4969ed69d5eaf12d12848b
+      localforage: 1.10.0
       nanoid: 3.3.1
       pixi-viewport: 4.34.4_1fe34640a50dbfa2a2b59919b311a347
       react: 17.0.2
@@ -130,6 +133,7 @@ importers:
       vectorial: link:../vectorial
       xstate: 4.30.6
     devDependencies:
+      '@figma/plugin-typings': 1.43.0
       '@tweakpane/core': 1.0.8
       '@types/node': 17.0.21
       '@types/react': 17.0.40
@@ -412,6 +416,10 @@ packages:
     dependencies:
       '@babel/helper-validator-identifier': 7.16.7
       to-fast-properties: 2.0.0
+    dev: true
+
+  /@figma/plugin-typings/1.43.0:
+    resolution: {integrity: sha512-FxLGYkMkTg87cw5O1S2qQVDCCFfuJpfJP3qKeLg9zmQ1yPD6trLvkeHau48XCYFzcd9o5Milaft/gfjGJ/BvTg==}
     dev: true
 
   /@jridgewell/resolve-uri/3.0.5:
@@ -1681,6 +1689,10 @@ packages:
     resolution: {integrity: sha512-mxIDAb9Lsm6DoOJ7xH+5+X4y1LU/4Hi50L9C5sIswK3JzULS4bwk1FvjdBgvYR4bzT4tuUQiC15FE2f5HbLvYw==}
     dev: true
 
+  /immediate/3.0.6:
+    resolution: {integrity: sha1-nbHb0Pr43m++D13V5Wu2BigN5ps=}
+    dev: false
+
   /import-fresh/3.3.0:
     resolution: {integrity: sha512-veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==}
     engines: {node: '>=6'}
@@ -1850,6 +1862,12 @@ packages:
     resolution: {integrity: sha1-Fz61KhpXoCOP5I8F0SJFB0SX+Jg=}
     dev: false
 
+  /lie/3.1.1:
+    resolution: {integrity: sha1-mkNrLMd0bKWd56QfpGmz77dr2H4=}
+    dependencies:
+      immediate: 3.0.6
+    dev: false
+
   /lilconfig/2.0.4:
     resolution: {integrity: sha512-bfTIN7lEsiooCocSISTWXkiWJkRqtL9wYtYy+8EK3Y41qh3mpwPU0ycTOgjdY9ErwXCc8QyrQp82bdL0Xkm9yA==}
     engines: {node: '>=10'}
@@ -1868,6 +1886,12 @@ packages:
       pify: 3.0.0
       strip-bom: 3.0.0
     dev: true
+
+  /localforage/1.10.0:
+    resolution: {integrity: sha512-14/H1aX7hzBBmmh7sGPd+AOMkkIrHM3Z1PAyGgZigA1H1p5O5ANnMyWzvpAETtG68/dC4pC0ncy3+PPGzXZHPg==}
+    dependencies:
+      lie: 3.1.1
+    dev: false
 
   /loose-envify/1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}

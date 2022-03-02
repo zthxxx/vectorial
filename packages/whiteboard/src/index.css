@@ -38,3 +38,11 @@ canvas {
 .tp-dfwv {
   user-select: none;
 }
+
+.tp-tabv_c .tp-brkv > .tp-fldv.tp-cntv {
+  margin-left: 0;
+}
+
+.tp-lblv .tp-lblv_v {
+  align-self: center;
+}
