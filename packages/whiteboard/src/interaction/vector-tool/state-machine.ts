@@ -120,7 +120,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
             on: {
               move: 'indicating',
               confirm: {
-                target: 'done',
+                target: '#vector-tool.done',
                 actions: createDone,
               },
             }

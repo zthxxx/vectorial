@@ -1,7 +1,7 @@
 import type { Viewport } from 'pixi-viewport'
 import { Plugin } from 'pixi-viewport'
 import { Container } from '@pixi/display'
-import type { LayerManager } from '../layer'
+import type { LayerManager } from './layer'
 
 export interface ElementsLayerProps {
   layerManager: LayerManager;

@@ -1,11 +1,12 @@
 import { useEffect, useRef, RefObject } from 'react'
-import { LayerManager } from './layer'
+import { LayerManager } from './interaction/layer'
 import {
   EventManager,
   MouseMonitorTool,
   BoundaryTool,
   SelectTool,
   VectorTool,
+  Toolbox,
 } from './interaction'
 import { Pane } from './pane'
 import { Viewport } from './viewport'
@@ -47,10 +48,21 @@ export const setupViewportPlugins = ({
     }),
   )
 
+  const toolbox = new Toolbox(viewport.viewport, {
+    pane: pane.misc,
+    interactionEvent$,
+  })
+
+  plugins.add(
+    Toolbox.name,
+    toolbox,
+  )
+
   plugins.add(
     SelectTool.name,
     new SelectTool(viewport.viewport, {
       pane: pane.misc,
+      toolbox,
       layerManager,
       interactionEvent$,
     }),
@@ -59,6 +71,7 @@ export const setupViewportPlugins = ({
   plugins.add(
     VectorTool.name,
     new VectorTool(viewport.viewport, {
+      toolbox,
       canvas: viewport.canvas,
       renderer: viewport.app.renderer,
       pane: pane.misc,
@@ -66,6 +79,8 @@ export const setupViewportPlugins = ({
       interactionEvent$,
     }),
   )
+
+  toolbox.switchToolByName(VectorTool.name)
 }
 
 export const useSetupCanvas = (containerRef: RefObject<HTMLDivElement>) => {

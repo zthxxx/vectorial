@@ -41,6 +41,12 @@ export enum MouseTriggerType {
 
 export type ModifierKey = 'Ctrl' | 'Alt' | 'Shift' | 'Meta'
 
+export interface EventKeyMatch {
+  modifiers?: ModifierKey[];
+  keys?: string[];
+  mouse?: MouseButton[];
+}
+
 export class InteractionEvent {
   /**
    * pressed modifier keys
@@ -175,11 +181,7 @@ export class InteractionEvent {
     return event
   }
 
-  public match({ modifiers, keys, mouse }: {
-    modifiers?: ModifierKey[],
-    keys?: string[],
-    mouse?: MouseButton[],
-  }): boolean {
+  public match({ modifiers, keys, mouse }: EventKeyMatch): boolean {
     if (!modifiers && !keys && !mouse) {
       return false
     }

@@ -29,7 +29,7 @@ import {
 } from '../../nodes'
 import {
   LayerManager
-} from '../../layer'
+} from '../layer'
 import type { InteractionEvent } from '../event'
 import type {
   StateContext,
@@ -39,6 +39,7 @@ import type {
 import {
   createVectorToolMachine,
 } from './state-machine'
+import type { Toolbox } from '../toolbox'
 
 class DrawsMap extends Map<VectorAnchor, AnchorNode> {
   public container: Container
@@ -61,6 +62,7 @@ class DrawsMap extends Map<VectorAnchor, AnchorNode> {
 }
 
 export interface VectorToolProps {
+  toolbox: Toolbox;
   layerManager: LayerManager;
   renderer?: Renderer;
   interactionEvent$: Observable<InteractionEvent>;
@@ -71,6 +73,7 @@ export interface VectorToolProps {
 
 export class VectorTool extends Plugin {
   public status: string = ''
+  private toolbox: Toolbox
   private stateBlade: MonitorBindingApi<string>
   private layerManager: LayerManager
   private interactionEvent$: Observable<InteractionEvent>
@@ -85,9 +88,12 @@ export class VectorTool extends Plugin {
       interactionEvent$,
       pane,
       canvas,
+      toolbox,
     } = props
     AnchorNode.renderer = renderer
+
     super(parent)
+    this.toolbox = toolbox
     this.canvas = canvas
 
     this.layerManager = layerManager
@@ -98,8 +104,7 @@ export class VectorTool extends Plugin {
       interval: 0,
     })
 
-    this.pause()
-    this.resume()
+    this.paused = true
   }
 
   public statusIndicate(status: StateValue) {
@@ -141,19 +146,20 @@ export class VectorTool extends Plugin {
 
   public pause(): void {
     this.paused = true
-    this.stateBlade.hidden = true
+    this.status = '(paused)'
+    this.stateBlade.refresh()
     this.toolLayer?.machine.stop()
     this.toolLayer?.destroy()
     this.toolLayer = undefined
     this.pathNode = undefined
-    this.parent.plugins.get('SelectTool')?.resume()
   }
 
   public resume(): void {
     this.setSelectedPath()
     this.paused = false
 
-    this.stateBlade.hidden = false
+    this.status = '(active)'
+    this.stateBlade.refresh()
     this.toolLayer = new ToolLayer({
       interactLayer: this.layerManager.interactLayer,
       interactionEvent$: this.interactionEvent$,
@@ -178,7 +184,10 @@ export class VectorTool extends Plugin {
       this.layerManager.select([this.pathNode])
     }
 
-    this.pause()
+    if (!this.paused) {
+      this.pause()
+      this.toolbox.switchToolByName('SelectTool')
+    }
   }
 }
 

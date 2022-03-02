@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid'
 import { Container } from '@pixi/display'
 import {
   PathNode,
-} from '../nodes'
+} from '../../nodes'
 
 type LayerNode = PathNode
 

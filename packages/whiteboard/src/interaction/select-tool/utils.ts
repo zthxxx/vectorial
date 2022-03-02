@@ -12,7 +12,7 @@ import {
 } from '../../nodes'
 import type {
   LayerManager,
-} from '../../layer'
+} from '../layer'
 import {
   MouseTriggerType,
   MouseButton,

@@ -16,7 +16,7 @@ import {
   State,
   StateValue,
 } from 'xstate'
-import type { LayerManager } from '../../layer'
+import type { LayerManager } from '../layer'
 import {
   PathNode,
 } from '../../nodes'
@@ -36,8 +36,10 @@ import {
   StateContext,
   SelectToolService,
 } from './types'
+import type { Toolbox } from '../toolbox'
 
 export interface SelectToolProps {
+  toolbox: Toolbox;
   pane: FolderApi;
   layerManager: LayerManager;
   interactionEvent$: Observable<InteractionEvent>;
@@ -45,10 +47,11 @@ export interface SelectToolProps {
 
 export class SelectTool extends Plugin {
   public status: string = ''
+  private toolbox: Toolbox
+  private stateBlade: MonitorBindingApi<string>
   private selectLayer: Container
   private boundaryLayer: Graphics
   private marqueeLayer: Graphics
-  private stateBlade: MonitorBindingApi<string>
   private layerManager: LayerManager
   private interactionEvent$: Observable<InteractionEvent>
 
@@ -59,10 +62,13 @@ export class SelectTool extends Plugin {
   constructor(parent: Viewport, props: SelectToolProps) {
     const {
       pane,
+      toolbox,
       layerManager,
       interactionEvent$,
     } = props
     super(parent)
+
+    this.toolbox = toolbox
 
     this.layerManager = layerManager
     this.selectLayer = new Container()
@@ -134,7 +140,7 @@ export class SelectTool extends Plugin {
     )
 
     this.machineSignal$.subscribe({
-      complete: () => this.editDone(this.stateContext),
+      complete: () => this.editDone(),
     })
 
     this.machine!.start()
@@ -158,8 +164,13 @@ export class SelectTool extends Plugin {
     }
   }
 
-  public editDone(context: StateContext) {
-    this.pause()
-    this.parent.plugins.get('VectorTool')?.resume()
+  /**
+   * only enter to `editVector` mode will call `editDone`
+   */
+  public editDone() {
+    if (!this.paused) {
+      this.pause()
+      this.toolbox.switchToolByName('VectorTool')
+    }
   }
 }

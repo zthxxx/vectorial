@@ -16,7 +16,7 @@ import {
   PathStyle,
   DefaultPathColor,
 } from '../../nodes'
-import type { LayerManager } from '../../layer'
+import type { LayerManager } from '../layer'
 import {
   InteractionEvent,
 } from '../event'

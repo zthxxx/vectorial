@@ -12,7 +12,7 @@ import type {
 import {
   PathNode,
 } from '../../nodes'
-import type { LayerManager } from '../../layer'
+import type { LayerManager } from '../layer'
 import type {
   InteractionEvent,
   MouseEvent,

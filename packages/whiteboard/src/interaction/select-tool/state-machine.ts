@@ -48,7 +48,7 @@ export const createSelectToolMachine = (context: StateContext): SelectToolMachin
             actions: selectingSelect,
           },
           enterNode: {
-            target: 'vectorEdit',
+            target: 'editVector',
           },
           cancel: {
 
@@ -96,7 +96,7 @@ export const createSelectToolMachine = (context: StateContext): SelectToolMachin
           },
         },
       },
-      vectorEdit: {
+      editVector: {
         type: 'final',
       },
     },
