@@ -66,6 +66,7 @@ importers:
       '@pixi/ticker': ^6.2.2
       '@pixi/utils': ^6.2.2
       '@tweakpane/core': ^1.0.8
+      '@tweakpane/plugin-essentials': 0.1.4
       '@types/node': ^17.0.21
       '@types/react': ^17.0.40
       '@types/react-dom': ^17.0.13
@@ -124,6 +125,7 @@ importers:
       '@pixi/text-bitmap': 6.2.2_1850d39ac09788f576136fe1422aec25
       '@pixi/ticker': 6.2.2_@pixi+settings@6.2.2
       '@pixi/utils': 6.2.2_ad095b7aec4969ed69d5eaf12d12848b
+      '@tweakpane/plugin-essentials': 0.1.4_tweakpane@3.0.7
       localforage: 1.10.0
       nanoid: 3.3.1
       pixi-viewport: 4.34.4_1fe34640a50dbfa2a2b59919b311a347
@@ -970,6 +972,14 @@ packages:
   /@tweakpane/core/1.0.8:
     resolution: {integrity: sha512-q7BQrqM4NYiaSoErRgRY0EBxxC8AzsZJoz52K8SNJ/IfYu9lTzfFTwW7ouYqgElSOx+3ybXBcMlkCPZdOBZg6Q==}
     dev: true
+
+  /@tweakpane/plugin-essentials/0.1.4_tweakpane@3.0.7:
+    resolution: {integrity: sha512-beJWDrTo6a29eh1L5AFsiybsiWL2BFMN+49dwAzccnR7vr6uXy3qxJIZVr3J91KXZwDEg1XZ+ZW301Sz+xTBqw==}
+    peerDependencies:
+      tweakpane: ^3.0.5
+    dependencies:
+      tweakpane: 3.0.7
+    dev: false
 
   /@types/earcut/2.1.1:
     resolution: {integrity: sha512-w8oigUCDjElRHRRrMvn/spybSMyX8MTkKA5Dv+tS1IE/TgmNZPqUYtvYBXGY8cieSE66gm+szeK+bnbxC2xHTQ==}

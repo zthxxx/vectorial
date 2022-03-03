@@ -1,8 +1,4 @@
-import {
-  Point as PaperPoint,
-  Path as PaperPath,
-  Color,
-} from 'paper'
+import paper from 'paper'
 import type { Vector, Matrix, Rect } from './types'
 import { VectorAnchor } from './anchor'
 import {
@@ -12,6 +8,7 @@ import {
   toRotation,
   toScale,
   multiply,
+  identityMatrix,
   applyInverse,
   applyMatrix,
 } from './math'
@@ -23,6 +20,7 @@ export enum PathHitType {
   OutHandler = 'OutHandler',
   Stroke = 'Stroke',
   Fill = 'Fill',
+  Compound = 'Compound',
 }
 
 export type PathHitResult =
@@ -41,7 +39,9 @@ export type PathHitResult =
   }
   | {
     type: PathHitType.Fill;
-    point: VectorAnchor;
+  }
+  | {
+    type: PathHitType.Compound;
   }
 
 export class VectorPathProps {
@@ -50,45 +50,69 @@ export class VectorPathProps {
   position?: Vector;
   /** degrees */
   rotation?: number;
-  resize?: Vector;
+  resizing?: Vector;
+  /**
+   * partiy of path area used for evenodd fill rule, of which,
+   *    1: odd (fill)
+   *    0: even (not fill)
+   */
+  parity?: 1 | 0;
 }
 
 export class VectorPath {
-  public position: Vector;
+  public _position: Vector;
   /**
    * euler rotation degree,
    * rotation point is the center of the self
    */
-  public rotation: number;
-  public resize: Vector;
+  public _rotation: number;
+  /**
+   * resizing scale from left-top corner
+   */
+  public _resizing: Vector;
   public path: paper.Path
+
+  /**
+   * partiy of path area used for evenodd fill rule, of which,
+   *    1: odd (fill)
+   *    0: even (not fill)
+   */
+  public parity?: 1 | 0;
   public segmentMap: Map<paper.Segment, VectorAnchor>
   private _anchors: VectorAnchor[] = []
   private _closed: boolean = false
-  private _transformTag?: string
-  private _transformMatrix?: Matrix
+  private _relativeMatrix: Matrix
 
   constructor({
     anchors = [],
     closed = false,
     position = emptyVector(),
     rotation = 0,
-    resize = { x: 1, y: 1 },
+    resizing = { x: 1, y: 1 },
+    parity = 1,
   }: VectorPathProps = {}) {
     this._anchors = anchors
     this._closed = closed
-    this.position = position
-    this.rotation = rotation
-    this.resize = resize
+    this.parity = parity
 
-    this.path = new PaperPath({
+    this._relativeMatrix = identityMatrix()
+
+    this._position = position
+    this._rotation = rotation
+    this._resizing = resizing
+
+    this.path = new paper.Path({
       segments: anchors.map(anchor => anchor.segment),
-      /** stroke and fill style only for hitTest interaction */
+      /**
+       * stroke and fill style only for hitTest interaction
+       * strokeWidth is how near can hit while mouse close to path
+       */
       strokeWidth: 10,
-      strokeColor: new Color(0x000),
-      fillColor: new Color(0x000),
+      strokeColor: new paper.Color(0x000),
+      fillColor: new paper.Color(0x000),
       fillRule: 'evenodd',
     })
+    this.path.closed = closed
     this.segmentMap = new Map(anchors.map(anchor => [anchor.segment, anchor]))
   }
 
@@ -102,6 +126,7 @@ export class VectorPath {
   public get closed(): boolean {
     return this._closed
   }
+
   public set closed(closed: boolean) {
     this._closed = closed
     this.path.closed = closed
@@ -127,59 +152,43 @@ export class VectorPath {
     return this._anchors
   }
 
-  public get translationMatrix(): Matrix {
-    return toTranslation(this.position.x, this.position.y)
+  public get relativeMatrix(): Matrix {
+    return this._relativeMatrix
   }
 
-  /**
-   * center rotation
-   */
-  public get rotationMatrix(): Matrix {
-    const { width, height } = this.bounds
-    return multiply(
-      multiply(
-        toTranslation(width / 2, height / 2),
-        toRotation(this.rotation),
-      ),
-      toTranslation(-width / 2, -height / 2),
+  private updateRelativeMatrix() {
+    this._relativeMatrix = multiply(
+      toTranslation(this.position.x, this.position.y),
+      toRotation(this.rotation),
+      toScale(this.resizing.x, this.resizing.y),
     )
   }
 
-  public get resizeMatrix(): Matrix {
-    return toScale(this.resize.x, this.resize.y)
+  public get position(): Vector {
+    return this._position
   }
 
-  private getTransformTag(): string {
-    const { width, height } = this.bounds
-    return [
-      this.position.x,
-      this.position.y,
-      this.rotation,
-      this.resize.x,
-      this.resize.y,
-      width,
-      height,
-    ].join(',')
+  public set position({ x, y }: Vector) {
+    this._position = { x, y }
+    this.updateRelativeMatrix()
   }
 
-  public get transformMatrix(): Matrix {
-    const currentTag = this.getTransformTag()
-    if (
-      this._transformMatrix
-      && this._transformTag === currentTag
-    ) {
-      return this._transformMatrix
-    }
+  public get rotation(): number {
+    return this._rotation
+  }
 
-    this._transformTag = currentTag
-    this._transformMatrix = multiply(
-      multiply(
-        this.translationMatrix,
-        this.rotationMatrix,
-      ),
-      this.resizeMatrix,
-    )
-    return this._transformMatrix
+  public set rotation(degree: number) {
+    this._rotation = degree
+    this.updateRelativeMatrix()
+  }
+
+  public get resizing(): Vector {
+    return this._resizing
+  }
+
+  public set resizing({ x, y }: Vector) {
+    this._resizing = { x, y }
+    this.updateRelativeMatrix()
   }
 
   public addAnchor(anchor: VectorAnchor) {
@@ -221,8 +230,9 @@ export class VectorPath {
       anchors: this.anchors,
       closed: this.closed,
       position: { ...this.position },
-      resize: { ...this.resize },
+      resizing: { ...this.resizing },
       rotation: this.rotation,
+      parity: this.parity,
     })
   }
 
@@ -231,7 +241,7 @@ export class VectorPath {
    * @returns point - local coordinate position
    */
   public toLocalPoint(point: Vector): Vector {
-    return applyInverse(point, this.transformMatrix)
+    return applyInverse(point, this.relativeMatrix)
   }
 
 
@@ -240,7 +250,7 @@ export class VectorPath {
    * @returns point - parent view coordinate position
    */
    public toParentPoint(point: Vector): Vector {
-    return applyMatrix(point, this.transformMatrix)
+    return applyMatrix(point, this.relativeMatrix)
   }
 
   public hitAnchorTest(viewPoint: Vector): PathHitResult | undefined {
@@ -273,7 +283,7 @@ export class VectorPath {
      * https://github.com/paperjs/paper.js/blob/v0.12.15/src/path/Path.js#L1699-L1721
      */
     const hitResult: paper.HitResult | undefined = this.path.hitTest(
-      new PaperPoint(point),
+      new paper.Point(point),
       {
         stroke: true,
         segments: false,
@@ -311,7 +321,7 @@ export class VectorPath {
     const point = this.toLocalPoint(viewPoint)
 
     const hitResult: paper.HitResult | undefined = this.path.hitTest(
-      new PaperPoint(point),
+      new paper.Point(point),
       {
         stroke: false,
         segments: false,
@@ -324,7 +334,6 @@ export class VectorPath {
     if (hitResult.type === 'fill') {
       return {
         type: PathHitType.Fill,
-        point: new VectorAnchor(point),
       }
     }
   }
@@ -334,6 +343,7 @@ export class VectorPath {
    * @TODO temporary, need to use translationMatrix to change position
    */
   public move(delta: Vector) {
+    // this.position = add(this.position, delta)
     this.anchors.forEach(anchor => {
       anchor.position = add(anchor.position, delta)
     })

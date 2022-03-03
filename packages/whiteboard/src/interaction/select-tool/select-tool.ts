@@ -8,9 +8,14 @@ import {
   tap,
 } from 'rxjs/operators'
 import type {
+  BladeApi,
+  ButtonApi,
   FolderApi,
   MonitorBindingApi,
 } from 'tweakpane'
+import type {
+  TpButtonGridEvent,
+} from '@tweakpane/plugin-essentials/dist/types/button-grid/api/tp-button-grid-event'
 import {
   interpret,
   State,
@@ -19,6 +24,8 @@ import {
 import type { LayerManager } from '../layer'
 import {
   PathNode,
+  ShapeNode,
+  DefaultPathColor,
 } from '../../nodes'
 import {
   InteractionEvent,
@@ -32,11 +39,21 @@ import {
   createSelectToolMachine,
 } from './state-machine'
 import {
+  MouseEvent,
   StateEvent,
   StateContext,
   SelectToolService,
 } from './types'
-import type { Toolbox } from '../toolbox'
+import {
+  Toolbox,
+  ToolType,
+} from '../toolbox'
+import {
+  VectorAnchor,
+  VectorPath,
+  VectorShape,
+  HandlerType,
+} from 'vectorial'
 
 export interface SelectToolProps {
   toolbox: Toolbox;
@@ -45,10 +62,18 @@ export interface SelectToolProps {
   interactionEvent$: Observable<InteractionEvent>;
 }
 
+const booleanMethods = [
+  ['Unite', 'Subtract'],
+  ['Intersect', 'Exclude'],
+]
+
+type BooleanOperator = 'unite' | 'intersect' | 'subtract' | 'exclude'
+
 export class SelectTool extends Plugin {
   public status: string = ''
   private toolbox: Toolbox
   private stateBlade: MonitorBindingApi<string>
+  private booleanButton!: ButtonApi
   private selectLayer: Container
   private boundaryLayer: Graphics
   private marqueeLayer: Graphics
@@ -89,6 +114,21 @@ export class SelectTool extends Plugin {
       interval: 0,
     })
 
+    /**
+     * @TODO temporary need be remove
+     */
+    this.booleanButton = pane.addBlade({
+      view: 'buttongrid',
+      size: [2, 2],
+      cells: (x: number, y: number) => ({
+        title: [
+          ['Unite', 'Subtract'],
+          ['Intersect', 'Exclude'],
+        ][y][x],
+      }),
+      label: 'Boolean',
+    }) as ButtonApi
+
     this.stateContext = {
       interactionEvent$: this.interactionEvent$,
       layerManager: this.layerManager,
@@ -99,6 +139,44 @@ export class SelectTool extends Plugin {
     }
 
     this.pause()
+    this.setupBooleanOperator()
+  }
+
+  public setupBooleanOperator() {
+    this.booleanButton.on('click', (ev: TpButtonGridEvent) => {
+      const method = booleanMethods[ev.index[1]][ev.index[0]].toLocaleLowerCase()
+      const { selected } = this.layerManager
+      if (selected.size < 2) return
+      const nodes = this.layerManager.filter(node => selected.has(node))
+      this.booleanOperate(method as BooleanOperator, nodes)
+    })
+  }
+
+  /**
+   * @TODO temporary need be remove
+   */
+  public booleanOperate(operator: BooleanOperator, selected: PathNode[]) {
+    selected.forEach(node => node.clear())
+
+    const shapeNode = new ShapeNode({
+      style: selected.at(-1)?.style,
+      shape: new VectorShape({
+        booleanOperation: operator,
+        children: selected.map(node => node.path),
+      })
+    })
+    shapeNode.draw()
+
+    this.layerManager.nodesLayer.addChild(shapeNode.container)
+    this.interactionEvent$.pipe(
+      filter(event => Boolean(event.mouse)),
+      tap((event: MouseEvent) => {
+        const hit = shapeNode.shape.hitPathTest(event.mouse)
+
+        if (hit) {
+        }
+      }),
+    ).subscribe()
   }
 
   public statusIndicate(status: StateValue) {
@@ -170,7 +248,7 @@ export class SelectTool extends Plugin {
   public editDone() {
     if (!this.paused) {
       this.pause()
-      this.toolbox.switchToolByName('VectorTool')
+      this.toolbox.switchToolByName(ToolType.VectorTool)
     }
   }
 }

@@ -52,11 +52,11 @@ export class LayerManager {
   }
 
   public filter(predicate: (layer: LayerNode) => boolean): LayerNode[] {
-    return Object.values(this.layers).filter(predicate)
+    return this.layers.filter(predicate)
   }
 
   public find(predicate: (layer: LayerNode) => boolean): LayerNode | undefined {
-    return Object.values(this.layers).find(predicate)
+    return this.layers.find(predicate)
   }
 
   public forEach(callback: (layer: LayerNode) => void) {

@@ -16,13 +16,12 @@ import {
   KeyTriggerType,
   MouseTriggerType,
 } from './event'
-import {
-  SelectTool,
-} from './select-tool'
-import {
-  VectorTool,
-} from './vector-tool'
 
+
+export enum ToolType {
+  SelectTool = 'SelectTool',
+  VectorTool = 'VectorTool',
+}
 
 export interface ToolDefine {
   /** pixi-viewport plugin name */
@@ -34,7 +33,7 @@ export interface ToolDefine {
 
 export const ToolList: ToolDefine[] = [
   {
-    name: SelectTool.name,
+    name: ToolType.SelectTool,
     label: 'Move Tool',
     match: {
       modifiers: [],
@@ -43,7 +42,7 @@ export const ToolList: ToolDefine[] = [
     },
   },
   {
-    name: VectorTool.name,
+    name: ToolType.VectorTool,
     label: 'Vector Tool',
     match: {
       modifiers: [],

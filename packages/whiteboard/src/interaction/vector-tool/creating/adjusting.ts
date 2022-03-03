@@ -105,7 +105,6 @@ export const adjustingRelease: StateAction = (context) => {
   const anchorNode = new AnchorNode({ vectorAnchor })
   if (isReverse) {
     vectorPath.addAnchorAt(vectorAnchor, 0)
-    // vectorPath.addAnchor(vectorAnchor)
   } else {
     vectorPath.addAnchor(vectorAnchor)
   }

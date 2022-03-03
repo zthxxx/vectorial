@@ -4,11 +4,15 @@ import {
   Subject,
   fromEvent,
   merge,
+  Observable,
+  of,
+  from,
 } from 'rxjs'
 import {
   tap,
   map,
   filter,
+  mergeMap,
 } from 'rxjs/operators'
 import type { FolderApi, MonitorBindingApi } from 'tweakpane'
 import {
@@ -289,12 +293,22 @@ export class EventManager extends Plugin {
 
     this.interactionEvent$ = new Subject<InteractionEvent>()
     const eventPipe = merge<(InteractionEvent | undefined)[]>(
-      fromEvent(element, 'mousedown').pipe(map(this.handleMouseEvent)),
-      fromEvent(window, 'mousemove').pipe(map(this.handleMouseEvent)),
-      fromEvent(window, 'mouseup').pipe(map(this.handleMouseEvent)),
+      merge(
+        fromEvent(element, 'mousedown'),
+        fromEvent(window, 'mousemove'),
+        fromEvent(window, 'mouseup'),
+      ).pipe(
+        tap(this.preventDefaultAndPropagation),
+        map(this.handleMouseEvent),
+      ),
+      merge(
+        fromEvent(window, 'keydown'),
+        fromEvent(window, 'keyup'),
+      ).pipe(
+        tap(this.preventDefaultAndPropagation),
+        mergeMap(this.handleKeyEvent),
+      ),
       fromEvent(element, 'wheel').pipe(map(this.handleWheelEvent)),
-      fromEvent(window, 'keydown').pipe(map(this.handleKeyEvent)),
-      fromEvent(window, 'keyup').pipe(map(this.handleKeyEvent)),
     ).pipe(
       filter(Boolean),
     )
@@ -348,6 +362,11 @@ export class EventManager extends Plugin {
     this.keyEventBlade.refresh()
     this.dragBlade.refresh()
     this.doubleClickBlade.refresh()
+  }
+
+  public preventDefaultAndPropagation = (e: DOMMouseEvent | KeyboardEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
   }
 
   public handleMouseEvent = (ev: DOMMouseEvent): InteractionEvent | undefined => {
@@ -464,7 +483,7 @@ export class EventManager extends Plugin {
     return event
   }
 
-  public handleKeyEvent = (ev: KeyboardEvent): InteractionEvent | undefined => {
+  public handleKeyEvent = (ev: KeyboardEvent): Observable<InteractionEvent | undefined> => {
     const event = this.lastEvent.clone()
     const {
       metaKey,
@@ -480,15 +499,37 @@ export class EventManager extends Plugin {
     event.altKey = altKey
     event.metaKey = metaKey
 
+    console.log({ code, type })
+
     if (EventManager.modifierKeys.has(code)) {
       if (isSameSet(event.modifiers, this.lastEvent.modifiers)) {
-        return
+        return of()
+      } else if (type === 'keyup' && ['MetaLeft', 'MetaRight'].includes(code)) {
+        // https://stackoverflow.com/questions/11818637/why-does-javascript-drop-keyup-events-when-the-metakey-is-pressed-on-mac-browser/57153300#57153300
+        let lastKeyup = event.clone()
+        lastKeyup.key = {
+          type: KeyTriggerType.Up,
+          trigger: code
+        }
+        // simulation release keys before MetaKey up
+        const releaseKeys = [...event.downKeys].map(code => {
+          lastKeyup.downKeys.delete(code)
+          const keyup = lastKeyup.clone()
+          keyup.metaKey = true
+          keyup.key = {
+            type: KeyTriggerType.Up,
+            trigger: code
+          }
+          return keyup
+        })
+        return from([... releaseKeys, lastKeyup])
+
       } else {
         event.key = {
           type: type === 'keydown' ? KeyTriggerType.Down : KeyTriggerType.Up,
           trigger: code
         }
-        return event
+        return of(event)
       }
     }
 
@@ -497,7 +538,7 @@ export class EventManager extends Plugin {
     switch (type) {
       case 'keydown': {
         if (event.downKeys.has(code)) {
-          return
+          return of()
         }
         event.downKeys.add(code)
         eventType = KeyTriggerType.Down
@@ -509,7 +550,7 @@ export class EventManager extends Plugin {
         break
       }
       default: {
-        return
+        return of()
       }
     }
 
@@ -518,7 +559,7 @@ export class EventManager extends Plugin {
       trigger: code
     }
 
-    return event
+    return of(event)
   }
 }
 

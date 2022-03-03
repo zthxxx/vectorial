@@ -4,6 +4,7 @@ import {
   TabApi,
   TabPageApi,
 } from 'tweakpane'
+import * as EssentialsPlugin from '@tweakpane/plugin-essentials'
 
 export class Pane {
   public pane: TweakPane
@@ -25,6 +26,8 @@ export class Pane {
 
   constructor() {
     this.pane = new TweakPane()
+
+    this.pane.registerPlugin(EssentialsPlugin);
     this.tab = this.pane.addTab({
       pages: [
         { title: 'Develop' },

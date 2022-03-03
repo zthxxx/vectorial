@@ -10,6 +10,7 @@ import {
 } from './interaction'
 import { Pane } from './pane'
 import { Viewport } from './viewport'
+import { ToolType } from './interaction/toolbox'
 
 
 export const setupViewportPlugins = ({
@@ -59,17 +60,7 @@ export const setupViewportPlugins = ({
   )
 
   plugins.add(
-    SelectTool.name,
-    new SelectTool(viewport.viewport, {
-      pane: pane.misc,
-      toolbox,
-      layerManager,
-      interactionEvent$,
-    }),
-  )
-
-  plugins.add(
-    VectorTool.name,
+    ToolType.VectorTool,
     new VectorTool(viewport.viewport, {
       toolbox,
       canvas: viewport.canvas,
@@ -80,7 +71,17 @@ export const setupViewportPlugins = ({
     }),
   )
 
-  toolbox.switchToolByName(VectorTool.name)
+  plugins.add(
+    ToolType.SelectTool,
+    new SelectTool(viewport.viewport, {
+      pane: pane.misc,
+      toolbox,
+      layerManager,
+      interactionEvent$,
+    }),
+  )
+
+  toolbox.switchToolByName(ToolType.VectorTool)
 }
 
 export const useSetupCanvas = (containerRef: RefObject<HTMLDivElement>) => {
@@ -113,7 +114,7 @@ export const Canvas = () => {
 
   return (
     <div
-      className="w-full h-full"
+      className="w-full h-full overflow-hidden"
       ref={divRef}
     />
   )

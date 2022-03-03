@@ -10,3 +10,5 @@ export enum HandlerType {
   Mirror = 'Mirror',
   Align = 'Align',
 }
+
+export type BooleanOperation = 'unite' | 'intersect' | 'subtract' | 'exclude'

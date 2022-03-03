@@ -1,3 +1,4 @@
+import type paper from 'paper'
 import {
   Point as PaperPoint,
   Segment as PaperSegment,
@@ -15,7 +16,7 @@ export class VectorAnchor {
   public segment: paper.Segment
   public handlerType: HandlerType
   /**
-   * point radius in polygen path
+   * @TODO point radius in polygen path
    */
   public radius: number = 0
 

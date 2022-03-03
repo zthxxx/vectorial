@@ -7,6 +7,12 @@ export const emptyMatrix = (): Matrix => [
   0, 0, 0,
 ]
 
+export const identityMatrix = (): Matrix => [
+  1, 0, 0,
+  0, 1, 0,
+  0, 0, 1,
+]
+
 export const toTranslation = (tx: number, ty: number): Matrix => [
   1, 0, 0,
   0, 1, 0,
@@ -37,16 +43,18 @@ export const toScale = (sx: number, sy: number): Matrix => [
  * └─       ─┘    └─                   ─┘
  * usually, m[2] and m[5] are always 0, m[8] is always 1, for 2D sence
  */
-export const multiply = (left: Matrix, right: Matrix): Matrix => {
-  const result: Matrix = emptyMatrix()
-  for (let row = 0; row < 3; row++) {
-    for (let col = 0; col < 3; col++) {
-      for (let i = 0; i < 3; i++) {
-        result[row * 3 + col] += left[row * 3 + i] * right[i * 3 + col]
+export const multiply = (...matrixes: Matrix[]): Matrix => {
+  return matrixes.reduce((left, right) => {
+    const result: Matrix = emptyMatrix()
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        for (let i = 0; i < 3; i++) {
+          result[row * 3 + col] += left[row * 3 + i] * right[i * 3 + col]
+        }
       }
     }
-  }
-  return result
+    return result
+  })
 }
 
 /**

@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid'
+import { Graphics } from '@pixi/graphics'
 import { CanvasTextureAllocator } from '@pixi-essentials/texture-allocator'
 import type { Path, SVGSceneContext } from '@pixi-essentials/svg'
 import { SVGPathNode, FILL_RULE} from '@pixi-essentials/svg'
@@ -7,8 +8,8 @@ import {
 } from 'vectorial'
 
 // https://github.dev/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGScene.ts#L120-L121
-const atlas = new CanvasTextureAllocator(2048, 2048)
-const sceneContext: SVGSceneContext = {
+export const atlas = new CanvasTextureAllocator(2048, 2048)
+export const sceneContext: SVGSceneContext = {
   atlas,
   disableHrefSVGLoading: true,
   disableRootPopulation: true,
@@ -62,6 +63,7 @@ export class PathNode {
 
   public draw() {
     const { style } = this
+    this.container.position.set(this.path.position.x, this.path.position.y)
     this.clear()
 
     if (
@@ -71,8 +73,6 @@ export class PathNode {
     ) {
       return
     }
-
-    const first = this.path.anchors[0]
 
     if (style.strokeWidth) {
       this.container.lineStyle({
@@ -86,28 +86,10 @@ export class PathNode {
       this.container.beginFill(style.fillColor)
     }
 
-    this.container.moveTo(first.position.x, first.position.y)
-
-    const anchors = this.path.closed
-      ? [...this.path.anchors, first]
-      : this.path.anchors
-
-    // pixi graphics draw bezier curve
-    anchors.reduce((prev, curr) => {
-      this.container.bezierCurveTo(
-        prev.position.x + (prev.outHandler?.x ?? 0),
-        prev.position.y + (prev.outHandler?.y ?? 0),
-        curr.position.x + (curr.inHandler?.x ?? 0),
-        curr.position.y + (curr.inHandler?.y ?? 0),
-        curr.position.x,
-        curr.position.y
-      )
-      return curr
-    })
-
-    if (this.path.closed) {
-      this.container.closePath()
-    }
+    drawPath(
+      this.container,
+      this.path,
+    )
 
     // https://github.com/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGPathNode.ts#L331-L336
     // @ts-ignore
@@ -128,5 +110,35 @@ export class PathNode {
   public destroy() {
     this.path.anchors = []
     this.container.destroy()
+  }
+}
+
+
+export const drawPath = (
+  graphics: Graphics,
+  path: VectorPath,
+) => {
+  const first = path.anchors[0]
+  graphics.moveTo(first.position.x, first.position.y)
+
+  const anchors = path.closed
+    ? [...path.anchors, first]
+    : path.anchors
+
+  // pixi graphics draw bezier curve
+  anchors.reduce((prev, curr) => {
+    graphics.bezierCurveTo(
+      prev.position.x + (prev.outHandler?.x ?? 0),
+      prev.position.y + (prev.outHandler?.y ?? 0),
+      curr.position.x + (curr.inHandler?.x ?? 0),
+      curr.position.y + (curr.inHandler?.y ?? 0),
+      curr.position.x,
+      curr.position.y
+    )
+    return curr
+  })
+
+  if (path.closed) {
+    graphics.closePath()
   }
 }

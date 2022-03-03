@@ -39,7 +39,10 @@ import type {
 import {
   createVectorToolMachine,
 } from './state-machine'
-import type { Toolbox } from '../toolbox'
+import {
+  Toolbox,
+  ToolType,
+} from '../toolbox'
 
 class DrawsMap extends Map<VectorAnchor, AnchorNode> {
   public container: Container
@@ -186,7 +189,7 @@ export class VectorTool extends Plugin {
 
     if (!this.paused) {
       this.pause()
-      this.toolbox.switchToolByName('SelectTool')
+      this.toolbox.switchToolByName(ToolType.SelectTool)
     }
   }
 }
