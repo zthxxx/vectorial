@@ -68,6 +68,7 @@
     "@pixi/ticker": "^6.2.2",
     "@pixi/utils": "^6.2.2",
     "@tweakpane/plugin-essentials": "0.1.4",
+    "fractional-indexing": "3.0.0",
     "localforage": "1.10.0",
     "nanoid": "^3.3.1",
     "pixi-viewport": "^4.34.4",
@@ -75,7 +76,8 @@
     "react-dom": "^17.0.2",
     "rxjs": "^7.5.5",
     "vectorial": "link:../vectorial",
-    "xstate": "^4.30.6"
+    "xstate": "^4.30.6",
+    "yjs": "13.5.32"
   },
   "devDependencies": {
     "@figma/plugin-typings": "1.43.0",

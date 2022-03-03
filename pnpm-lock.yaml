@@ -72,6 +72,7 @@ importers:
       '@types/react-dom': ^17.0.13
       '@vitejs/plugin-react': ^1.2.0
       autoprefixer: ^10.4.2
+      fractional-indexing: 3.0.0
       localforage: 1.10.0
       nanoid: ^3.3.1
       paper: ^0.12.15
@@ -87,6 +88,7 @@ importers:
       vectorial: link:../vectorial
       vite: ^2.8.6
       xstate: ^4.30.6
+      yjs: 13.5.32
     dependencies:
       '@pixi-essentials/svg': 1.1.5_f092e5b9587684893d5139a60e9249b5
       '@pixi-essentials/texture-allocator': 1.0.5_dd156e7df4b7d636c4bab0ee5813c0b9
@@ -126,6 +128,7 @@ importers:
       '@pixi/ticker': 6.2.2_@pixi+settings@6.2.2
       '@pixi/utils': 6.2.2_ad095b7aec4969ed69d5eaf12d12848b
       '@tweakpane/plugin-essentials': 0.1.4_tweakpane@3.0.7
+      fractional-indexing: 3.0.0
       localforage: 1.10.0
       nanoid: 3.3.1
       pixi-viewport: 4.34.4_1fe34640a50dbfa2a2b59919b311a347
@@ -134,6 +137,7 @@ importers:
       rxjs: 7.5.5
       vectorial: link:../vectorial
       xstate: 4.30.6
+      yjs: 13.5.32
     devDependencies:
       '@figma/plugin-typings': 1.43.0
       '@tweakpane/core': 1.0.8
@@ -1591,6 +1595,11 @@ packages:
     resolution: {integrity: sha512-MhLuK+2gUcnZe8ZHlaaINnQLl0xRIGRfcGk2yl8xoQAfHrSsL3rYu6FCmBdkdbhc9EPlwyGHewaRsvwRMJtAlA==}
     dev: true
 
+  /fractional-indexing/3.0.0:
+    resolution: {integrity: sha512-GyiruBNlMJZmkn7xKNlW9qddtco9gA4+7f1ibF2qBoqh6BpeLQWe6aNrlCoSC3MVUv7SvUAPB11l/4lmzR1/Hg==}
+    engines: {node: ^14.13.1 || >=16.0.0}
+    dev: false
+
   /fs.realpath/1.0.0:
     resolution: {integrity: sha1-FQStJSMVjKpA20onh8sBQRmU6k8=}
     dev: true
@@ -1843,6 +1852,10 @@ packages:
     resolution: {integrity: sha512-VaFW53yt8QO61k2WJui0dHf4SlL8lxBofUuUmwBo0ljPk0Drz2TiuDW4jo3wDcv41qy/SxrJ+VAzJ/qYqsmzRw==}
     dev: false
 
+  /isomorphic.js/0.2.5:
+    resolution: {integrity: sha512-PIeMbHqMt4DnUP3MA/Flc0HElYjMXArsw1qwJZcm9sqR8mq3l8NYizFMty0pWwE/tzIGH3EKK5+jes5mAr85yw==}
+    dev: false
+
   /js-tokens/4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
@@ -1867,6 +1880,13 @@ packages:
     dependencies:
       minimist: 1.2.5
     dev: true
+
+  /lib0/0.2.47:
+    resolution: {integrity: sha512-RXprIyaflw7OmFNMpb8HmvDhuRVUFXYCXrmynQN8OGbGevgMx9u6tjQG/yB0dOoDcuB1XXgqFn8Oy3RlKF/Qhg==}
+    engines: {node: '>=12'}
+    dependencies:
+      isomorphic.js: 0.2.5
+    dev: false
 
   /libtess/1.2.2:
     resolution: {integrity: sha1-Fz61KhpXoCOP5I8F0SJFB0SX+Jg=}
@@ -2572,3 +2592,9 @@ packages:
     resolution: {integrity: sha512-r3vXyErRCYJ7wg28yvBY5VSoAF8ZvlcW9/BwUzEtUsjvX/DKs24dIkuwjtuprwJJHsbyUbLApepYTR1BN4uHrg==}
     engines: {node: '>= 6'}
     dev: true
+
+  /yjs/13.5.32:
+    resolution: {integrity: sha512-YU6hAbEGPrvLH1Juq+/7pww+gos3F1kEArVKNOz2wbQLjsfRK9Gcdx5yjQXJO2/bBHO6W9jHNGSNXord+xtIQw==}
+    dependencies:
+      lib0: 0.2.47
+    dev: false
