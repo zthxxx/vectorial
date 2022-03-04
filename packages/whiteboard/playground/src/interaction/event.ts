@@ -499,8 +499,6 @@ export class EventManager extends Plugin {
     event.altKey = altKey
     event.metaKey = metaKey
 
-    console.log({ code, type })
-
     if (EventManager.modifierKeys.has(code)) {
       if (isSameSet(event.modifiers, this.lastEvent.modifiers)) {
         return of()

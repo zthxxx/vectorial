@@ -1,105 +1,97 @@
+import * as Y from 'yjs'
+import { Container } from '@pixi/display'
 import type {
   Vector,
   Matrix,
   Rect,
   VectorPath,
 } from 'vectorial'
+import {
+  NodeType,
+  BaseDataMixin,
+  ChildrenDataMixin,
+  LayoutDataMixin,
+  VectorData,
+  BooleanOperationData,
+  GroupData,
+  FrameData,
+  PageData,
+  DocumentData,
+} from '@vectorial/whiteboard/model'
+import { SharedMap } from '@vectorial/whiteboard/utils'
 
-export enum NodeType {
-  Document = 'Document',
-  Page = 'Page',
-  Frame = 'Frame',
-  Group = 'Group',
-  Vector = 'Vector',
-  BooleanOperation = 'BooleanOperation',
-}
-
-export interface BaseNodeMixin {
-  id: string;
-  name: string;
-  parent?: BaseNodeMixin['id'];
-  type: NodeType;
-  /**
-   * fractional-indexing for order in parent
-   * https://github.com/rocicorp/fractional-indexing
-   */
-  order?: string;
-  /**
-   * for CRDT
-   */
-  removed: boolean;
+export interface BaseNodeMixin<T extends BaseDataMixin = BaseDataMixin> extends BaseDataMixin {
+  binding: SharedMap<T>;
+  container: Container;
   /** need a specify type in inherit */
-  clone(): BaseNodeMixin;
+  clone(): BaseNodeMixin<T>;
 }
 
-export interface ChildrenMixin<T extends BaseNodeMixin = BaseNodeMixin> {
-  /**
-   * order fractional-indexing from small to large
-   */
-  children: T['id'][];
+export interface ChildrenMixin<T extends BaseNodeMixin = BaseNodeMixin> extends
+  ChildrenDataMixin<T> {
+    /** for get child node by id mapping in PageNode */
+    page: PageNode;
 
-  addChild(child: T): void;
-  insertChild(child: T, index: number): void;
-  removeChild(child: T): void;
-  find(predicate: (node: T) => any): T | undefined;
-  filter(predicate: (node: T) => any): T[];
+    addChild(child: T): void;
+    insertChild(index: number, child: T): void;
+    removeChild(child: T): void;
+    findChild(predicate: (node: T) => any): T | undefined;
+    filterChild(predicate: (node: T) => any): T[];
+    forEachChild(predicate: (node: T) => void): void;
+  }
+
+export interface SerializableStaticMixin<
+  Node extends BaseNodeMixin = BaseNodeMixin,
+  Data extends BaseDataMixin = BaseDataMixin,
+> {
+  new(): Node;
+  from(data: Data): Node;
 }
 
-export interface SerializableMixin<T extends BaseNodeMixin = BaseNodeMixin> {
-  serialize(): Object;
-  /** that's static method */
-  from(data: Object): T;
+export interface SerializableMixin<
+  Data extends BaseDataMixin = BaseDataMixin,
+> {
+  serialize(): Data;
 }
 
 export type Transform = Matrix
 export type Mixed = symbol
 
-export interface LayoutMixin {
+export interface LayoutMixin extends LayoutDataMixin {
   /** relative to its parent */
-  relativeTransform: Transform;
-  /** absolute to its PageNode */
-  absoluteTransform: Transform;
-  position: Vector;
-  /** rotate degrees anti-clockwise */
-  rotation: number;
+  readonly relativeTransform: Transform;
+  /** absolute to its PageNode (also scene) */
+  readonly absoluteTransform: Transform;
+  updateAbsoluteTransform(): void;
 
-  width: number;
-  height: number;
-  absoluteBounds: Rect;
+  readonly bounds: Rect;
+  readonly width: number;
+  readonly height: number;
+  readonly center: Vector;
+
+  /** absolute to its PageNode without rotation (also scene) */
+  readonly absoluteBounds: Rect;
+
   resize(width: number, height: number): void;
   rescale(scale: number): void;
-}
 
-export enum BlendMode {
-  PassThrough = 'PassThrough',
-  Normal = 'Normal',
-}
-
-export interface BlendMixin {
-  opacity: number;
-  isMask: boolean;
-  blendMode: BlendMode;
+  hitTest(viewPoint: Vector): boolean;
+  coverTest(viewRect: Rect): boolean;
 }
 
 export interface VectorNode extends
-  BaseNodeMixin, LayoutMixin,
-  SerializableMixin<VectorNode> {
+  BaseNodeMixin<VectorData>,
+  VectorData,
+  SerializableMixin<VectorData> {
   type: NodeType.Vector;
   clone(): VectorNode;
   vectorPath: VectorPath;
 }
 
-export type BooleanOperation = 'unite' | 'intersect' | 'subtract' | 'exclude'
-export enum BooleanOperator {
-  Union = 'union',
-  Intersect = 'intersect',
-  Subtract = 'subtract',
-  Exclude = 'exclude',
-}
-
 export interface BooleanOperationNode extends
-  BaseNodeMixin, LayoutMixin,
-  SerializableMixin<BooleanOperationNode>,
+  BaseNodeMixin<BooleanOperationData>,
+  BooleanOperationData,
+  SerializableMixin<BooleanOperationData>,
   ChildrenMixin<
     | GroupNode
     | VectorNode
@@ -107,30 +99,78 @@ export interface BooleanOperationNode extends
   > {
     type: NodeType.BooleanOperation;
     clone(): BooleanOperationNode;
-
-    booleanOperator: BooleanOperator;
   }
 
 export interface GroupNode extends
-  BaseNodeMixin, LayoutMixin,
+  BaseNodeMixin<GroupNode>,
+  GroupData,
   SerializableMixin<GroupNode>,
-    ChildrenMixin {
+  ChildrenMixin {
     type: NodeType.Group;
     clone(): GroupNode;
   }
 
 export interface FrameNode extends
-  BaseNodeMixin, LayoutMixin,
-  SerializableMixin<FrameNode>,
-    ChildrenMixin {
+  BaseNodeMixin<FrameData>,
+  FrameData,
+  SerializableMixin<FrameData>,
+  ChildrenMixin {
     type: NodeType.Frame;
     clone(): FrameNode;
   }
 
+export type SceneNode =
+  | FrameNode
+  | GroupNode
+  | BooleanOperationNode
+  | VectorNode
+
+export interface NodeManagerMixin {
+  /** only add to node map */
+  add(node: BaseNodeMixin): void;
+  get(id?: string): BaseNodeMixin | undefined;
+  delete(id: string): void;
+  insert(
+    /** an new node not exist in page */
+    node: BaseNodeMixin,
+    parent: ChildrenMixin,
+    /** fractional-indexing of parent's child, none to insert at top */
+    after?: string,
+  ): void;
+  relocate(
+    /** a existed node to be reorder */
+    node: BaseNodeMixin,
+    parent: ChildrenMixin,
+    /** fractional-indexing of parent's child, none to insert at top */
+    after?: string,
+  ): void;
+  find(predicate: (node: BaseNodeMixin) => any): BaseNodeMixin | undefined;
+  filter(predicate: (node: BaseNodeMixin) => any): BaseNodeMixin[];
+}
+
 export interface PageNode extends
-  BaseNodeMixin, SerializableMixin<PageNode>,
-  ChildrenMixin {
+  BaseNodeMixin<PageData>,
+  PageData,
+  SerializableMixin<PageData>,
+  ChildrenMixin,
+  NodeManagerMixin {
     type: NodeType.Page;
+    nodes: { [key: SceneNode['id']]: SceneNode };
     clone(): PageNode;
   }
 
+export interface DocumentNode extends
+  BaseNodeMixin<DocumentData>,
+  DocumentData,
+  SerializableMixin<DocumentData>,
+  /** @TODO implement insert / relocate */
+  Pick<NodeManagerMixin, 'add' | 'get' | 'delete'> {
+    type: NodeType.Document;
+    pages: { [key: PageNode['id']]: PageNode };
+    clone(): DocumentNode;
+  }
+
+
+export type Constructor<T = {}> = new (...args: any[]) => T;
+
+export class EmptyMixin {}

@@ -23,7 +23,7 @@
   },
   "main": "es",
   "module": "es",
-  "types": "es",
+  "types": "src",
   "files": [
     "README.md",
     "src",

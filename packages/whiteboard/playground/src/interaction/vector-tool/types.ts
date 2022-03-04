@@ -12,7 +12,7 @@ import type {
   VectorPath,
   VectorAnchor,
   Vector,
-  PathHitResult,
+  HitResult,
 } from 'vectorial'
 import type {
   AnchorNode,
@@ -28,7 +28,7 @@ export type {
   MouseEvent,
   KeyEvent,
 }
-export type StateMouseEvent = EventObject & { event: MouseEvent; hit?: PathHitResult; }
+export type StateMouseEvent = EventObject & { event: MouseEvent; hit?: HitResult; }
 export type StateKeyEvent = EventObject & { event: KeyEvent }
 
 export type StateEvent = EventObject | StateMouseEvent | StateKeyEvent
@@ -50,7 +50,7 @@ export interface StateContext {
    * selected anchors or handler,
    * only anchors could be multi-selected
    */
-  selected: PathHitResult[];
+  selected: HitResult[];
 
   /**
    * mouse drag begin position

@@ -13,7 +13,7 @@ import {
   sub,
   add,
   PathHitType,
-  PathHitResult,
+  HitResult,
   VectorAnchor,
 } from 'vectorial'
 import type {
@@ -88,7 +88,7 @@ export const adjustingAdjust: StateAction = (context, { event }: StateMouseEvent
           selected.splice(0, selected.length, {
             ...hitAnchor,
             type: PathHitType.OutHandler,
-          } as PathHitResult)
+          } as HitResult)
 
         changes.push([anchorNode, { anchor: 'normal', outHandler: 'selected' }])
         }

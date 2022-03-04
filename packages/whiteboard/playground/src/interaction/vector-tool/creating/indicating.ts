@@ -11,7 +11,7 @@ import {
 } from 'rxjs/operators'
 import {
   PathHitType,
-  PathHitResult,
+  HitResult,
 } from 'vectorial'
 import {
   icon,
@@ -55,7 +55,7 @@ export const enterIndicating: StateAction = (context) => {
           isMove,
           isClickDown,
         } = normalizeMouseEvent(event, vectorPath, anchorNodes)
-        const hit: PathHitResult | undefined = handlerHit ?? anchorHit ?? pathHit
+        const hit: HitResult | undefined = handlerHit ?? anchorHit ?? pathHit
         const isReverse = context.creatingBase !== vectorPath.anchors.at(-1)
         const closeTarget = isReverse ? vectorPath.anchors.at(-1) : vectorPath.anchors.at(0)
 

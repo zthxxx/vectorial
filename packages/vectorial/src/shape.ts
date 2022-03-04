@@ -1,36 +1,71 @@
 import paper from 'paper'
-import { VectorPath, PathHitResult, PathHitType } from './path'
+import {
+  VectorPath,
+  PathData,
+} from './path'
 import { VectorAnchor } from './anchor'
 import {
   Rect,
   Vector,
   HandlerType,
-  BooleanOperation,
+  BooleanOperator,
+  PathHitType,
+  PathHitResult,
 } from './types'
+import {
+  emptyVector,
+} from './math'
+import {
+  AreaMixin,
+  AreaHitMixin,
+  TransformMixin,
+} from './mixin'
 
+
+export interface ShapeData {
+  type: 'Shape';
+  position: Vector;
+  rotation: number;
+  children: (PathData | ShapeData)[];
+  booleanOperator: BooleanOperator;
+}
 
 export interface VectorShapeProps {
   /**
    * paths in order (top -> bottom)
    */
   children: (VectorPath | VectorShape)[];
-  booleanOperation: BooleanOperation;
+  booleanOperator: BooleanOperator;
+  position?: ShapeData['position'];
+  rotation?: ShapeData['rotation'];
 }
 
 /**
  * composed shape cannot be directly edit
  */
-export class VectorShape {
+export class VectorShape extends TransformMixin(AreaMixin()) implements AreaHitMixin {
+  public type = 'Shape'
   public children: (VectorPath | VectorShape)[] = []
-  public booleanOperation: BooleanOperation = 'unite'
+  public booleanOperator: BooleanOperator
   public _compoundPath: paper.CompoundPath | paper.Path | undefined
 
   constructor({
     children,
-    booleanOperation,
+    booleanOperator,
+    position = emptyVector(),
+    rotation = 0,
   }: VectorShapeProps) {
+    super()
     this.children = children
-    this.booleanOperation = booleanOperation
+    this.booleanOperator = booleanOperator
+
+    this._position = position
+    this._rotation = rotation
+    this.updateRelativeTransform()
+  }
+
+  public get bounds(): Rect {
+    return this.compoundPath.bounds
   }
 
   get composed(): boolean {
@@ -39,12 +74,15 @@ export class VectorShape {
 
   get compoundPath(): paper.CompoundPath | paper.Path {
     if (!this._compoundPath) {
+      const operator: 'unite' | 'intersect' | 'subtract' | 'exclude' =
+        this.booleanOperator === BooleanOperator.Union ? 'unite' : this.booleanOperator
+
       this._compoundPath = this.children
         .map(item => (item instanceof VectorShape)
           ? item.compoundPath
           : item.path
         )
-        .reduceRight((bottom, top) => bottom[this.booleanOperation](top) as paper.CompoundPath)
+        .reduceRight((bottom, top) => bottom[operator](top) as paper.CompoundPath)
     }
     return this._compoundPath
   }
@@ -71,26 +109,9 @@ export class VectorShape {
     return compound.children.map(toVectorPath)
   }
 
-  public get bounds(): Rect {
-    return this.compoundPath.bounds
-  }
 
-  public get width(): number {
-    return this.bounds.width
-  }
-
-  public get height(): number {
-    return this.bounds.height
-  }
-
-  public clone(): VectorShape {
-    return new VectorShape({
-      booleanOperation: this.booleanOperation,
-      children: this.children.map(path => path.clone()),
-    })
-  }
-
-  public hitPathTest(point: Vector): PathHitResult | undefined {
+  public hitPathTest(viewPoint: Vector): PathHitResult | undefined {
+    const point = this.toLocalPoint(viewPoint)
     const compound = this.compoundPath
 
     const hitResult: paper.HitResult | undefined = compound.hitTest(
@@ -98,17 +119,79 @@ export class VectorShape {
       {
         stroke: true,
         segments: false,
-        // BUG with paperjs hit handles
+        handles: false,
+        fill: false,
+      },
+    )
+    if (!hitResult) return
+
+    if (hitResult.type === 'stroke') {
+      /**
+       * don't get location detail of hit curve in VectorShape
+       */
+      return {
+        type: PathHitType.Path,
+        point: new VectorAnchor(point),
+      } as any as PathHitResult
+    }
+  }
+
+  public hitAreaTest(viewPoint: Vector): boolean {
+    const point = this.toLocalPoint(viewPoint)
+    const compound = this.compoundPath
+
+    const hitResult: paper.HitResult | undefined = compound.hitTest(
+      new paper.Point(point.x, point.y),
+      {
+        stroke: true,
+        segments: false,
         handles: false,
         fill: false,
       },
     )
 
-    if (hitResult) {
-      return  {
-        type: PathHitType.Compound,
-      }
+    return Boolean(hitResult)
+  }
+
+  public hitBoundsTest(viewPoint: Vector): boolean {
+    const point = this.toLocalPoint(viewPoint)
+    const { x, y, width, height } = this.bounds
+    return (
+      x <= point.x
+      && point.x <= x + width
+      && y <= point.y
+      && point.y <= y + height
+    )
+  }
+
+  public clone(): VectorShape {
+    return new VectorShape({
+      booleanOperator: this.booleanOperator,
+      children: this.children.map(path => path.clone()),
+    })
+  }
+
+  public serialize(): ShapeData {
+    return {
+      type: 'Shape',
+      children: this.children.map(path => path.serialize()),
+      booleanOperator: this.booleanOperator,
+      position: { ...this.position },
+      rotation: this.rotation,
     }
+  }
+
+  static from(shape: ShapeData): VectorShape {
+    return new VectorShape({
+      booleanOperator: shape.booleanOperator,
+      children: shape.children.map(path => (
+        path.type === 'Shape'
+          ? VectorShape.from(path)
+          : VectorPath.from(path)
+      )),
+      position: { ...shape.position },
+      rotation: shape.rotation,
+    })
   }
 }
 

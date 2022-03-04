@@ -49,7 +49,7 @@ export const multiply = (...matrixes: Matrix[]): Matrix => {
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {
         for (let i = 0; i < 3; i++) {
-          result[row * 3][col] += left[row * 3][i] * right[i * 3][col]
+          result[row][col] += left[row][i] * right[i][col]
         }
       }
     }
@@ -90,4 +90,54 @@ export const applyInverse = (v: Vector, m: Matrix): Vector => {
     x: (m[1][1] * id * v.x) + (-m[1][0] * id * v.y) + (((m[2][1] * m[1][0]) - (m[2][0] * m[1][1])) * id),
     y: (m[0][0] * id * v.y) + (-m[0][1] * id * v.x) + (((-m[2][1] * m[0][0]) + (m[2][0] * m[0][1])) * id)
   }
+}
+
+export const getInverseMatrix = (m: Matrix): Matrix => {
+  const det = (m[0][0] * m[1][1]) - (m[1][0] * m[0][1])
+  const id = 1 / det
+  return [
+    [m[1][1] * id, -m[1][0] * id, 0],
+    [-m[0][1] * id, m[0][0] * id, 0],
+    [((m[2][1] * m[1][0]) - (m[2][0] * m[1][1])) * id, ((-m[2][1] * m[0][0]) + (m[2][0] * m[0][1])) * id, 1],
+  ]
+}
+
+export const decomposeMatrix = (m: Matrix): {
+  translation: Vector,
+  rotation: number,
+  scale: Vector,
+} => {
+  const det = m[0][0] * m[1][1] - m[1][0] * m[0][1]
+  const r = Math.sqrt(m[0][0] * m[0][0] + m[0][1] * m[0][1])
+  const translation: Vector = { x: m[2][0], y: m[2][1] }
+
+  if (r === 0) {
+    return {
+      translation,
+      rotation: 0,
+      scale: { x: 1, y: 1 },
+    }
+  }
+
+  const radian = Math.acos(m[0][0] / r) * (m[0][1] < 0 ? -1 : 1)
+  const scale = {
+    x: r,
+    y: det / r,
+  }
+
+  return {
+    translation,
+    rotation: radian * 180 / Math.PI,
+    scale,
+  }
+}
+
+export const transposeMatrix = (m: Matrix): Matrix => {
+  const result: Matrix = emptyMatrix()
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 3; col++) {
+      result[row][col] = m[col][row]
+    }
+  }
+  return result
 }

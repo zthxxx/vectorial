@@ -3,12 +3,15 @@
   "compilerOptions": {
     "rootDir": "src",
     "baseUrl": ".",
+    "jsx": "react-jsx",
+    "jsxImportSource": "@emotion/react",
+    "types": ["vite-plugin-svgr/client"],
     "paths": {
-      "vectorial": ["../vectorial/src"],
+      "@vectorial/whiteboard/*": ["src/*"],
     },
   },
   "include": [
     "src",
     "vite-env.d.ts",
-  ]
+  ],
 }

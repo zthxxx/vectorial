@@ -11,7 +11,7 @@ import {
 import {
   add,
   PathHitType,
-  PathHitResult,
+  HitResult,
 } from 'vectorial'
 import {
   AnchorNode,
@@ -51,7 +51,7 @@ export const enterSelecting: StateAction = ({
           isClickDown,
         } = normalizeMouseEvent(event, vectorPath, anchorNodes)
 
-        const hit: PathHitResult | undefined = handlerHit ?? anchorHit ?? pathHit
+        const hit: HitResult | undefined = handlerHit ?? anchorHit ?? pathHit
 
         if (isClickDown) {
           if (!hit) {
@@ -106,7 +106,7 @@ export const selectingSelect: StateAction = (context, stateEvent: StateMouseEven
 
   switch (hit.type) {
     case (PathHitType.Anchor): {
-      let anchors: PathHitResult[] = []
+      let anchors: HitResult[] = []
       const isSelected = anchorNodes.get(hit.point)!.style?.anchor === 'selected'
       context.dragBase = { ...hit.point.position }
 

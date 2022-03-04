@@ -1,1 +1,5 @@
-export * from './types'
+// export * from './types'
+export * from './mixin'
+export * from './document'
+export * from './page'
+export * from './frame'

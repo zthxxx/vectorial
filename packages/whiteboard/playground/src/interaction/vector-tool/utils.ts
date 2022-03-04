@@ -8,7 +8,7 @@ import {
   Vector,
   VectorPath,
   PathHitType,
-  PathHitResult,
+  HitResult,
   HandlerType,
 } from 'vectorial'
 import {
@@ -37,7 +37,7 @@ export const getHandlerHit = (
   { mouse }: MouseEvent,
   vectorPath?: VectorPath,
   anchorNodes?: StateContext['anchorNodes'],
-): PathHitResult | undefined => {
+): HitResult | undefined => {
   if (!vectorPath || !anchorNodes) return
   const index = vectorPath.anchors.findIndex(anchor => {
     const anchorNode = anchorNodes.get(anchor)!
@@ -69,9 +69,9 @@ export const normalizeMouseEvent = (
   /** anchorNodes for anchors'handlers hit test */
   anchorNodes?: StateContext['anchorNodes'],
 ): {
-  handlerHit?: PathHitResult;
-  anchorHit?: PathHitResult;
-  pathHit?: PathHitResult;
+  handlerHit?: HitResult;
+  anchorHit?: HitResult;
+  pathHit?: HitResult;
   isMove: boolean;
   isClickDown: boolean;
   isClickUp: boolean;
@@ -141,7 +141,7 @@ export const getSelectedStyleChanges = (
 /**
  * @TODO: need a more precise algorithm
  */
-export const toggleAnchorHandler = (anchorHit: PathHitResult & { type: PathHitType.Anchor }) => {
+export const toggleAnchorHandler = (anchorHit: HitResult & { type: PathHitType.Anchor }) => {
   const anchor = anchorHit.point
   const [prev, next] = anchorHit.ends
   const direction = sub(
@@ -158,7 +158,7 @@ export const toggleAnchorHandler = (anchorHit: PathHitResult & { type: PathHitTy
 }
 
 export const setAnchorHandlerOnPath = (
-  pathHit: PathHitResult & { type: PathHitType.Stroke },
+  pathHit: HitResult & { type: PathHitType.Stroke },
 ) => {
   const {
     point: anchor,

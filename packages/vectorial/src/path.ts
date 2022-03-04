@@ -1,75 +1,48 @@
 import paper from 'paper'
-import type { Vector, Matrix, Rect } from './types'
-import { VectorAnchor } from './anchor'
+import type { Vector, Rect } from './types'
+import { VectorAnchor, AnchorData } from './anchor'
 import {
   add,
-  emptyVector,
-  toTranslation,
-  toRotation,
-  toScale,
-  multiply,
-  identityMatrix,
-  applyInverse,
-  applyMatrix,
 } from './math'
+import {
+  AreaMixin,
+  AreaHitMixin,
+  TransformMixin,
+} from './mixin'
+import {
+  AnchorHitResult,
+  PathHitResult,
+  PathHitType,
+} from './types'
 
-
-export enum PathHitType {
-  Anchor = 'Anchor',
-  InHandler = 'InHandler',
-  OutHandler = 'OutHandler',
-  Stroke = 'Stroke',
-  Fill = 'Fill',
-  Compound = 'Compound',
-}
-
-export type PathHitResult =
-  | {
-    type: PathHitType.Anchor | PathHitType.InHandler | PathHitType.OutHandler;
-    point: VectorAnchor;
-    ends: [VectorAnchor, VectorAnchor];
-  }
-  | {
-    type: PathHitType.Stroke;
-    point: VectorAnchor;
-    ends: [VectorAnchor, VectorAnchor];
-    /** bezier curve parameter t, range: 0-1*/
-    t: number;
-    curveIndex: number;
-  }
-  | {
-    type: PathHitType.Fill;
-  }
-  | {
-    type: PathHitType.Compound;
-  }
-
-export class VectorPathProps {
-  anchors?: VectorAnchor[];
-  closed?: boolean;
-  position?: Vector;
-  /** degrees */
-  rotation?: number;
-  resizing?: Vector;
+export interface PathData {
+  type: 'Path';
+  anchors: AnchorData[];
+  closed: boolean;
+  position: Vector;
   /**
-   * partiy of path area used for evenodd fill rule, of which,
+   * euler rotation in degree,
+   * rotation point is the center of the self
+   */
+  rotation: number;
+  /**
+   * parity of path area used for evenodd fill rule, of which,
    *    1: odd (fill)
    *    0: even (not fill)
    */
-  parity?: 1 | 0;
+  parity: 1 | 0;
 }
 
-export class VectorPath {
-  public _position: Vector;
-  /**
-   * euler rotation degree,
-   * rotation point is the center of the self
-   */
-  public _rotation: number;
-  /**
-   * resizing scale from left-top corner
-   */
-  public _resizing: Vector;
+export class VectorPathProps {
+  anchors?: VectorAnchor[];
+  closed?: PathData['closed'];
+  position?: PathData['position'];
+  rotation?: PathData['rotation'];
+  parity?: PathData['parity'];
+}
+
+export class VectorPath extends TransformMixin(AreaMixin()) implements AreaHitMixin {
+  public type = 'Path'
   public path: paper.Path
 
   /**
@@ -77,29 +50,21 @@ export class VectorPath {
    *    1: odd (fill)
    *    0: even (not fill)
    */
-  public parity?: 1 | 0;
+  public parity: 1 | 0;
   public segmentMap: Map<paper.Segment, VectorAnchor>
   private _anchors: VectorAnchor[] = []
   private _closed: boolean = false
-  private _relativeMatrix: Matrix
 
   constructor({
     anchors = [],
     closed = false,
-    position = emptyVector(),
-    rotation = 0,
-    resizing = { x: 1, y: 1 },
     parity = 1,
   }: VectorPathProps = {}) {
+    super()
+
     this._anchors = anchors
     this._closed = closed
     this.parity = parity
-
-    this._relativeMatrix = identityMatrix()
-
-    this._position = position
-    this._rotation = rotation
-    this._resizing = resizing
 
     this.path = new paper.Path({
       segments: anchors.map(anchor => anchor.segment),
@@ -136,59 +101,8 @@ export class VectorPath {
     return this.path.bounds
   }
 
-  public get center(): Vector {
-    return this.path.bounds.center
-  }
-
-  public get width(): number {
-    return this.bounds.width
-  }
-
-  public get height(): number {
-    return this.bounds.height
-  }
-
   public get anchors(): Array<VectorAnchor> {
     return this._anchors
-  }
-
-  public get relativeMatrix(): Matrix {
-    return this._relativeMatrix
-  }
-
-  private updateRelativeMatrix() {
-    this._relativeMatrix = multiply(
-      toTranslation(this.position.x, this.position.y),
-      toRotation(this.rotation),
-      toScale(this.resizing.x, this.resizing.y),
-    )
-  }
-
-  public get position(): Vector {
-    return this._position
-  }
-
-  public set position({ x, y }: Vector) {
-    this._position = { x, y }
-    this.updateRelativeMatrix()
-  }
-
-  public get rotation(): number {
-    return this._rotation
-  }
-
-  public set rotation(degree: number) {
-    this._rotation = degree
-    this.updateRelativeMatrix()
-  }
-
-  public get resizing(): Vector {
-    return this._resizing
-  }
-
-  public set resizing({ x, y }: Vector) {
-    this._resizing = { x, y }
-    this.updateRelativeMatrix()
   }
 
   public addAnchor(anchor: VectorAnchor) {
@@ -225,35 +139,7 @@ export class VectorPath {
     this._anchors = []
   }
 
-  public clone(): VectorPath {
-    return new VectorPath({
-      anchors: this.anchors,
-      closed: this.closed,
-      position: { ...this.position },
-      resizing: { ...this.resizing },
-      rotation: this.rotation,
-      parity: this.parity,
-    })
-  }
-
-  /**
-   * @param point - parent coordinate position
-   * @returns point - local coordinate position
-   */
-  public toLocalPoint(point: Vector): Vector {
-    return applyInverse(point, this.relativeMatrix)
-  }
-
-
-  /**
-   * @param point - local coordinate position
-   * @returns point - parent view coordinate position
-   */
-   public toParentPoint(point: Vector): Vector {
-    return applyMatrix(point, this.relativeMatrix)
-  }
-
-  public hitAnchorTest(viewPoint: Vector): PathHitResult | undefined {
+  public hitAnchorTest(viewPoint: Vector): AnchorHitResult | undefined {
     const point = this.toLocalPoint(viewPoint)
     const { closed } = this
     const first = this.anchors.at(0)
@@ -300,7 +186,7 @@ export class VectorPath {
     if (hitResult.type === 'stroke') {
       const { point, location } = hitResult
       return {
-        type: PathHitType.Stroke,
+        type: PathHitType.Path,
         point: new VectorAnchor(point),
         ends: [
           this.anchors[location.index],
@@ -312,11 +198,8 @@ export class VectorPath {
     }
   }
 
-  public hitFillTest(viewPoint: Vector):
-   | (PathHitResult & { type: PathHitType.Fill })
-   | undefined
-  {
-    if (!this.closed) return
+  public hitAreaTest(viewPoint: Vector): boolean {
+    if (!this.closed) return false
 
     const point = this.toLocalPoint(viewPoint)
 
@@ -329,13 +212,20 @@ export class VectorPath {
         fill: true,
       },
     )
-    if (!hitResult) return
+    if (!hitResult) return false
 
-    if (hitResult.type === 'fill') {
-      return {
-        type: PathHitType.Fill,
-      }
-    }
+    return hitResult.type === 'fill'
+  }
+
+  public hitBoundsTest(viewPoint: Vector): boolean {
+    const point = this.toLocalPoint(viewPoint)
+    const { x, y, width, height } = this.bounds
+    return (
+      x <= point.x
+      && point.x <= x + width
+      && y <= point.y
+      && point.y <= y + height
+    )
   }
 
   /**
@@ -346,6 +236,37 @@ export class VectorPath {
     // this.position = add(this.position, delta)
     this.anchors.forEach(anchor => {
       anchor.position = add(anchor.position, delta)
+    })
+  }
+
+  public clone(): VectorPath {
+    return new VectorPath({
+      anchors: this.anchors,
+      closed: this.closed,
+      position: { ...this.position },
+      rotation: this.rotation,
+      parity: this.parity,
+    })
+  }
+
+  public serialize(): PathData {
+    return {
+      type: 'Path',
+      anchors: this.anchors.map(anchor => anchor.serialize()),
+      closed: this.closed,
+      position: { ...this.position },
+      rotation: this.rotation,
+      parity: this.parity,
+    }
+  }
+
+  static from(path: PathData): VectorPath {
+    return new VectorPath({
+      anchors: path.anchors.map(anchor => VectorAnchor.from(anchor)),
+      closed: path.closed,
+      position: { ...path.position },
+      rotation: path.rotation,
+      parity: path.parity,
     })
   }
 }

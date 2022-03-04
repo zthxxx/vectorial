@@ -28,7 +28,7 @@ export const findHitPath = (
   layerManager: LayerManager,
   point: Vector,
 ): PathNode | undefined => layerManager.find(
-  node => Boolean(node.path.hitFillTest(point) || node.path.hitPathTest(point)),
+  node => Boolean(node.path.hitAreaTest(point) || node.path.hitPathTest(point)),
 )
 
 export const createEventGuard = (entry: GuardAction, exit?: StateAction): {

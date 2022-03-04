@@ -11,7 +11,7 @@ import {
 import {
   HandlerType,
   PathHitType,
-  PathHitResult,
+  HitResult,
 } from 'vectorial'
 
 import type {
@@ -107,7 +107,7 @@ export const confirmingUnselect: StateAction = ({
 
   const isMultiSelect = event.shiftKey
 
-  const anchors: PathHitResult[] = isMultiSelect
+  const anchors: HitResult[] = isMultiSelect
     ? selected.filter(({ point }) => point !== hit.point)
     : [hit]
 
@@ -148,7 +148,7 @@ export const confirmingToggleHander: StateAction = ({
       if (anchor.inHandler && anchor.outHandler) {
         anchor.handlerType = HandlerType.None
       } else (
-        toggleAnchorHandler(hit as PathHitResult & { type: PathHitType.Anchor })
+        toggleAnchorHandler(hit as HitResult & { type: PathHitType.Anchor })
       )
       selected.splice(0, selected.length, hit)
       break
