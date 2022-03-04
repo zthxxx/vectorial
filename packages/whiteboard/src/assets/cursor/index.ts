@@ -1,2 +1,9 @@
-export { default as pen } from './pen.svg?url'
-export { default as arrow } from './arrow.svg?url'
+
+export {
+  default as arrow,
+  ReactComponent as Arrow,
+} from './arrow.svg'
+export {
+  default as pen,
+  ReactComponent as Pen,
+} from './pen.svg'

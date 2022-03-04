@@ -16,7 +16,11 @@ import {
   sub,
   len,
   Vector,
+  applyInverse,
 } from 'vectorial'
+import type {
+  Scene,
+} from './scene'
 
 
 type DOMMouseEvent = globalThis.MouseEvent
@@ -43,11 +47,15 @@ export type ModifierKey = 'Ctrl' | 'Alt' | 'Shift' | 'Meta'
 
 export interface EventKeyMatch {
   modifiers?: ModifierKey[];
+  /**
+   * keyboard pressed keys without modifiers
+   * https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code/code_values
+   */
   keys?: string[];
   mouse?: MouseButton[];
 }
 
-export class InteractionEvent {
+export class InteractEvent {
   /**
    * pressed modifier keys
    */
@@ -62,17 +70,11 @@ export class InteractionEvent {
    */
   public downMouse: Set<MouseButton>
 
-  public key?: {
-    /**
-     * key event trigger type
-     */
-    type: KeyTriggerType;
-    /**
-     * keyboard press/release key code
-     * https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code/code_values
-     */
-    trigger: string;
-  }
+  /**
+   * last mouse position
+   * useful when trigger key event or wheel
+   */
+  public lastMouse?: Vector
 
   public mouse?: {
     /**
@@ -89,6 +91,18 @@ export class InteractionEvent {
      * mouse event (include release) trigger button
      */
     trigger: MouseButton;
+  }
+
+  public key?: {
+    /**
+     * key event trigger type
+     */
+    type: KeyTriggerType;
+    /**
+     * keyboard press/release key code
+     * https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code/code_values
+     */
+    trigger: string;
   }
 
   /**
@@ -171,11 +185,14 @@ export class InteractionEvent {
     }
   }
 
-  public clone(): InteractionEvent {
-    const event = new InteractionEvent()
+  public clone(): InteractEvent {
+    const event = new InteractEvent()
     event.modifiers = new Set(this.modifiers)
     event.downKeys = new Set(this.downKeys)
     event.downMouse = new Set(this.downMouse)
+    if (this.lastMouse) {
+      event.lastMouse = { ...this.lastMouse }
+    }
     event.isDoubleClick = this.isDoubleClick
     event.dragging = this.dragging
     return event
@@ -203,17 +220,22 @@ export class InteractionEvent {
 }
 
 
-export type MouseEvent = InteractionEvent & { mouse: NonNullable<InteractionEvent['mouse']> }
-export type KeyEvent = InteractionEvent & { key: NonNullable<InteractionEvent['key']> }
+export type MouseEvent = InteractEvent & { mouse: NonNullable<InteractEvent['mouse']> }
+export type KeyEvent = InteractEvent & { key: NonNullable<InteractEvent['key']> }
 
 
 export interface EventManagerProps {
   element: HTMLElement;
+  scene: Scene;
 }
 
 export class EventManager {
-  private _lastEvent?: InteractionEvent
-  public interactionEvent$: Subject<InteractionEvent>
+  private _lastEvent?: InteractEvent
+  /**
+   * all mouse position relative inside scene
+   */
+  public scene: Scene;
+  public interactEvent$: Subject<InteractEvent>
 
   /**
    * mouse drag begin position,
@@ -236,9 +258,11 @@ export class EventManager {
     'MetaRight',
   ])
 
-  constructor({ element }: EventManagerProps) {
-    this.interactionEvent$ = new Subject<InteractionEvent>()
-    const eventPipe = merge<(InteractionEvent | undefined)[]>(
+  constructor({ element, scene }: EventManagerProps) {
+    this.scene = scene
+    this.interactEvent$ = new Subject<InteractEvent>()
+
+    const eventPipe = merge<(InteractEvent | undefined)[]>(
       merge(
         fromEvent(element, 'mousedown'),
         fromEvent(window, 'mousemove'),
@@ -255,31 +279,34 @@ export class EventManager {
         mergeMap(this.handleKeyEvent),
       ),
       fromEvent(window, 'blur').pipe(mergeMap(this.handleBlurEvent)),
-      fromEvent(element, 'wheel').pipe(map(this.handleWheelEvent)),
+      fromEvent(element, 'wheel').pipe(
+        tap(this.preventDefaultAndPropagation),
+        map(this.handleWheelEvent)
+      ),
     ).pipe(
       filter(Boolean),
     )
 
-    eventPipe.subscribe(this.interactionEvent$)
+    eventPipe.subscribe(this.interactEvent$)
 
-    this.interactionEvent$
+    this.interactEvent$
       .pipe(
         tap(this.setLastEvent),
       ).subscribe()
   }
 
-  public get lastEvent(): InteractionEvent {
+  public get lastEvent(): InteractEvent {
     if (!this._lastEvent) {
-      this._lastEvent = new InteractionEvent()
+      this._lastEvent = new InteractEvent()
     }
     return this._lastEvent
   }
 
-  public set lastEvent(event: InteractionEvent) {
+  public set lastEvent(event: InteractEvent) {
     this._lastEvent = event
   }
 
-  private setLastEvent = (event: InteractionEvent) => {
+  private setLastEvent = (event: InteractEvent) => {
     this.lastEvent = event
   }
 
@@ -288,7 +315,7 @@ export class EventManager {
     e.preventDefault()
   }
 
-  public handleMouseEvent = (ev: DOMMouseEvent): InteractionEvent | undefined => {
+  public handleMouseEvent = (ev: DOMMouseEvent): InteractEvent | undefined => {
     const event = this.lastEvent.clone()
     const {
       x,
@@ -300,8 +327,9 @@ export class EventManager {
       button,
       type,
     } = ev
-    const position: Vector = { x, y }
+    const position: Vector = applyInverse({ x, y }, this.scene.viewMatrix)
 
+    event.lastMouse = position
     event.shiftKey = shiftKey
     event.ctrlKey = ctrlKey
     event.altKey = altKey
@@ -368,8 +396,7 @@ export class EventManager {
     }
 
     event.mouse = {
-      x,
-      y,
+      ...position,
       type: eventType,
       trigger: button,
     }
@@ -377,9 +404,12 @@ export class EventManager {
     return event
   }
 
-  public handleWheelEvent = (ev: WheelEvent): InteractionEvent => {
+  public handleWheelEvent = (ev: WheelEvent): InteractEvent => {
     const event = this.lastEvent.clone()
+    const { scene } = this
     const {
+      x,
+      y,
       deltaX,
       deltaY,
       metaKey,
@@ -388,6 +418,7 @@ export class EventManager {
       ctrlKey,
     } = ev
 
+    event.lastMouse = applyInverse({ x, y }, scene.viewMatrix)
     event.shiftKey = shiftKey
     event.ctrlKey = ctrlKey
     event.altKey = altKey
@@ -402,7 +433,7 @@ export class EventManager {
     return event
   }
 
-  public handleKeyEvent = (ev: KeyboardEvent): Observable<InteractionEvent | undefined> => {
+  public handleKeyEvent = (ev: KeyboardEvent): Observable<InteractEvent | undefined> => {
     const event = this.lastEvent.clone()
     const {
       metaKey,
@@ -417,7 +448,6 @@ export class EventManager {
     event.ctrlKey = ctrlKey
     event.altKey = altKey
     event.metaKey = metaKey
-
 
     if (EventManager.modifierKeys.has(code)) {
       if (isSameSet(event.modifiers, this.lastEvent.modifiers)) {
@@ -480,12 +510,13 @@ export class EventManager {
     return of(event)
   }
 
-  public handleBlurEvent = (): Observable<InteractionEvent | undefined> => {
-    const releaseKeys: InteractionEvent[] = []
+  public handleBlurEvent = (): Observable<InteractEvent | undefined> => {
+    const releaseKeys: InteractEvent[] = []
     const event = this.lastEvent.clone()
 
     event.isDoubleClick = false
     event.dragging = undefined
+    this.dragBase = undefined
 
     if (event.downMouse.size) {
       event.downMouse.forEach(button => {

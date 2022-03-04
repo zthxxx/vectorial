@@ -1,6 +1,7 @@
 import {
   Vector,
   Matrix,
+  Rect,
   PathData,
   BooleanOperator,
 } from 'vectorial'
@@ -171,9 +172,10 @@ export interface User {
 }
 
 export interface UserAwareness extends User {
-  color: string;
-  position: Vector;
-  selection: SceneNodeData['id'];
+  pageId: string;
+  position?: Vector;
+  selection?: Rect;
+  selected?: SceneNodeData['id'][];
 }
 
 export type Store = {
@@ -182,7 +184,7 @@ export type Store = {
   currentPageId: string | null;
 }
 
-export type Documents = { [id: string]: DocumentData }
+export type Documents = { [id: DocumentData['id']]: DocumentData }
 
 export type LocalStore = YMap<Store>
 export type SharedDocuments = SharedMap<Documents>

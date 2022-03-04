@@ -75,10 +75,7 @@ export class PageNode extends NodeManagerMixin(ChildrenMixin(BaseNodeMixin())) i
       }
     })
 
-    children.forEach(id => {
-      const child = this.get(id)!
-      this.addChild(child)
-    })
+    this.resumeChildren(children)
   }
 
   clone(): PageNode {

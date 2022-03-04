@@ -5,12 +5,10 @@ import {
 import {
   atom,
   useAtom,
-  useAtomValue,
 } from 'jotai'
 import { Spin } from '@vectorial/whiteboard/components'
 import {
   useRootDoc,
-  cooperationAtom,
 } from '@vectorial/whiteboard/model'
 import { logger } from '@vectorial/whiteboard/utils'
 

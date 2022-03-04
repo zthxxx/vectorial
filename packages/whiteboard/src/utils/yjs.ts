@@ -3,17 +3,39 @@ import * as Y from 'yjs'
 export type SharedTypes<T> = (
   T extends Function
     ? never
-    : T extends Y.Doc | Y.AbstractType<any>
-      ? T
-      : (
-        T extends Array<any>
-          ? Y.Array<SharedTypes<T[number]>>
+    : (
+      T extends Y.Doc | Y.AbstractType<any>
+        ? T
+        : (
+          T extends Array<any>
+            ? Y.Array<SharedTypes<T[number]>>
+            : (
+              T extends object
+                ? YMap<{ [K in keyof T]: SharedTypes<T[K]>}>
+                : T
+            )
+        )
+    )
+)
+
+export type SerializeType<T> = (
+  T extends Function
+    ? never
+    : (
+      T extends Y.Doc
+        ? never
+        : (
+          T extends Y.Array<infer U>
+          ? Array<SerializeType<U>>
           : (
-            T extends object
-              ? YMap<{ [K in keyof T]: SharedTypes<T[K]>}>
-              : T
+            T extends YMap<infer U>
+              ? { [K in keyof U]: SerializeType<U[K]> }
+              : T extends object
+                ? { [K in keyof T]: SerializeType<T[K]> }
+                : T
           )
-      )
+        )
+    )
 )
 
 export type SharedArray<T extends Array<any>> = Y.Array<SharedTypes<T[number]>>
@@ -36,6 +58,8 @@ export interface YMap<T extends object> extends Y.Map<any> {
   }
 
   clone: () => YMap<T>
+
+  toJSON: () => SerializeType<T>
 }
 
 export interface YDoc<T extends object> extends Y.Doc {

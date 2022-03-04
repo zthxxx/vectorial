@@ -1,4 +1,3 @@
-import * as Y from 'yjs'
 import { Container } from '@pixi/display'
 import type {
   Vector,

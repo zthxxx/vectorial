@@ -1,6 +1,5 @@
 import {
   nanoid,
-  YDoc,
 } from '@vectorial/whiteboard/utils'
 import {
   NodeType,
@@ -30,6 +29,8 @@ export const createDefaultDocumentPage = (id?: string) => {
 
   page.nodes[frame.id] = frame
   page.children.push(frame.id)
+  // hack page id for stable when create in default
+  page.id = document.id
   document.pages[page.id] = page
 
   return {

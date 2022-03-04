@@ -31,14 +31,26 @@ export const ChildrenMixin = <T extends BaseNodeMixin, S extends Constructor<T>>
       } = props
       this.children = []
       this.page = page
+
       if (!this.binding.get('children')) {
         this.binding.set('children', Y.Array.from(children))
+
+        if (this.page) {
+          children.forEach(id => {
+            this.addChild(this.page.get(id) as T)
+          })
+        }
+      } else if (this.page) {
+        this.resumeChildren(children)
       }
-      if (this.page) {
-        children.forEach(id => {
-          this.addChild(this.page.get(id) as T)
-        })
-      }
+    }
+
+    resumeChildren(children: string[]) {
+      children.forEach(id => {
+        const node = this.page.get(id)!
+        this.container.addChild(node.container)
+        this.children.push(node.id)
+      })
     }
 
     addChild(child: T): void {

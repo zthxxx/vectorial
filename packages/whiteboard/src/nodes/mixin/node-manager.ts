@@ -4,7 +4,6 @@ import { SharedMap } from '@vectorial/whiteboard/utils'
 import {
   Constructor,
   EmptyMixin,
-  PageNode,
   BaseNodeMixin as BaseNode,
   ChildrenMixin as ChildrenMixinType,
   SceneNode,

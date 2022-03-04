@@ -1,4 +1,4 @@
-import { useEffect, useRef, RefObject, memo } from 'react'
+import { memo } from 'react'
 import { atom, useSetAtom } from 'jotai'
 
 export const containerAtom = atom<HTMLDivElement | null>(null)

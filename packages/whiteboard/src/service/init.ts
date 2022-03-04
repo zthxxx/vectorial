@@ -5,9 +5,8 @@ import {
 import { atom, useAtomValue } from 'jotai'
 import {
   state,
-  storeTransact,
-  documentTransact,
   createDefaultDocumentPage,
+  DocumentData,
 } from '@vectorial/whiteboard/model'
 import {
   DocumentNode,
@@ -53,34 +52,35 @@ export const useGetDocumentPage = (id?: string): {
     return docsRef
   }
 
-  storeTransact(() => {
-    documentTransact(() => {
-      if (store.get('currentDocId') !== id) {
-        store.set('currentDocId', id)
-      }
+  if (store.get('currentDocId') !== id) {
+    store.set('currentDocId', id)
+  }
 
-      if (!documents.get(id)) {
-        logger.info(`Document of id ${id} missed, creating a default one ...`)
-        const { document, page } = createDefaultDocumentPage(id)
-        documents.set(id, toSharedTypes(document))
-        store.set('currentPageId', page.id)
-      }
+  if (!documents.get(id)) {
+    logger.info(`Document of id ${id} missed, creating a default one ...`)
+    const { document, page } = createDefaultDocumentPage(id)
+    documents.set(id, toSharedTypes(document))
+    store.set('currentPageId', page.id)
+  }
 
-      const binding = documents.get(id)!
-      const documentData = binding.toJSON()
+  const binding = documents.get(id)!
+  const documentData = binding.toJSON() as DocumentData
 
-      const documentNode = new DocumentNode({
-        ...documentData,
-        binding,
-      })
-
-      const currentPageId = store.get('currentPageId')!
-      const pageNode = documentNode.get(currentPageId)!
-
-      docsRef.document = documentNode
-      docsRef.page = pageNode
-    })
+  const documentNode = new DocumentNode({
+    ...documentData,
+    binding,
   })
+
+  const pages = documentData.pages
+  if (!pages[store.get('currentPageId')!]) {
+    const firstPageId = Object.keys(pages)[0]
+    store.set('currentPageId', firstPageId)
+  }
+  const currentPageId = store.get('currentPageId')!
+  const pageNode = documentNode.get(currentPageId)!
+
+  docsRef.document = documentNode
+  docsRef.page = pageNode
 
   return docsRef
 }

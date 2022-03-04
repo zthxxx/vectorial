@@ -48,11 +48,11 @@ export const Toolbox = () => {
 
   return (
     <div
-      className="
+      className='
         absolute top-2 px-8 py-1
         flex justify-center items-center
         rounded-lg drop-shadow  bg-white
-      "
+      '
     >
       {tools.map(tool => (
         <div
@@ -66,10 +66,10 @@ export const Toolbox = () => {
               cursor-pointer
             `,
             tool.name === current?.name
-              ? `bg-blue-400 text-white`
+              ? `bg-pink-400 text-white`
               : `
                 text-gray-800
-                hover:text-blue-500
+                hover:text-pink-400
               `
           ].join(' ')}
           onClick={() => {
@@ -81,7 +81,7 @@ export const Toolbox = () => {
         >
           <tool.Icon
             alt={tool.label}
-            className="w-6 h-6"
+            className='w-6 h-6'
           />
         </div>
       ))}
