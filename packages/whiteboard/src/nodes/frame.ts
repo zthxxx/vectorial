@@ -17,7 +17,7 @@ import {
 import {
   BaseNodeMixin,
   ChildrenMixin,
-  ChildrenMixinProps,
+  LayoutMixinProps,
   LayoutMixin,
   BlendMixin,
 } from './mixin'
@@ -25,7 +25,7 @@ import {
   FrameNode as FrameNodeType,
 } from './types'
 
-export interface FrameNodeProps extends Partial<FrameData>, ChildrenMixinProps {
+export interface FrameNodeProps extends Partial<FrameData>, LayoutMixinProps {
   binding?: SharedMap<FrameData>;
 }
 

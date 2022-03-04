@@ -14,7 +14,7 @@ const useAppRoutes = (): ReactElement | null => {
     {
       path: '/',
       element: (
-        <SceneIdGuard routePath='/'>
+        <SceneIdGuard routePath='/' resumeLastScene>
           <HomeLayout />
         </SceneIdGuard>
       ),

@@ -15,7 +15,10 @@ export interface ChildrenMixinProps extends Partial<ChildrenMixinType>{
   page: PageNode;
 }
 
-export const ChildrenMixin = <T extends BaseNodeMixin, S extends Constructor<T>>(Super: S) => {
+export const ChildrenMixin = <
+  T extends BaseNodeMixin,
+  S extends Constructor<T> = Constructor<T>
+>(Super: S) => {
   return class ChildrenMixin extends (Super ?? EmptyMixin) implements ChildrenMixinType {
     declare binding: SharedMap<BaseDataMixin & { children: string[] }>;
 
@@ -30,6 +33,8 @@ export const ChildrenMixin = <T extends BaseNodeMixin, S extends Constructor<T>>
         page,
       } = props
       this.children = []
+
+      // page params maybe empty in constructor when using ChildrenMixin in PageNode
       this.page = page
 
       if (!this.binding.get('children')) {
@@ -88,10 +93,10 @@ export const ChildrenMixin = <T extends BaseNodeMixin, S extends Constructor<T>>
         .find(predicate)
     }
 
-    forEachChild(callback: (node: T) => any): void {
-      this.children
+    forEachChild<K>(callback: (node: T) => K): K[] {
+      return this.children
         .map(id => this.page.get(id) as T)
-        .forEach(callback)
+        .map(callback)
     }
   }
 }

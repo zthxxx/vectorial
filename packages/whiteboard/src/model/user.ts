@@ -23,9 +23,12 @@ export const userColors: string[] = [
   '#e800ed',
   '#9300ed',
   '#30bced',
+  '#18a0fb',
   '#1b84e5',
   '#333333',
 ]
+
+export const currentUserColor = '#18a0fb'
 
 export const getRandColor = (): string => (
   userColors[Math.floor(Math.random() * userColors.length)]

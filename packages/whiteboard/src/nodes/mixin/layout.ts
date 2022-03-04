@@ -16,17 +16,31 @@ import {
   Constructor,
   BaseNodeMixin,
   ChildrenMixin,
+  PageNode,
   LayoutMixin as LayoutMixinType,
 } from '../types'
 
-export interface LayoutMixinProps extends LayoutDataMixin {
+export interface LayoutMixinProps extends Partial<LayoutDataMixin> {
+  page: PageNode;
 }
 
-export const LayoutMixin = <T extends ChildrenMixin<BaseNodeMixin>>(Super: Constructor<T>) => {
+export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
   return class LayoutMixin extends TransformMixin(AreaMixin(Super)) implements LayoutMixinType {
     declare parent: BaseNodeMixin['id']
+    // forEachChild maybe miss when using without ChildrenMixin
+    declare forEachChild: ChildrenMixin['forEachChild']
 
+    public page: PageNode
     public _absoluteTransform: Matrix = identityMatrix()
+
+    constructor(...args: any[])
+    constructor(props: LayoutMixinProps, ...args: any[]) {
+      super(props, ...args)
+      const {
+        page,
+      } = props
+      this.page = page
+    }
 
     public get absoluteTransform(): Matrix {
       return this._absoluteTransform
@@ -40,15 +54,16 @@ export const LayoutMixin = <T extends ChildrenMixin<BaseNodeMixin>>(Super: Const
       if (this.page.get(this.parent)) {
         const parent = this.page.get(this.parent)! as BaseNodeMixin & LayoutMixinType
         if (parent.absoluteTransform) {
-          const parentAbsoluteTransform = parent.absoluteTransform
           this._absoluteTransform = multiply(
-            parentAbsoluteTransform,
+            parent.absoluteTransform,
             this.relativeTransform,
           )
         }
+      } else {
+        this._absoluteTransform = this.relativeTransform
       }
 
-      this.forEachChild((node: BaseNodeMixin & LayoutMixinType) => {
+      this.forEachChild?.((node: BaseNodeMixin & LayoutMixinType) => {
         node.updateAbsoluteTransform?.()
       })
     }

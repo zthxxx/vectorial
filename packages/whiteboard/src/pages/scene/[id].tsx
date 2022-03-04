@@ -24,16 +24,18 @@ import {
 import {
   Scene,
   ViewportPlugin,
+  AwareCursorsPlugin,
 } from '@vectorial/whiteboard/scene'
 import {
   CanvasContainer,
   containerAtom,
-  Toolbox,
-  AwareCursors,
 } from './components'
+import {
+  Toolbox,
+} from './tools'
+
 
 export const sceneAtom = atom<Scene | null>(null)
-
 
 export const userScene = ({ user, page, awareness }: {
   user?: User,
@@ -58,12 +60,8 @@ export const userScene = ({ user, page, awareness }: {
       docTransact: documentsTransact,
     })
 
-    scene.use(
-      new ViewportPlugin({
-        user,
-        scene,
-      })
-    )
+    scene.use(new ViewportPlugin({ user, scene }))
+    scene.use(new AwareCursorsPlugin({ user, scene }))
 
     setScene(scene)
   }, [container, user, page, awareness, ready])
@@ -90,15 +88,15 @@ export const SceneView: FC = memo(() => {
   return (
     <>
       <CanvasContainer />
-      {scene && page && (
-        <AwareCursors
-          pageId={page.id}
-          viewMatrix={scene.viewMatrix}
-          viewMatrix$={scene.viewMatrix$}
-          interactEvent$={scene.interactEvent$}
-        />
+      {user && scene && page && (
+        <>
+          {scene.plugins['AwareCursorsPlugin']?.cursors}
+          <Toolbox
+            user={user}
+            scene={scene}
+          />
+        </>
       )}
-      <Toolbox />
     </>
   )
 })

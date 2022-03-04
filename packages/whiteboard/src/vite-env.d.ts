@@ -8,3 +8,8 @@ declare module 'fractional-indexing' {
   import * as fra from 'fractional-indexing/src/index.d'
   export = fra;
 }
+
+declare module 'valtio' {
+  export * from 'valtio/index.d'
+  export function snapshot<T extends object>(p: T): T;
+}

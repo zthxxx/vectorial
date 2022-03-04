@@ -26,6 +26,13 @@ import {
   ScenePluginProps,
 } from './types'
 
+
+declare module '@vectorial/whiteboard/scene/scene' {
+  interface ScenePlugins {
+    ViewportPlugin?: ViewportPlugin;
+  }
+}
+
 const isPressSpace = (event: InteractEvent): boolean => (
   event.key?.type === KeyTriggerType.Down
   && event.match({ modifiers: [], keys: ['Space'] })
@@ -53,7 +60,7 @@ export class ViewportPlugin extends ScenePlugin {
     super(props)
     this.isActive = true
 
-    const { interactEvent$ } = this.scene
+    const { interactEvent$ } = this.scene.events
 
     interactEvent$.pipe(
       filter(isPressSpace),

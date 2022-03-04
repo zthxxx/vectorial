@@ -13,7 +13,10 @@ import {
 export interface BlendMixinProps extends Partial<BlendMixinType>{
 }
 
-export const BlendMixin = <T extends BaseNodeMixin, S extends Constructor<T>>(Super: S) => {
+export const BlendMixin = <
+  T extends BaseNodeMixin,
+  S extends Constructor<T> = Constructor<T>
+>(Super: S) => {
   return class BlendMixin extends (Super ?? EmptyMixin) implements BlendMixinType {
     declare binding: SharedMap<BaseDataMixin & BlendMixinType>;
 

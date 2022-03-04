@@ -32,6 +32,7 @@ export const AreaMixin = <T extends {}>(Super: Constructor<T>) => {
       this._position = position ?? emptyVector()
     }
 
+    // bounds without apply any transform
     public get bounds(): Rect {
       throw new Error('Not Implemented')
     }

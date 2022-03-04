@@ -36,7 +36,7 @@ export interface ChildrenMixin<T extends BaseNodeMixin = BaseNodeMixin> extends
     removeChild(child: T): void;
     findChild(predicate: (node: T) => any): T | undefined;
     filterChild(predicate: (node: T) => any): T[];
-    forEachChild(predicate: (node: T) => void): void;
+    forEachChild<K>(predicate: (node: T) => K): K[];
   }
 
 export interface SerializableStaticMixin<
@@ -91,11 +91,12 @@ export interface BooleanOperationNode extends
   BaseNodeMixin<BooleanOperationData>,
   BooleanOperationData,
   SerializableMixin<BooleanOperationData>,
-  ChildrenMixin<
-    | GroupNode
-    | VectorNode
-    | BooleanOperationNode
-  > {
+  // ChildrenMixin<
+  //   | GroupNode
+  //   | VectorNode
+  //   | BooleanOperationNode
+  // >,
+  ChildrenMixin {
     type: NodeType.BooleanOperation;
     clone(): BooleanOperationNode;
   }

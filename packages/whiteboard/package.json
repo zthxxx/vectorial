@@ -80,6 +80,8 @@
     "react-dom": "^17.0.2",
     "react-router-dom": "6.2.2",
     "rxjs": "^7.5.5",
+    "valtio": "1.5.1",
+    "valtio-yjs": "0.3.1",
     "vectorial": "link:../vectorial",
     "xstate": "^4.30.6",
     "y-indexeddb": "9.0.7",

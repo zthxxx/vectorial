@@ -19,14 +19,14 @@ import {
 } from '@vectorial/whiteboard/utils'
 
 
-export const useCheckToNewScene = (condition: boolean) => {
+export const useCheckToNewScene = (condition: boolean, id?: string | null) => {
   const navigate = useNavigate()
 
   useEffect(() => {
     if (condition) {
-      navigate(`/scene/${genDocId()}`, { replace: true })
+      navigate(`/scene/${id ?? genDocId()}`, { replace: true })
     }
-  }, [condition])
+  }, [condition, id])
 }
 
 export const genDocId = () => nanoid(18)

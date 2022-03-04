@@ -78,10 +78,11 @@ export const YDoc: TDocType = Y.Doc as TDocType
 
 export const toSharedTypes = <T>(value: T): SharedTypes<T> => {
   switch (true) {
-    case (typeof value === 'function'): {
+    case (typeof value === 'function'):
+    case (value instanceof Y.Doc): {
       throw new Error(`yjs SharedTypes need JSON-encodable values, but got function ${value}`)
     }
-    case (value instanceof Y.Doc || value instanceof Y.AbstractType): {
+    case (value instanceof Y.AbstractType): {
       // @ts-ignore
       return value
     }

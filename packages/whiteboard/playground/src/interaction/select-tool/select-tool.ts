@@ -85,13 +85,13 @@ export class SelectTool extends Plugin {
   public machineSignal$?: Observable<State<StateContext, StateEvent>>
 
   constructor(parent: Viewport, props: SelectToolProps) {
+    super(parent)
     const {
       pane,
       toolbox,
       layerManager,
       interactionEvent$,
     } = props
-    super(parent)
 
     this.toolbox = toolbox
 

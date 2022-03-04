@@ -64,23 +64,25 @@ export interface BlendMixin {
   blendMode: BlendMode;
 }
 
+export type Color = `#${string}`
+
 export interface BasePaintMixin {
   id: string;
-  type: 'SOLID' | GradientType;
+  type: 'Solid' | GradientType;
   /**
    * fractional-indexing for order in parent
    * https://github.com/rocicorp/fractional-indexing
    */
   order?: string;
-  visible?: boolean;
+  invisible?: boolean;
   opacity?: number;
   blendMode?: BlendMode;
 }
 
 export interface SolidPaint extends BasePaintMixin {
-  type: 'SOLID';
+  type: 'Solid';
   /** rgba color */
-  color: string;
+  color: Color;
 }
 
 export enum GradientType {
@@ -92,7 +94,7 @@ export interface ColorStop {
   /** relative position 0 - 1 */
   position: number;
   /** rgba color */
-  color: string;
+  color: Color;
 }
 
 export interface GradientPaint extends BasePaintMixin  {
@@ -104,8 +106,8 @@ export interface GradientPaint extends BasePaintMixin  {
 export type Paint = SolidPaint | GradientPaint;
 
 export interface Stroke {
-  paints: Paint[];
   width: number;
+  paints: Paint[];
 }
 
 export interface Fill {
@@ -174,7 +176,7 @@ export interface User {
 export interface UserAwareness extends User {
   pageId: string;
   position?: Vector;
-  selection?: Rect;
+  marquee?: Rect;
   selected?: SceneNodeData['id'][];
 }
 

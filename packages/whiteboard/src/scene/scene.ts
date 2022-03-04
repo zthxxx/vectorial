@@ -1,11 +1,15 @@
 import * as Y from 'yjs'
 import type { Renderer } from '@pixi/core'
 import { Container } from '@pixi/display'
-import { Observable, Subject } from 'rxjs'
+import { Subject, ReplaySubject } from 'rxjs'
 import { Awareness } from 'y-protocols/awareness'
 import {
   Matrix,
+  Rect,
 } from 'vectorial'
+import {
+  SceneNodeData,
+} from '@vectorial/whiteboard/model'
 import {
   PageNode,
 } from '@vectorial/whiteboard/nodes'
@@ -26,6 +30,12 @@ import {
 } from './plugins'
 
 
+type SelectedIds = SceneNodeData['id'][]
+
+export interface ScenePlugins {
+  [name: ScenePlugin['name']]: ScenePlugin | undefined;
+}
+
 export interface SceneProps {
   element: HTMLElement;
   page: PageNode;
@@ -45,17 +55,25 @@ export class Scene {
   public awareness: Awareness
   public docTransact: Y.Doc['transact']
   public undoManager: Y.UndoManager
+  public eventManager: EventManager
 
   public viewport: Container
-  public viewMatrix$: Subject<Matrix> = new Subject()
   /** interactLayer nodes will be move but not scale */
   public interactLayer: Container
   public usersLayer: Container
-  public eventManager: EventManager;
-  public interactEvent$: Observable<InteractEvent>;
-  public _lastCursor: string | undefined;
 
-  public plugins: { [name: ScenePlugin['name']]: ScenePlugin } = {};
+  protected _lastCursor: string | undefined
+  protected _marquee: Rect | null = null
+  protected _selected: SelectedIds = []
+
+  public events = {
+    interactEvent$: new Subject<InteractEvent>(),
+    viewMatrix$: new ReplaySubject<Matrix>(1),
+    marquee$: new Subject<Rect | null>(),
+    selected$: new Subject<SelectedIds>(),
+  }
+
+  public plugins: ScenePlugins = {}
 
   constructor(props: SceneProps) {
     const {
@@ -93,9 +111,10 @@ export class Scene {
       element,
       scene: this,
     })
-    this.interactEvent$ = this.eventManager.interactEvent$
+    this.events.interactEvent$ = this.eventManager.interactEvent$
 
     this.setCursor({ icon: arrow })
+    this.events.viewMatrix$.next(this.viewMatrix)
   }
 
   public destroy() {
@@ -129,7 +148,25 @@ export class Scene {
   public set viewMatrix(matrix: Matrix) {
     this.viewport.transform.setFromMatrix(toPixiMatrix(matrix))
     this.viewport.transform.updateLocalTransform()
-    this.viewMatrix$.next(matrix)
+    this.events.viewMatrix$.next(matrix)
+  }
+
+  public get marquee(): Rect | null {
+    return this._marquee
+  }
+
+  public set marquee(marquee: Rect | null) {
+    this._marquee = marquee
+    this.events.marquee$.next(marquee)
+  }
+
+  public get selected(): SelectedIds {
+    return this._selected
+  }
+
+  public set selected(selected: SelectedIds) {
+    this._selected = selected
+    this.events.selected$.next(selected)
   }
 
   public use(plugin: ScenePlugin) {
@@ -139,14 +176,14 @@ export class Scene {
   public activate(pluginName: string) {
     const plugin = this.plugins[pluginName]
     if (plugin && !plugin.isActive) {
-      this.plugins[pluginName].activate()
+      plugin.activate()
     }
   }
 
   public deactivate(pluginName: string) {
     const plugin = this.plugins[pluginName]
     if (plugin && plugin.isActive) {
-      this.plugins[pluginName].deactivate()
+      plugin.deactivate()
     }
   }
 }

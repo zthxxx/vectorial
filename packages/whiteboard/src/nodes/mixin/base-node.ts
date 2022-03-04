@@ -52,6 +52,7 @@ export const BaseNodeMixin = <T extends Constructor>(Super?: T) => {
     }
 
     set id(id: string) {
+      if (this.id === id) return
       this.binding.set('id', id)
     }
 
@@ -60,6 +61,7 @@ export const BaseNodeMixin = <T extends Constructor>(Super?: T) => {
     }
 
     set name(name: string) {
+      if (this.name === name) return
       this.binding.set('name', name)
     }
 
@@ -68,6 +70,7 @@ export const BaseNodeMixin = <T extends Constructor>(Super?: T) => {
     }
 
     set parent(parent: string | undefined) {
+      if (this.parent === parent) return
       this.binding.set('parent', parent)
     }
 
@@ -76,6 +79,7 @@ export const BaseNodeMixin = <T extends Constructor>(Super?: T) => {
     }
 
     set type(type: NodeType) {
+      if (this.type === type) return
       this.binding.set('type', type)
     }
 
@@ -84,6 +88,7 @@ export const BaseNodeMixin = <T extends Constructor>(Super?: T) => {
     }
 
     set order(order: string | undefined) {
+      if (this.order === order) return
       this.binding.set('order', order)
     }
 
@@ -92,6 +97,7 @@ export const BaseNodeMixin = <T extends Constructor>(Super?: T) => {
     }
 
     set removed(removed: boolean | undefined) {
+      if (this.removed === removed) return
       this.binding.set('removed', removed)
       this.container.visible = !removed
     }

@@ -1,4 +1,9 @@
-import { useState, useRef, memo, useLayoutEffect } from 'react'
+import {
+  useState,
+  useRef,
+  memo,
+  useLayoutEffect,
+} from 'react'
 import { Observable } from 'rxjs'
 import {
   filter,
@@ -138,27 +143,28 @@ export const useUsersAware = ({ pageId, interactEvent$ }: {
 
 export interface AwareCursorsProps {
   pageId: string;
-  viewMatrix: Matrix;
   viewMatrix$: Observable<Matrix>;
   interactEvent$: Observable<InteractEvent>;
 }
 
 export const AwareCursors = memo(({
   pageId,
-  viewMatrix,
   viewMatrix$,
   interactEvent$,
 }: AwareCursorsProps) => {
-  const [matrix, setMatrix] = useState<Matrix>(viewMatrix)
+  const [matrix, setMatrix] = useState<Matrix | null>(null)
   const users = useUsersAware({ pageId, interactEvent$ })
 
-  viewMatrix$.subscribe(setMatrix)
+  useLayoutEffect(() => {
+    const pipe = viewMatrix$.subscribe(setMatrix)
+    return () => pipe.unsubscribe()
+  }, [])
 
   return (
     <div
      className='absolute top-0 left-0 pointer-events-none select-none'
     >
-      {users.map(([clientID, user]) => (
+      {matrix && users.map(([clientID, user]) => (
         <Cursor
           key={clientID}
           clientID={clientID}

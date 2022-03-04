@@ -3,6 +3,7 @@ import type { Vector, Rect } from './types'
 import { VectorAnchor, AnchorData } from './anchor'
 import {
   add,
+  emptyVector,
 } from './math'
 import {
   AreaMixin,
@@ -33,6 +34,15 @@ export interface PathData {
   parity: 1 | 0;
 }
 
+export const emptyPath = (): PathData => ({
+  type: 'Path',
+  anchors: [],
+  closed: false,
+  position: emptyVector(),
+  rotation: 0,
+  parity: 1,
+})
+
 export class VectorPathProps {
   anchors?: VectorAnchor[];
   closed?: PathData['closed'];
@@ -51,7 +61,6 @@ export class VectorPath extends TransformMixin(AreaMixin()) implements AreaHitMi
    *    0: even (not fill)
    */
   public parity: 1 | 0;
-  public segmentMap: Map<paper.Segment, VectorAnchor>
   private _anchors: VectorAnchor[] = []
   private _closed: boolean = false
 
@@ -78,14 +87,15 @@ export class VectorPath extends TransformMixin(AreaMixin()) implements AreaHitMi
       fillRule: 'evenodd',
     })
     this.path.closed = closed
-    this.segmentMap = new Map(anchors.map(anchor => [anchor.segment, anchor]))
   }
 
   public set anchors(anchors: (VectorAnchor | undefined)[]) {
+    const { closed } = this
     this.clear()
     anchors
       .filter(Boolean)
       .forEach(anchor => this.addAnchor(anchor!))
+    this.closed = closed
   }
 
   public get closed(): boolean {
@@ -115,7 +125,6 @@ export class VectorPath extends TransformMixin(AreaMixin()) implements AreaHitMi
 
     this.anchors.splice(index, 0, anchor)
     this.path.insert(index, anchor.segment)
-    this.segmentMap.set(anchor.segment, anchor)
   }
 
   public removeAnchor(anchor: VectorAnchor) {
@@ -129,11 +138,9 @@ export class VectorPath extends TransformMixin(AreaMixin()) implements AreaHitMi
     if (!anchor) return
     this.anchors.splice(index, 1)
     this.path.removeSegment(index)
-    this.segmentMap.delete(anchor.segment)
   }
 
   public clear() {
-    this.segmentMap.clear()
     this.path.removeSegments()
     this.closed = false
     this._anchors = []
