@@ -12,6 +12,7 @@ import {
 } from '@vectorial/whiteboard/model'
 import {
   PageNode,
+  SceneNode,
 } from '@vectorial/whiteboard/nodes'
 import {
   arrow,
@@ -30,7 +31,7 @@ import {
 } from './plugins'
 
 
-type SelectedIds = SceneNodeData['id'][]
+type SelectedIds = Set<SceneNode>
 
 export interface ScenePlugins {
   [name: ScenePlugin['name']]: ScenePlugin | undefined;
@@ -63,14 +64,17 @@ export class Scene {
   public usersLayer: Container
 
   protected _lastCursor: string | undefined
-  protected _marquee: Rect | null = null
-  protected _selected: SelectedIds = []
+  /** absolute rect to page layout */
+  protected _marquee: Rect | undefined
+  protected _selected: SelectedIds = new Set()
+  protected _hovered?: SceneNode
 
   public events = {
     interactEvent$: new Subject<InteractEvent>(),
     viewMatrix$: new ReplaySubject<Matrix>(1),
-    marquee$: new Subject<Rect | null>(),
+    marquee$: new Subject<Rect | undefined>(),
     selected$: new Subject<SelectedIds>(),
+    hovered$: new Subject<SceneNode | undefined>(),
   }
 
   public plugins: ScenePlugins = {}
@@ -151,11 +155,11 @@ export class Scene {
     this.events.viewMatrix$.next(matrix)
   }
 
-  public get marquee(): Rect | null {
+  public get marquee(): Rect | undefined {
     return this._marquee
   }
 
-  public set marquee(marquee: Rect | null) {
+  public set marquee(marquee: Rect | undefined) {
     this._marquee = marquee
     this.events.marquee$.next(marquee)
   }
@@ -167,6 +171,15 @@ export class Scene {
   public set selected(selected: SelectedIds) {
     this._selected = selected
     this.events.selected$.next(selected)
+  }
+
+  public get hovered(): SceneNode | undefined {
+    return this._hovered
+  }
+
+  public set hovered(hovered: SceneNode | undefined) {
+    this._hovered = hovered
+    this.events.hovered$.next(hovered)
   }
 
   public use(plugin: ScenePlugin) {

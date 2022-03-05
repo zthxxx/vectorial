@@ -21,6 +21,7 @@ import {
   SharedMap,
   nanoid,
   toSharedTypes,
+  toPixiColor,
 } from '@vectorial/whiteboard/utils'
 import {
   BaseNodeMixin,
@@ -78,7 +79,13 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
   }
 
   public get bounds(): Rect {
-    return this.vectorPath.bounds
+    const { width, height } = this.vectorPath.bounds
+    return {
+      x: 0,
+      y: 0,
+      width,
+      height,
+    }
   }
 
   clone(): VectorNode {
@@ -173,11 +180,6 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
         })
     }
   }
-}
-
-
-export const toPixiColor = (color: Color): number => {
-  return Number(color.replace('#', '0x'))
 }
 
 export const drawPath = (

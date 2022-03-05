@@ -8,10 +8,10 @@ import {
 } from './matrix'
 
 export const isPointInRect = (point: Vector, rect: Rect): boolean => (
-  point.x >= rect.x &&
-  point.x <= rect.x + rect.width &&
-  point.y >= rect.y &&
-  point.y <= rect.y + rect.height
+  point.x >= rect.x
+  && point.x <= rect.x + rect.width
+  && point.y >= rect.y
+  && point.y <= rect.y + rect.height
 )
 
 export const polygonsIntersectTest = (polygonA: Vector[], polygonB: Vector[]): boolean => {

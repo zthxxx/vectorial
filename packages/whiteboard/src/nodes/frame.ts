@@ -51,12 +51,19 @@ export class FrameNode extends LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixi
     this.graphics = new Graphics()
     this.container.addChild(this.graphics)
     this.draw()
+
+    this.binding.observe(() => {
+      this.updateRelativeTransform()
+      this.updateAbsoluteTransform()
+      this.draw()
+    })
   }
 
   public get bounds(): Rect {
-    const { position, width, height } = this
+    const { width, height } = this
     return {
-      ...position,
+      x: 0,
+      y: 0,
       width,
       height,
     }
@@ -72,12 +79,10 @@ export class FrameNode extends LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixi
 
   public set width(width: number) {
     this.binding.set('width', width)
-    this.draw()
   }
 
   public set height(height: number) {
     this.binding.set('height', height)
-    this.draw()
   }
 
   clone(): FrameNode {
@@ -101,34 +106,31 @@ export class FrameNode extends LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixi
     }
   }
 
-  public updateRelativeTransform(): void {
-    super.updateRelativeTransform()
-    this.draw()
-  }
-
   public hitTest(viewPoint: Vector): boolean {
     const point = this.toLocalPoint(viewPoint)
 
-    return isPointInRect(
+    const hit = isPointInRect(
       point,
       {
-        x: point.x,
-        y: point.y - 20,
-        width: 40,
-        height: 20
+        x: 0,
+        y: -15,
+        width: 80,
+        height: 15
       },
     )
+
+    return hit
   }
 
   public coverTest(viewRect: Rect): boolean {
-    const inverseTransform = getInverseMatrix(this.absoluteTransform)
-    const points = getPointsFromRect(this.bounds, inverseTransform)
-
-    return points.every(point => isPointInRect(point, viewRect))
+    const points = getPointsFromRect(this.bounds, this.absoluteTransform)
+    const cover = points.every(point => isPointInRect(point, viewRect))
+    return cover
   }
 
   draw() {
     const {
+      position,
       bounds,
       graphics,
     } = this
@@ -140,8 +142,8 @@ export class FrameNode extends LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixi
       .clear()
       .beginFill(0xffffff)
       .drawRect(
-        bounds.x,
-        bounds.y,
+        position.x,
+        position.y,
         bounds.width,
         bounds.height,
       )

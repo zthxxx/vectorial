@@ -1,4 +1,4 @@
-import { memo, useRef, useCallback } from 'react'
+import { memo, useEffect, useRef, useCallback } from 'react'
 import { atom, useAtom } from 'jotai'
 import { keyBy } from 'lodash-es'
 import { ScenePluginProps } from '@vectorial/whiteboard/scene'
@@ -46,9 +46,10 @@ export const Toolbox = memo((props: ToolboxProps) => {
   const switchTool = useCallback((name: string) => {
     const current = toolNameRef.current
     const toolsMap = toolsMapRef.current
-    if (name === current) return
-    toolsMap[current]?.deactivate()
-    toolsMap[name]?.activate()
+    const currentTool = toolsMap[current]
+    const nextTool = toolsMap[name]
+    currentTool?.isActive && currentTool.deactivate()
+    !nextTool?.isActive && nextTool?.activate()
     setCurrent(name)
     toolNameRef.current = name
   }, [])
@@ -62,6 +63,12 @@ export const Toolbox = memo((props: ToolboxProps) => {
   const toolsMap = keyBy(tools, 'name')
   toolsMapRef.current = toolsMap
 
+  useEffect(() => {
+    if (tools.length) {
+      switchTool('SelectTool')
+    }
+  }, [tools])
+
   return (
     <div
       className='
@@ -73,7 +80,7 @@ export const Toolbox = memo((props: ToolboxProps) => {
       {tools.map((tool) => (
         <div
           key={tool.name}
-          title={`${tool.label} (${tool.hotkeyLabel})`}
+          title={`${tool.label}`}  // (${tool.hotkeyLabel})
           className={[
             `
               flex justify-center items-center

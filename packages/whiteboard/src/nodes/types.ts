@@ -63,16 +63,18 @@ export interface LayoutMixin extends LayoutDataMixin {
   readonly absoluteTransform: Transform;
   updateAbsoluteTransform(): void;
 
-  readonly bounds: Rect;
-  readonly width: number;
-  readonly height: number;
-  readonly center: Vector;
+  bounds: Rect;
+  width: number;
+  height: number;
+  center: Vector;
 
   /** absolute to its PageNode without rotation (also scene) */
   readonly absoluteBounds: Rect;
 
   resize(width: number, height: number): void;
   rescale(scale: number): void;
+
+  moveDelta(viewDelta: Vector): void;
 
   hitTest(viewPoint: Vector): boolean;
   coverTest(viewRect: Rect): boolean;
@@ -81,6 +83,7 @@ export interface LayoutMixin extends LayoutDataMixin {
 export interface VectorNode extends
   BaseNodeMixin<VectorData>,
   VectorData,
+  LayoutMixin,
   SerializableMixin<VectorData> {
   type: NodeType.Vector;
   clone(): VectorNode;
@@ -90,6 +93,7 @@ export interface VectorNode extends
 export interface BooleanOperationNode extends
   BaseNodeMixin<BooleanOperationData>,
   BooleanOperationData,
+  LayoutMixin,
   SerializableMixin<BooleanOperationData>,
   // ChildrenMixin<
   //   | GroupNode
@@ -104,6 +108,7 @@ export interface BooleanOperationNode extends
 export interface GroupNode extends
   BaseNodeMixin<GroupNode>,
   GroupData,
+  LayoutMixin,
   SerializableMixin<GroupNode>,
   ChildrenMixin {
     type: NodeType.Group;
@@ -113,6 +118,7 @@ export interface GroupNode extends
 export interface FrameNode extends
   BaseNodeMixin<FrameData>,
   FrameData,
+  LayoutMixin,
   SerializableMixin<FrameData>,
   ChildrenMixin {
     type: NodeType.Frame;

@@ -14,6 +14,7 @@ import {
   AnchorHitResult,
   PathHitResult,
   PathHitType,
+  EmptyMixin,
 } from './types'
 
 export interface PathData {
@@ -51,7 +52,7 @@ export class VectorPathProps {
   parity?: PathData['parity'];
 }
 
-export class VectorPath extends TransformMixin(AreaMixin()) implements AreaHitMixin {
+export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements AreaHitMixin {
   public type = 'Path'
   public path: paper.Path
 

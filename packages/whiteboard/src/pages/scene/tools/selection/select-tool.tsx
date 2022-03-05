@@ -1,12 +1,26 @@
 import { ReactElement } from 'react'
-import { Plugin } from 'pixi-viewport'
 import { Container } from '@pixi/display'
 import { Graphics } from '@pixi/graphics'
+import { isEqual, throttle } from 'lodash-es'
 import { Observable, from } from 'rxjs'
 import {
   filter,
   tap,
 } from 'rxjs/operators'
+import {
+  interpret,
+  State,
+  StateValue,
+} from 'xstate'
+import {
+  Vector,
+  Rect,
+  add,
+  getInverseMatrix,
+  getPointsFromRect,
+  applyMatrix,
+  applyInverse,
+} from 'vectorial'
 import {
   Arrow,
 } from '@vectorial/whiteboard/assets/icon'
@@ -14,9 +28,24 @@ import {
   InteractEvent,
 } from '@vectorial/whiteboard/scene'
 import {
+  UserAwareness,
+} from '@vectorial/whiteboard/model'
+import {
+  SceneNode,
+} from '@vectorial/whiteboard/nodes'
+import {
   ToolDefine,
   ToolProps,
 } from '../types'
+import {
+  createSelectToolMachine,
+} from './state-machine'
+import {
+  MouseEvent,
+  StateEvent,
+  StateContext,
+  SelectToolService,
+} from './types'
 
 
 export class SelectTool extends ToolDefine {
@@ -25,29 +54,85 @@ export class SelectTool extends ToolDefine {
   public hotkey: string[] = ['KeyV']
   public hotkeyLabel: string = 'V'
 
-  protected selectLayer: Container
-  protected boundaryLayer: Graphics
-  protected marqueeLayer: Graphics
+  public interactEvent$: Observable<InteractEvent>
 
-  protected interactEvent$: Observable<InteractEvent>
+  public selectCache = new Set<SceneNode>()
+
+  public machine?: SelectToolService
 
   constructor(props: ToolProps) {
     super(props)
     const { scene } = props
 
-    this.selectLayer = new Container()
-    this.boundaryLayer = new Graphics()
-    this.marqueeLayer = new Graphics()
-
-    scene.interactLayer.addChild(
-      this.selectLayer,
-      this.boundaryLayer,
-      this.marqueeLayer,
-    )
-
     this.interactEvent$ = scene.events.interactEvent$.pipe(
       filter(() => this.isActive),
     )
+  }
+
+  public activate() {
+    this.isActive = true
+    // @ts-ignore
+    this.machine = interpret(createSelectToolMachine(this))
+    this.machine!.start()
+
+    from(this.machine!).pipe(
+      tap(state => console.log('select-tool', state.value)),
+    ).subscribe({
+      complete: () => {
+        const state = this.machine!.state.value
+        switch (state) {
+          case 'editVector': {
+            this.switchTool('VectorTool')
+          }
+        }
+      }
+    })
+  }
+
+  public deactivate() {
+    this.isActive = false
+
+    this.machine?.stop()
+    this.selectCache.clear()
+    this.scene.hovered = undefined
+  }
+
+  public setMarquee = (marquee?: Rect) => {
+    if (isEqual(marquee, this.scene.marquee)) return
+    const { awareness, viewMatrix } = this.scene
+    if (!marquee) {
+      this.scene.marquee = marquee
+      awareness.setLocalStateField('marquee', marquee)
+      return
+    }
+
+    const topLeft = applyInverse(marquee, viewMatrix)
+    const rightBottom = applyInverse(
+      {
+        x: marquee.x + marquee.width,
+        y: marquee.y + marquee.height,
+      },
+      viewMatrix,
+    )
+
+    const area: Rect = {
+      ...topLeft,
+      width: rightBottom.x - topLeft.x,
+      height: rightBottom.y - topLeft.y,
+    }
+
+    this.scene.marquee = marquee
+    this.setAwareness({
+      marquee: area,
+      position: rightBottom,
+    })
+  }
+
+  public setSelected = (selected: Set<SceneNode>) => {
+    this.scene.selected = selected
+    this.setAwareness({
+      selected: [...selected].map(node => node.id),
+    })
   }
 
   public get icon(): ReactElement | null {
@@ -55,4 +140,12 @@ export class SelectTool extends ToolDefine {
       <Arrow className='w-6 h-6' />
     )
   }
+
+  public setAwareness = throttle((change: Partial<UserAwareness>) => {
+    const { awareness } = this.scene
+    awareness.setLocalState({
+      ...awareness.getLocalState(),
+      ...change,
+    } as UserAwareness)
+  }, 100)
 }

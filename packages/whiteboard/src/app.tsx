@@ -1,5 +1,6 @@
 import { Suspense, FC, lazy, ReactElement } from 'react'
 import { useRoutes } from 'react-router-dom'
+import { ErrorBoundary } from '@vectorial/whiteboard/components'
 import { LoadingPage } from '@vectorial/whiteboard/pages'
 
 const SceneIdGuard = lazy(() => import('./pages/id-guard'))
@@ -45,7 +46,9 @@ export const App: FC = () => {
     <Suspense
       fallback={<LoadingPage />}
     >
-      {useAppRoutes()}
+      <ErrorBoundary>
+        {useAppRoutes()}
+      </ErrorBoundary>
     </Suspense>
   )
 }

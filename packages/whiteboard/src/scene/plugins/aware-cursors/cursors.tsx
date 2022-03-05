@@ -4,7 +4,7 @@ import {
   memo,
   useLayoutEffect,
 } from 'react'
-import { Observable } from 'rxjs'
+import { Observable, asyncScheduler } from 'rxjs'
 import {
   filter,
   tap,
@@ -61,7 +61,7 @@ export const Cursor = memo(({ clientID, user, viewMatrix }: {
     <div
       className={`
         absolute
-        ease-linear
+        ease-linear duration-100
         ${positionChange ? 'transition-transform' : 'transition-none'}
       `}
       style={{
@@ -113,7 +113,7 @@ export const useUsersAware = ({ pageId, interactEvent$ }: {
     filter(event => Boolean(event.lastMouse)),
     map(event => event.lastMouse!),
     distinctUntilChanged((prev, next) => isEqual(prev, next)),
-    throttleTime(150),
+    throttleTime(150, asyncScheduler, { trailing: true }),
     tap(position => {
       const userAwareness: UserAwareness = {
         ...awareness.getLocalState() as UserAwareness,
@@ -131,6 +131,13 @@ export const useUsersAware = ({ pageId, interactEvent$ }: {
       awareness,
       pageId,
     })
+      .map(([uid, user]) => [uid, {
+        id: user.id,
+        name: user.name,
+        pageId: user.pageId,
+        position: user.position,
+      }] as [Awareness['clientID'], UserAwareness])
+
 
     if (isEqual(updatedUsers, usersRef.current)) return
     usersRef.current = updatedUsers

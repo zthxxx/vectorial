@@ -25,6 +25,7 @@ import {
   Scene,
   ViewportPlugin,
   AwareCursorsPlugin,
+  HighlightSelectedPlugin,
 } from '@vectorial/whiteboard/scene'
 import {
   CanvasContainer,
@@ -62,6 +63,7 @@ export const userScene = ({ user, page, awareness }: {
 
     scene.use(new ViewportPlugin({ user, scene }))
     scene.use(new AwareCursorsPlugin({ user, scene }))
+    scene.use(new HighlightSelectedPlugin({ user, scene }))
 
     setScene(scene)
   }, [container, user, page, awareness, ready])

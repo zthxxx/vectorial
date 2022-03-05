@@ -1,6 +1,7 @@
 import {
   TransformMixin,
   AreaMixin,
+  add,
   Rect,
   Matrix,
   identityMatrix,
@@ -8,10 +9,18 @@ import {
   multiply,
   isPointInRect,
   rectCoverTest,
+  applyMatrix,
+  applyInverse,
+  emptyVector,
 } from 'vectorial'
 import {
   LayoutDataMixin,
+  BaseDataMixin,
 } from '@vectorial/whiteboard/model'
+import {
+  SharedMap,
+  toSharedTypes,
+} from '@vectorial/whiteboard/utils'
 import {
   Constructor,
   BaseNodeMixin,
@@ -26,6 +35,7 @@ export interface LayoutMixinProps extends Partial<LayoutDataMixin> {
 
 export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
   return class LayoutMixin extends TransformMixin(AreaMixin(Super)) implements LayoutMixinType {
+    declare binding: SharedMap<BaseDataMixin & LayoutDataMixin>
     declare parent: BaseNodeMixin['id']
     // forEachChild maybe miss when using without ChildrenMixin
     declare forEachChild: ChildrenMixin['forEachChild']
@@ -38,8 +48,36 @@ export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
       super(props, ...args)
       const {
         page,
+        position = emptyVector(),
+        rotation = 0,
       } = props
       this.page = page
+
+      this.updateAbsoluteTransform()
+
+      if (!this.binding.get('position')) {
+        this.binding.set('position', toSharedTypes(position))
+      }
+
+      if (!this.binding.has('rotation')) {
+        this.binding.set('rotation', rotation)
+      }
+    }
+
+    public get position(): Vector {
+      return this.binding.get('position')!.toJSON()
+    }
+
+    public set position({ x, y }: Vector) {
+      this.binding.set('position', toSharedTypes({ x, y }))
+    }
+
+    public get rotation(): number {
+      return this.binding.get('rotation')!
+    }
+
+    public set rotation(degree: number) {
+      this.binding.set('rotation', degree)
     }
 
     public get absoluteTransform(): Matrix {
@@ -68,17 +106,25 @@ export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
       })
     }
 
-    public updateRelativeTransform(): void {
-      super.updateRelativeTransform()
-      this.updateAbsoluteTransform()
-    }
-
     public resize(width: number, height: number): void {
       throw new Error('Not Implemented')
     }
 
     public rescale(scale: number): void {
       throw new Error('Not Implemented')
+    }
+
+    public moveDelta(viewDelta: Vector) {
+      const position = applyInverse(this.position, this.absoluteTransform)
+      this.position = applyMatrix(add(position, viewDelta), this.absoluteTransform)
+    }
+
+    public toLocalPoint(viewPoint: Vector): Vector {
+      return applyInverse(viewPoint, this.absoluteTransform)
+    }
+
+    public toPagePoint(point: Vector): Vector {
+      return applyMatrix(point, this.absoluteTransform)
     }
 
     public hitTest(viewPoint: Vector): boolean {

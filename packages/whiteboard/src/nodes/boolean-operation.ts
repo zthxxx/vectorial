@@ -17,6 +17,7 @@ import {
 import {
   SharedMap,
   nanoid,
+  toPixiColor,
 } from '@vectorial/whiteboard/utils'
 import {
   BaseNodeMixin,
@@ -32,7 +33,6 @@ import {
 import {
   sceneContext,
   drawPath,
-  toPixiColor,
   VectorNode,
 } from './vector-path'
 
@@ -82,7 +82,13 @@ export class BooleanOperationNode
   }
 
   public get bounds(): Rect {
-    return this.shape.bounds
+    const { width, height } = this.shape.bounds
+    return {
+      x: 0,
+      y: 0,
+      width,
+      height,
+    }
   }
 
   clone(): BooleanOperationNode {

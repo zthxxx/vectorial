@@ -85,7 +85,7 @@ export const TransformMixin = <T extends { width: number, height: number }>(Supe
      * @returns point - local coordinate position
      */
     public toLocalPoint(viewPoint: Vector): Vector {
-      return applyMatrix(viewPoint, this.relativeTransform)
+      return applyInverse(viewPoint, this.relativeTransform)
     }
 
     /**
@@ -93,7 +93,7 @@ export const TransformMixin = <T extends { width: number, height: number }>(Supe
      * @returns point - parent view coordinate position
      */
     public toParentPoint(point: Vector): Vector {
-      return applyInverse(point, this.relativeTransform)
+      return applyMatrix(point, this.relativeTransform)
     }
   }
 }

@@ -32,7 +32,7 @@ export const defaultStroke = (): Stroke => ({
 
 export const GeometryMixin = <T extends BaseNodeMixin, S extends Constructor<T>>(Super: S) => {
   return class GeometryMixin extends (Super ?? EmptyMixin) implements GeometryMixinType {
-    declare binding: SharedMap<BaseDataMixin & GeometryMixinType>;
+    declare binding: SharedMap<BaseDataMixin & GeometryMixinType>
     public stroke: Stroke;
     public fill: Fill;
 

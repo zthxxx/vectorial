@@ -11,6 +11,7 @@ import {
   BooleanOperator,
   PathHitType,
   PathHitResult,
+  EmptyMixin,
 } from './types'
 import {
   emptyVector,
@@ -43,7 +44,7 @@ export interface VectorShapeProps {
 /**
  * composed shape cannot be directly edit
  */
-export class VectorShape extends TransformMixin(AreaMixin()) implements AreaHitMixin {
+export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implements AreaHitMixin {
   public type = 'Shape'
   public children: (VectorPath | VectorShape)[] = []
   public booleanOperator: BooleanOperator

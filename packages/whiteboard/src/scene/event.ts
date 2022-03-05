@@ -384,7 +384,7 @@ export class EventManager {
             delta: sub(position, this.dragBase),
           }
         } else if (event.dragging) {
-          event.dragging.delta = sub(position, this.lastEvent.mouse!)
+          event.dragging.delta = sub(position, this.lastEvent.lastMouse!)
           event.dragging.offset = sub(position, this.dragBase)
         }
 
