@@ -4,7 +4,7 @@ import { SharedMap } from '@vectorial/whiteboard/utils'
 import {
   Constructor,
   EmptyMixin,
-  BaseNodeMixin as BaseNode,
+  BaseNodeMixin,
   ChildrenMixin as ChildrenMixinType,
   SceneNode,
   NodeManagerMixin as NodeManagerMixinType,
@@ -12,19 +12,21 @@ import {
 import {
   BaseDataMixin,
   SceneNodeData,
+  ChildrenDataMixin,
+  documentsTransact,
 } from '@vectorial/whiteboard/model'
 
 
 export type ParentNode = (
   & ChildrenMixinType
-  & BaseNode
+  & BaseNodeMixin
   & { binding: SharedMap<{ children: BaseDataMixin['id'][] }> }
 )
 
 
-export const NodeManagerMixin = <S extends Constructor>(Super: S) => {
+export const NodeManagerMixin = <T extends ChildrenMixinType & BaseNodeMixin>(Super: Constructor<T>) => {
   return class NodeManagerMixin extends (Super ?? EmptyMixin) implements NodeManagerMixinType {
-    declare binding: SharedMap<{
+    declare binding: SharedMap<ChildrenDataMixin & BaseDataMixin & {
       nodes: { [key: SceneNodeData['id']]: SceneNodeData };
     }>;
     declare container: Container
@@ -34,7 +36,10 @@ export const NodeManagerMixin = <S extends Constructor>(Super: S) => {
     add(node: SceneNode): void {
       if (this.nodes[node.id]) return
       this.nodes[node.id] = node
-      this.binding.get('nodes')!.set(node.id, node.binding)
+      const nodesBinding = this.binding.get('nodes')!
+      if (nodesBinding.get(node.id) !== node.binding) {
+        nodesBinding.set(node.id, node.binding)
+      }
     }
 
     get(id?: string): SceneNode | undefined {
@@ -42,32 +47,41 @@ export const NodeManagerMixin = <S extends Constructor>(Super: S) => {
     }
 
     delete(id: string): void {
-      const node = this.get(id)!
-      node.removed = true
-      delete this.nodes[id]
-      this.binding.get('nodes')!.delete(id)
+      documentsTransact(() => {
+        const node = this.get(id)!
+        node.removed = true
 
-      const parent = this.get(node.parent) as ParentNode
-      if (!parent) return
-      const index = parent.children.indexOf(id)
+        const parent: ParentNode = node.parent === this.id
+          ? this as ParentNode
+          : this.get(node.parent) as ParentNode
 
-      parent.children.splice(index, 1)
-      parent.container.removeChild(node.container)
-      parent.binding.get('children')!.delete(index, 1)
+        if (parent) {
+          const index = parent.children.indexOf(id)
+
+          parent.children.splice(index, 1)
+          parent.container.removeChild(node.container)
+          parent.binding.get('children')!.delete(index, 1)
+        }
+
+        delete this.nodes[id]
+        this.binding.get('nodes')!.delete(id)
+      })
     }
 
     insert(node: SceneNode, parent: ParentNode, after?: string): void {
       const children = parent.children.map(id => this.get(id)!)
 
-      node.removed = false
-      const [order, index] = getAfterOrder(children, after)
-      node.order = order
-      node.parent = parent.id
+      documentsTransact(() => {
+        node.removed = false
+        const [order, index] = getAfterOrder(children, after)
+        node.order = order
+        node.parent = parent.id
 
-      parent.container.addChild(node.container)
-      parent.children.splice(index, 0, node.id)
-      parent.binding.get('children')!.insert(index, [node.id])
-      this.add(node)
+        parent.container.addChild(node.container)
+        parent.children.splice(index, 0, node.id)
+        parent.binding.get('children')!.insert(index, [node.id])
+        this.add(node)
+      })
     }
 
     relocate(node: SceneNode, parent: ParentNode, after?: string): void {

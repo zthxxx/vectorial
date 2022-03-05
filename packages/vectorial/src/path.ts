@@ -65,12 +65,13 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
   private _anchors: VectorAnchor[] = []
   private _closed: boolean = false
 
-  constructor({
-    anchors = [],
-    closed = false,
-    parity = 1,
-  }: VectorPathProps = {}) {
-    super()
+  constructor(props: VectorPathProps = {}) {
+    const {
+      anchors = [],
+      closed = false,
+      parity = 1,
+    } = props
+    super(props)
 
     this._anchors = anchors
     this._closed = closed
@@ -88,6 +89,10 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
       fillRule: 'evenodd',
     })
     this.path.closed = closed
+  }
+
+  public get anchors(): Array<VectorAnchor> {
+    return this._anchors
   }
 
   public set anchors(anchors: (VectorAnchor | undefined)[]) {
@@ -110,10 +115,6 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
 
   public get bounds(): Rect {
     return this.path.bounds
-  }
-
-  public get anchors(): Array<VectorAnchor> {
-    return this._anchors
   }
 
   public addAnchor(anchor: VectorAnchor) {
@@ -147,8 +148,7 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
     this._anchors = []
   }
 
-  public hitAnchorTest(viewPoint: Vector): AnchorHitResult | undefined {
-    const point = this.toLocalPoint(viewPoint)
+  public hitAnchorTest(point: Vector): AnchorHitResult | undefined {
     const { closed } = this
     const first = this.anchors.at(0)
     const last = this.anchors.at(-1)
@@ -163,13 +163,13 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
             this.anchors[index - 1] ?? (closed ? last : first),
             this.anchors[index + 1] ?? (closed ? first : last),
           ],
+          anchorIndex: index,
         }
       }
     }
   }
 
-  public hitPathTest(viewPoint: Vector): PathHitResult | undefined {
-    const point = this.toLocalPoint(viewPoint)
+  public hitPathTest(point: Vector): PathHitResult | undefined {
     const { closed } = this
 
     /**
@@ -206,10 +206,8 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
     }
   }
 
-  public hitAreaTest(viewPoint: Vector): boolean {
+  public hitAreaTest(point: Vector): boolean {
     if (!this.closed) return false
-
-    const point = this.toLocalPoint(viewPoint)
 
     const hitResult: paper.HitResult | undefined = this.path.hitTest(
       new paper.Point(point),
@@ -225,8 +223,7 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
     return hitResult.type === 'fill'
   }
 
-  public hitBoundsTest(viewPoint: Vector): boolean {
-    const point = this.toLocalPoint(viewPoint)
+  public hitBoundsTest(point: Vector): boolean {
     const { x, y, width, height } = this.bounds
     return (
       x <= point.x

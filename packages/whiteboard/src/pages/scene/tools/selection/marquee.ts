@@ -78,7 +78,7 @@ export const marqueeAction: StateAction = (context, { event }: StateMouseEvent) 
     setMarquee,
     setSelected,
   } = context
-  const { selected } = scene
+  const selected = new Set(scene.selected)
   const isMultiSelect = event.shiftKey
   if (!event.dragging) {
     setMarquee()

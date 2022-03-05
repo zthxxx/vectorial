@@ -4,6 +4,9 @@ import {
   Hand,
 } from '@vectorial/whiteboard/assets/icon'
 import {
+  EventKeyMatch,
+} from '@vectorial/whiteboard/scene'
+import {
   ToolDefine,
 } from '../types'
 
@@ -11,7 +14,11 @@ import {
 export class PanTool extends ToolDefine {
   public name: string = 'PanTool'
   public label: string = 'Move Hand'
-  public hotkey: string[] = ['KeyH']
+  public hotkey: EventKeyMatch = {
+    modifiers: [],
+    keys: ['KeyH'],
+    mouse: [],
+  }
   public hotkeyLabel: string = 'H'
 
   public get icon(): ReactElement | null {

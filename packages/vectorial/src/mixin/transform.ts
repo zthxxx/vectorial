@@ -40,7 +40,7 @@ export const TransformMixin = <T extends { width: number, height: number }>(Supe
       this._rotation = rotation ?? 0
       this._relativeTransform = identityMatrix()
 
-      this.updateRelativeTransform()
+      // this.updateRelativeTransform()
     }
 
     public get relativeTransform(): Matrix {
@@ -48,16 +48,17 @@ export const TransformMixin = <T extends { width: number, height: number }>(Supe
     }
 
     public updateRelativeTransform() {
+      const { width, height } = this
       // make rotate around own center
       this._relativeTransform = multiply(
         toTranslation(
-          this.position.x + this.width / 2,
-          this.position.y + this.height / 2
+          this.position.x + width / 2,
+          this.position.y + height / 2
         ),
         toRotation(this.rotation),
         toTranslation(
-          -this.width / 2,
-          -this.height / 2
+          -width / 2,
+          -height / 2
         ),
       )
     }

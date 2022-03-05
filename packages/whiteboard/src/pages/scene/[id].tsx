@@ -24,6 +24,7 @@ import {
 import {
   Scene,
   ViewportPlugin,
+  UndoRedoPlugin,
   AwareCursorsPlugin,
   HighlightSelectedPlugin,
 } from '@vectorial/whiteboard/scene'
@@ -62,6 +63,7 @@ export const userScene = ({ user, page, awareness }: {
     })
 
     scene.use(new ViewportPlugin({ user, scene }))
+    scene.use(new UndoRedoPlugin({ user, scene }))
     scene.use(new AwareCursorsPlugin({ user, scene }))
     scene.use(new HighlightSelectedPlugin({ user, scene }))
 

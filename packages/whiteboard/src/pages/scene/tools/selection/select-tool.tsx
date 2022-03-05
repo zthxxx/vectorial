@@ -22,10 +22,14 @@ import {
   applyInverse,
 } from 'vectorial'
 import {
+  cursor,
+} from '@vectorial/whiteboard/assets'
+import {
   Arrow,
 } from '@vectorial/whiteboard/assets/icon'
 import {
   InteractEvent,
+  EventKeyMatch,
 } from '@vectorial/whiteboard/scene'
 import {
   UserAwareness,
@@ -33,6 +37,9 @@ import {
 import {
   SceneNode,
 } from '@vectorial/whiteboard/nodes'
+import {
+  isSameSet,
+} from '@vectorial/whiteboard/utils'
 import {
   ToolDefine,
   ToolProps,
@@ -51,7 +58,11 @@ import {
 export class SelectTool extends ToolDefine {
   public name: string = 'SelectTool'
   public label: string = 'Selection'
-  public hotkey: string[] = ['KeyV']
+  public hotkey: EventKeyMatch = {
+    modifiers: [],
+    keys: ['KeyV'],
+    mouse: [],
+  }
   public hotkeyLabel: string = 'V'
 
   public interactEvent$: Observable<InteractEvent>
@@ -70,14 +81,13 @@ export class SelectTool extends ToolDefine {
   }
 
   public activate() {
+    this.scene.setCursor({ icon: cursor.arrow })
     this.isActive = true
     // @ts-ignore
     this.machine = interpret(createSelectToolMachine(this))
     this.machine!.start()
 
-    from(this.machine!).pipe(
-      tap(state => console.log('select-tool', state.value)),
-    ).subscribe({
+    from(this.machine!).subscribe({
       complete: () => {
         const state = this.machine!.state.value
         switch (state) {
@@ -129,6 +139,8 @@ export class SelectTool extends ToolDefine {
   }
 
   public setSelected = (selected: Set<SceneNode>) => {
+    if (isSameSet(selected, this.scene.selected)) return
+
     this.scene.selected = selected
     this.setAwareness({
       selected: [...selected].map(node => node.id),

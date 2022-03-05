@@ -25,7 +25,7 @@ import {
 export const findHitPath = (
   page: PageNode,
   point: Vector,
-): SceneNode | undefined => page.find(
+): SceneNode | undefined => page.findChild(
   node => Boolean(node.hitTest(point)),
 )
 
@@ -36,7 +36,7 @@ export const createEventGuard = (entry: GuardAction, exit?: StateAction): {
   const rests$ = new Subject<void>()
 
   return {
-    entry: (context) => {
+    entry: (context, ev) => {
       const { interactEvent$ } = context
       const event$ = interactEvent$.pipe(
         takeUntil(rests$),
@@ -44,6 +44,7 @@ export const createEventGuard = (entry: GuardAction, exit?: StateAction): {
       entry(
         event$,
         context,
+        ev,
       )
     },
     exit: (context, event, action) => {

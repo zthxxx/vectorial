@@ -9,6 +9,7 @@ import {
   PageNode,
   BaseNodeMixin,
   ChildrenMixin as ChildrenMixinType,
+  SceneNode,
 } from '../types'
 
 export interface ChildrenMixinProps extends Partial<ChildrenMixinType>{
@@ -42,7 +43,7 @@ export const ChildrenMixin = <
 
         if (this.page) {
           children.forEach(id => {
-            this.addChild(this.page.get(id) as T)
+            this.addChild(this.page.get(id) as SceneNode)
           })
         }
       } else if (this.page) {
@@ -51,21 +52,22 @@ export const ChildrenMixin = <
     }
 
     resumeChildren(children: string[]) {
-      children.forEach(id => {
-        const node = this.page.get(id)!
+      children.reverse().forEach(id => {
+        const node = this.page.get(id)
+        if (!node) return
         this.container.addChild(node.container)
-        this.children.push(node.id)
+        this.children.unshift(node.id)
       })
     }
 
-    addChild(child: T): void {
+    addChild(child: SceneNode): void {
       this.page.insert(
         child,
         this,
       )
     }
 
-    insertChild(index: number, child: T): void {
+    insertChild(index: number, child: SceneNode): void {
       this.page.insert(
         child,
         this,
@@ -73,7 +75,7 @@ export const ChildrenMixin = <
       )
     }
 
-    removeChild(child: T): void {
+    removeChild(child: SceneNode): void {
       const index = this.children.indexOf(child.id)
       if (index < 0) return
       this.children.splice(index, 1)
@@ -81,21 +83,24 @@ export const ChildrenMixin = <
       this.page.delete(child.id)
     }
 
-    filterChild(predicate: (node: T) => any): T[] {
+    filterChild(predicate: (node: SceneNode) => any): SceneNode[] {
       return this.children
-        .map(id => this.page.get(id) as T)
+        .map(id => this.page.get(id) as SceneNode)
+        .filter(Boolean)
         .filter(predicate)
     }
 
-    findChild(predicate: (node: T) => any): T | undefined {
+    findChild(predicate: (node: SceneNode) => any): SceneNode | undefined {
       return this.children
-        .map(id => this.page.get(id) as T)
+        .map(id => this.page.get(id) as SceneNode)
+        .filter(Boolean)
         .find(predicate)
     }
 
-    forEachChild<K>(callback: (node: T) => K): K[] {
+    forEachChild<K>(callback: (node: SceneNode) => K): K[] {
       return this.children
-        .map(id => this.page.get(id) as T)
+        .map(id => this.page.get(id))
+        .filter(Boolean)
         .map(callback)
     }
   }

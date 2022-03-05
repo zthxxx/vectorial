@@ -13,3 +13,7 @@ declare module 'valtio' {
   export * from 'valtio/index.d'
   export function snapshot<T extends object>(p: T): T;
 }
+
+interface Array<T> {
+  at(i: number): T | undefined;
+}

@@ -1,6 +1,7 @@
 import {
   NodeType,
   PageData,
+  SceneNodeData,
 } from '@vectorial/whiteboard/model'
 import {
   SharedMap,
@@ -15,18 +16,22 @@ import {
 } from './mixin'
 import {
   SceneNode,
+  ChildrenMixin as ChildrenMixinType,
   PageNode as PageNodeType,
 } from './types'
 import {
   FrameNode,
 } from './frame'
+import {
+  VectorNode,
+} from './vector-path'
 
 
 
 export const NodeTypeMap = {
   [NodeType.Frame]: FrameNode,
   [NodeType.Group]: undefined,
-  [NodeType.Vector]: undefined,
+  [NodeType.Vector]: VectorNode,
   [NodeType.BooleanOperation]: undefined,
 }
 
@@ -34,7 +39,7 @@ export interface PageNodeProps extends Partial<PageData> {
   binding?: SharedMap<PageData>
 }
 
-export class PageNode extends NodeManagerMixin(ChildrenMixin(BaseNodeMixin())) implements PageNodeType {
+export class PageNode extends NodeManagerMixin(ChildrenMixin(BaseNodeMixin())) implements ChildrenMixinType, PageNodeType {
   declare binding: SharedMap<PageData>
   declare type: NodeType.Page
   nodes: { [key: SceneNode['id']]: SceneNode }
@@ -57,13 +62,13 @@ export class PageNode extends NodeManagerMixin(ChildrenMixin(BaseNodeMixin())) i
     }
     const nodesBinding = this.binding.get('nodes')!
 
-    Object.values(nodes).forEach(node => {
+    Object.values(nodes).forEach((node: SceneNodeData) => {
       const nodeBinding: YMap<any> | undefined = nodesBinding.get(node.id)
       const NodeType = NodeTypeMap[node.type]
       if (!NodeType) return
 
       const item = new NodeType({
-        ...node,
+        ...node as any,
         type: undefined,
         binding: nodeBinding,
         page: this,

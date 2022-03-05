@@ -65,6 +65,7 @@ export const useGetDocumentPage = (id?: string): {
 
   const binding = documents.get(id)!
   const documentData = binding.toJSON() as DocumentData
+  logger.info(`Document ${id} loaded.`, documentData)
 
   const documentNode = new DocumentNode({
     ...documentData,

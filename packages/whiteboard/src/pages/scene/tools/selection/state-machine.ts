@@ -13,8 +13,10 @@ import {
   enterSelecting,
   selectingMove,
   selectingSelect,
+  selectingCancel,
   enterSelectConfirming,
   confirmingUnselect,
+  selectingDelete,
 } from './selection'
 import {
   enterMarqueeing,
@@ -50,8 +52,11 @@ export const createSelectToolMachine = (context: StateContext): SelectToolMachin
           enterNode: {
             target: 'editVector',
           },
+          delete: {
+            actions: selectingDelete,
+          },
           cancel: {
-
+            actions: selectingCancel,
           },
         },
       },

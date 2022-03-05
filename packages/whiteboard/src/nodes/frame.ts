@@ -4,7 +4,6 @@ import {
   Vector,
   isPointInRect,
   getPointsFromRect,
-  getInverseMatrix,
 } from 'vectorial'
 import {
   NodeType,
@@ -23,6 +22,8 @@ import {
 } from './mixin'
 import {
   FrameNode as FrameNodeType,
+  BaseNodeMixin as BaseNodeMixinType,
+  LayoutMixin as LayoutMixinType,
 } from './types'
 
 export interface FrameNodeProps extends Partial<FrameData>, LayoutMixinProps {
@@ -50,6 +51,9 @@ export class FrameNode extends LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixi
 
     this.graphics = new Graphics()
     this.container.addChild(this.graphics)
+
+    this.updateRelativeTransform()
+    this.updateAbsoluteTransform()
     this.draw()
 
     this.binding.observe(() => {
@@ -60,10 +64,11 @@ export class FrameNode extends LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixi
   }
 
   public get bounds(): Rect {
+    const { x, y } = this.position
     const { width, height } = this
     return {
-      x: 0,
-      y: 0,
+      x,
+      y,
       width,
       height,
     }
@@ -123,14 +128,14 @@ export class FrameNode extends LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixi
   }
 
   public coverTest(viewRect: Rect): boolean {
-    const points = getPointsFromRect(this.bounds, this.absoluteTransform)
+    const parent = this.page.get(this.parent) as BaseNodeMixinType & LayoutMixinType
+    const points = getPointsFromRect(this.bounds, parent?.absoluteTransform)
     const cover = points.every(point => isPointInRect(point, viewRect))
     return cover
   }
 
   draw() {
     const {
-      position,
       bounds,
       graphics,
     } = this
@@ -142,8 +147,8 @@ export class FrameNode extends LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixi
       .clear()
       .beginFill(0xffffff)
       .drawRect(
-        position.x,
-        position.y,
+        0,
+        0,
         bounds.width,
         bounds.height,
       )

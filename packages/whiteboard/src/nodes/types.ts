@@ -26,7 +26,7 @@ export interface BaseNodeMixin<T extends BaseDataMixin = BaseDataMixin> extends 
   clone(): BaseNodeMixin<T>;
 }
 
-export interface ChildrenMixin<T extends BaseNodeMixin = BaseNodeMixin> extends
+export interface ChildrenMixin<T extends BaseNodeMixin = SceneNode> extends
   ChildrenDataMixin<T> {
     /** for get child node by id mapping in PageNode */
     page: PageNode;
@@ -158,7 +158,7 @@ export interface PageNode extends
   BaseNodeMixin<PageData>,
   PageData,
   SerializableMixin<PageData>,
-  ChildrenMixin,
+  ChildrenMixin<SceneNode>,
   NodeManagerMixin {
     type: NodeType.Page;
     nodes: { [key: SceneNode['id']]: SceneNode };

@@ -2,6 +2,9 @@ import type {
   Observable,
 } from 'rxjs'
 import type {
+  HitResult,
+} from 'vectorial'
+import type {
   Interpreter,
   StateMachine,
   EventObject,
@@ -12,24 +15,21 @@ import type {
   MouseEvent,
   KeyEvent,
 } from '@vectorial/whiteboard/scene'
-import {
-  SceneNode,
-} from '@vectorial/whiteboard/nodes'
-import type { SelectTool } from './select-tool'
+import type { ToolLayer } from './vector-tool'
 
 export type {
   MouseEvent,
   KeyEvent,
 }
-export type StateMouseEvent = EventObject & { event: MouseEvent; hit?: SceneNode; }
+export type StateMouseEvent = EventObject & { event: MouseEvent; hit?: HitResult; }
 export type StateKeyEvent = EventObject & { event: KeyEvent }
 
 export type StateEvent = EventObject | StateMouseEvent | StateKeyEvent
 
-export type StateContext = SelectTool
+export type StateContext = ToolLayer
 
 export type StateAction = ActionFunction<StateContext, StateEvent>
 export type GuardAction = (interactEvent$: Observable<InteractEvent>, context: StateContext, ev: StateEvent) => void
 
-export type SelectToolMachine = StateMachine<StateContext, any, StateEvent>
-export type SelectToolService = Interpreter<StateContext, any, StateEvent>
+export type VectorToolMachine = StateMachine<StateContext, any, StateEvent>
+export type VectorToolService = Interpreter<StateContext, any, StateEvent>

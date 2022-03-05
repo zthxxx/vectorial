@@ -4,7 +4,6 @@ import {
   add,
   Rect,
   Matrix,
-  identityMatrix,
   Vector,
   multiply,
   isPointInRect,
@@ -41,7 +40,7 @@ export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
     declare forEachChild: ChildrenMixin['forEachChild']
 
     public page: PageNode
-    public _absoluteTransform: Matrix = identityMatrix()
+    public _absoluteTransform: Matrix | null = null
 
     constructor(...args: any[])
     constructor(props: LayoutMixinProps, ...args: any[]) {
@@ -53,7 +52,8 @@ export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
       } = props
       this.page = page
 
-      this.updateAbsoluteTransform()
+      this.container.position.set(position.x, position.y)
+      this.container.angle = rotation
 
       if (!this.binding.get('position')) {
         this.binding.set('position', toSharedTypes(position))
@@ -70,6 +70,7 @@ export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
 
     public set position({ x, y }: Vector) {
       this.binding.set('position', toSharedTypes({ x, y }))
+      this.container.position.set(x, y)
     }
 
     public get rotation(): number {
@@ -78,9 +79,22 @@ export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
 
     public set rotation(degree: number) {
       this.binding.set('rotation', degree)
+      this.container.angle = degree
     }
 
     public get absoluteTransform(): Matrix {
+      if (!this._absoluteTransform) {
+        const parent = this.page.get(this.parent) as undefined | BaseNodeMixin & LayoutMixinType
+        if (parent && parent.absoluteTransform) {
+          this._absoluteTransform = multiply(
+            parent.absoluteTransform,
+            this.relativeTransform,
+          )
+        } else {
+          this._absoluteTransform = this.relativeTransform
+        }
+      }
+
       return this._absoluteTransform
     }
 
@@ -89,17 +103,7 @@ export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
     }
 
     public updateAbsoluteTransform(): void {
-      if (this.page.get(this.parent)) {
-        const parent = this.page.get(this.parent)! as BaseNodeMixin & LayoutMixinType
-        if (parent.absoluteTransform) {
-          this._absoluteTransform = multiply(
-            parent.absoluteTransform,
-            this.relativeTransform,
-          )
-        }
-      } else {
-        this._absoluteTransform = this.relativeTransform
-      }
+      this._absoluteTransform = null
 
       this.forEachChild?.((node: BaseNodeMixin & LayoutMixinType) => {
         node.updateAbsoluteTransform?.()
@@ -115,8 +119,8 @@ export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
     }
 
     public moveDelta(viewDelta: Vector) {
-      const position = applyInverse(this.position, this.absoluteTransform)
-      this.position = applyMatrix(add(position, viewDelta), this.absoluteTransform)
+      // due to we are not make scale as matrix transform
+      this.position = add(this.position, viewDelta)
     }
 
     public toLocalPoint(viewPoint: Vector): Vector {

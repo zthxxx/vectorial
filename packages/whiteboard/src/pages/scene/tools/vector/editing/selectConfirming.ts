@@ -13,11 +13,14 @@ import {
   PathHitType,
   HitResult,
 } from 'vectorial'
-
+import {
+  assignMap,
+} from '@vectorial/whiteboard/utils'
 import type {
   MouseEvent,
   StateMouseEvent,
   StateAction,
+  GuardAction,
 } from '../types'
 import {
   normalizeMouseEvent,
@@ -27,74 +30,73 @@ import {
 } from '../utils'
 
 
-export const enterSelectConfirming: StateAction = (
-  context,
-  { hit }: StateMouseEvent,
-) => {
+export const enterSelectConfirming: GuardAction = (interactEvent$, context, event) => {
   const {
-    interactionEvent$,
-    subscription,
     machine,
     vectorPath,
   } = context
-  subscription.push(
-    interactionEvent$.pipe(
-      filter(event => Boolean(event.mouse)),
-      mergeMap((event: MouseEvent) => defer(() => {
-        const {
-          isDrag,
-          isClickUp,
-          anchorHit,
-        } = normalizeMouseEvent(event, vectorPath)
 
-        // dragBase will always be existed, code only for defense and type guard
-        if (!context.dragBase) {
-          return EMPTY
+  const { hit } = event as StateMouseEvent
+
+  interactEvent$.pipe(
+    filter(event => Boolean(event.mouse)),
+    mergeMap((event: MouseEvent) => defer(() => {
+      const {
+        isDrag,
+        isClickUp,
+        anchorHit,
+      } = normalizeMouseEvent(event, vectorPath)
+
+      // dragBase will always be existed, code only for defense and type guard
+      if (!context.dragBase) {
+        return EMPTY
+      }
+
+      if (isDrag) {
+        return of<StateMouseEvent>({ type: 'adjust', event })
+
+      } else if (isClickUp) {
+        if (
+          event.match({ modifiers: ['Meta'] })
+          && [
+            PathHitType.Anchor,
+            PathHitType.InHandler,
+            PathHitType.OutHandler,
+          ].includes(hit?.type as PathHitType)
+        ) {
+          return of<StateMouseEvent>({ type: 'toggleHandler', event, hit })
         }
 
-        if (isDrag) {
-          return of<StateMouseEvent>({ type: 'adjust', event })
-
-        } else if (isClickUp) {
-          if (
-            event.match({ modifiers: ['Meta'] })
-            && [
-              PathHitType.Anchor,
-              PathHitType.InHandler,
-              PathHitType.OutHandler,
-            ].includes(hit?.type as PathHitType)
-          ) {
-            return of<StateMouseEvent>({ type: 'toggleHandler', event, hit })
-          }
-
-          if (
-            !vectorPath.closed
-            && !event.shiftKey
-            && anchorHit
+        if (
+          !vectorPath.closed
+          && !event.shiftKey
+          && anchorHit
+          && (
+            'point' in anchorHit
             && (
               anchorHit.point === vectorPath.anchors.at(0)
               || anchorHit.point === vectorPath.anchors.at(-1)
             )
-          ) {
-            return of<StateMouseEvent>({ type: 'resumeCreating', event, hit: anchorHit })
-          }
-          /**
-           * if not hit anchor, that means anchor is new appended to selected;
-           * if hit an anchor, that means the anchor need be judge to unselect;
-           */
-          if (hit?.type === PathHitType.Anchor) {
-            return of<StateMouseEvent>({ type: 'unselect', event, hit })
-          }
-          return of<StateMouseEvent>({ type: 'cancel', event })
-
-        } else {
-          return EMPTY
+          )
+        ) {
+          return of<StateMouseEvent>({ type: 'resumeCreating', event, hit: anchorHit })
         }
+        /**
+         * if not hit anchor, that means anchor is new appended to selected;
+         * if hit an anchor, that means the anchor need be judge to unselect;
+         */
+        if (hit?.type === PathHitType.Anchor) {
+          return of<StateMouseEvent>({ type: 'unselect', event, hit })
+        }
+        return of<StateMouseEvent>({ type: 'cancel', event })
 
-      })),
-      tap((event: StateMouseEvent) => { machine?.send(event) }),
-    ).subscribe(),
-  )
+      } else {
+        return EMPTY
+      }
+
+    })),
+    tap((event: StateMouseEvent) => { machine?.send(event) }),
+  ).subscribe()
 }
 
 export const confirmingUnselect: StateAction = ({
@@ -135,6 +137,8 @@ export const selectingResumeCreating: StateAction = (
 }
 
 export const confirmingToggleHandler: StateAction = ({
+  scene,
+  vectorNode,
   changes,
   anchorNodes,
   selected,
@@ -169,7 +173,21 @@ export const confirmingToggleHandler: StateAction = ({
       })
       break
     }
+    default: {
+      return
+    }
   }
+
+  const anchors = vectorNode.binding.get('path')!.get('anchors')!
+
+  const { point, anchorIndex } = hit
+  scene.docTransact(() => {
+    assignMap(anchors.get(anchorIndex), {
+      inHandler: point.inHandler,
+      outHandler: point.outHandler,
+      handlerType: point.handlerType,
+    })
+  })
 
   changes.push(...getResetStyleChanges(anchorNodes))
   changes.push(...getSelectedStyleChanges(selected, anchorNodes))

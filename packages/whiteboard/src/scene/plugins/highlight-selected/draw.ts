@@ -3,6 +3,7 @@ import { Rectangle } from '@pixi/math'
 import {
   Vector,
   Rect,
+  multiply,
   getInverseMatrix,
   getPointsFromRect,
 } from 'vectorial'
@@ -60,7 +61,10 @@ export const getNodesBounds = (nodes: LayoutMixin[]): Rect => {
   const rightBottom: Vector = { x: -Infinity, y: -Infinity }
 
   nodes.forEach(node => {
-    const points = getPointsFromRect(node.bounds, node.absoluteTransform)
+    const inverse = getInverseMatrix(
+      multiply(node.absoluteTransform, getInverseMatrix(node.relativeTransform)),
+    )
+    const points = getPointsFromRect(node.bounds, inverse)
 
     points.forEach(point => {
       if (point.x < topLeft.x) topLeft.x = point.x

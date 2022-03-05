@@ -1,6 +1,5 @@
-import { proxy, snapshot, subscribe } from 'valtio'
-import { bindProxyAndYMap } from 'valtio-yjs'
 import { Graphics } from '@pixi/graphics'
+import { proxy } from 'valtio'
 import { CanvasTextureAllocator } from '@pixi-essentials/texture-allocator'
 import type { Path, SVGSceneContext } from '@pixi-essentials/svg'
 import { SVGPathNode, FILL_RULE} from '@pixi-essentials/svg'
@@ -14,7 +13,6 @@ import {
 import {
   NodeType,
   VectorData,
-  Color,
   SolidPaint,
 } from '@vectorial/whiteboard/model'
 import {
@@ -36,8 +34,8 @@ import {
 
 
 // https://github.dev/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGScene.ts#L120-L121
-export const atlas = new CanvasTextureAllocator(2048, 2048)
-export const sceneContext: SVGSceneContext = {
+const atlas = new CanvasTextureAllocator(2048, 2048)
+export const pixiSceneContext: SVGSceneContext = {
   atlas,
   disableHrefSVGLoading: true,
   disableRootPopulation: true,
@@ -65,8 +63,9 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
       type: NodeType.Vector,
     })
 
-    this.container = new SVGPathNode(sceneContext)
-    this.path = proxy(path)
+    this.path = path
+    this.container = new SVGPathNode(pixiSceneContext)
+    this.container.position.set(this.position.x, this.position.y)
 
     /** @TODO two-way binding */
     this.vectorPath = VectorPath.from(path)
@@ -75,17 +74,36 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
       this.binding.set('path', toSharedTypes(path))
     }
 
-    bindProxyAndYMap(this.path, this.binding.get('path')!)
+    this.updateRelativeTransform()
+    this.draw()
+
+    this.binding.observeDeep((events) => {
+      this.updateRelativeTransform()
+      this.updateAbsoluteTransform()
+      this.draw()
+    })
   }
 
   public get bounds(): Rect {
-    const { width, height } = this.vectorPath.bounds
+    const { x, y } = this.position
+    const { bounds } = this.vectorPath
+    const { width, height } = bounds
+
     return {
-      x: 0,
-      y: 0,
+      x: x + bounds.x,
+      y: y + bounds.y,
       width,
       height,
     }
+  }
+
+  public hitTest(viewPoint: Vector): boolean {
+    const point = this.toLocalPoint(viewPoint)
+
+    return Boolean(
+      this.vectorPath.hitPathTest(point)
+      || this.vectorPath.hitAreaTest(point)
+    )
   }
 
   clone(): VectorNode {
@@ -104,17 +122,8 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
       ...this.serializeBlend(),
       ...this.serializeGeometry(),
       type: NodeType.Vector,
-      path: snapshot(this.path),
+      path: this.vectorPath.serialize(),
     }
-  }
-
-  public hitTest(viewPoint: Vector): boolean {
-    const point = this.toLocalPoint(viewPoint)
-
-    return Boolean(
-      this.vectorPath.hitPathTest(point)
-      || this.vectorPath.hitAreaTest(point)
-    )
   }
 
   public clear() {
@@ -127,40 +136,31 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
 
   public draw() {
     const { fill, stroke } = this
-    this.container.position.set(this.position.x, this.position.y)
     this.clear()
-
     if (
       this.removed
+      || this.vectorPath.anchors.length < 2
       || this.page.get(this.parent)?.type === NodeType.BooleanOperation
     ) return
 
-    fill.paints
-      .filter(paint => !paint.invisible)
-      /** @TODO gradient */
-      .filter(paint => paint.type === 'Solid')
-      .forEach((paint: SolidPaint) => {
-        this.container.beginFill(
-          toPixiColor(paint.color),
-          paint.opacity,
-        )
+    if (this.vectorPath.closed) {
+      fill.paints
+        .filter(paint => !paint.invisible)
+        /** @TODO gradient */
+        .filter(paint => paint.type === 'Solid')
+        .forEach((paint: SolidPaint) => {
+          this.container.beginFill(
+            toPixiColor(paint.color),
+            paint.opacity,
+          )
 
-        drawPath(
-          this.container,
-          this.path,
-        )
-
-        // https://github.com/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGPathNode.ts#L331-L336
-        // @ts-ignore
-        const currentPath: Path = this.container.currentPath2
-        if (currentPath) {
-          currentPath.fillRule = FILL_RULE.EVENODD
-          // @ts-ignore
-          this.container.drawShape(currentPath);
-          // @ts-ignore
-          this.container.currentPath2 = null
-        }
-      })
+          drawPath(
+            this.container,
+            this.vectorPath,
+          )
+          this.drawEnd()
+        })
+    }
 
     if (stroke.width) {
       stroke.paints
@@ -168,23 +168,36 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
         /** @TODO gradient */
         .filter(paint => paint.type === 'Solid')
         .forEach((paint: SolidPaint) => {
-
           this.container.lineStyle({
             width: stroke.width,
             color: toPixiColor(paint.color),
           })
           drawPath(
             this.container,
-            this.path,
+            this.vectorPath,
           )
+          this.drawEnd()
         })
+    }
+  }
+
+  public drawEnd() {
+    // https://github.com/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGPathNode.ts#L331-L336
+    // @ts-ignore
+    const currentPath: Path = this.container.currentPath2
+    if (currentPath) {
+      currentPath.fillRule = FILL_RULE.EVENODD
+      // @ts-ignore
+      this.container.drawShape(currentPath);
+      // @ts-ignore
+      this.container.currentPath2 = null
     }
   }
 }
 
 export const drawPath = (
   graphics: Graphics,
-  path: PathData,
+  path: VectorPath,
 ) => {
   const first = path.anchors[0]
   graphics.moveTo(first.position.x, first.position.y)

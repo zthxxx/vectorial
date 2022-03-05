@@ -43,8 +43,11 @@ export const toScale = (sx: number, sy: number): Matrix => [
  * └─             ─┘    └─                   ─┘
  * usually, m[2] and m[5] are always 0, m[8] is always 1, for 2D sence
  */
-export const multiply = (...matrixes: Matrix[]): Matrix => {
-  return matrixes.reduce((left, right) => {
+export const multiply = (...matrixes: (Matrix | undefined)[]): Matrix => {
+  const chain = matrixes.filter(Boolean) as Matrix[]
+  if (chain.length === 0) return identityMatrix()
+
+  return chain.reduce((left, right) => {
     const result: Matrix = emptyMatrix()
     for (let row = 0; row < 3; row++) {
       for (let col = 0; col < 3; col++) {

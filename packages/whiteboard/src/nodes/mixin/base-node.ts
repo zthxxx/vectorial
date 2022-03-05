@@ -33,12 +33,25 @@ export const BaseNodeMixin = <T extends Constructor>(Super?: T) => {
       this.container = new Container()
       this.binding = (binding ?? new Y.Map()) as SharedMap<BaseDataMixin>
 
-      if (!binding) {
+      if (!this.binding.has('id')) {
         this.id = id ?? nanoid()
+      }
+
+      if (!this.binding.has('name')) {
         this.name = name ?? ''
+      }
+
+      if (!this.binding.has('parent')) {
         this.parent = parent
+      }
+
+      if (!this.binding.has('type')) {
         this.type = type ?? NodeType.Frame
+      }
+      if (!this.binding.has('order')) {
         this.order = order
+      }
+      if (!this.binding.has('removed')) {
         this.removed = removed ?? false
       }
     }

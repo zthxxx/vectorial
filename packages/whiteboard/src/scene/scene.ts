@@ -1,11 +1,12 @@
 import * as Y from 'yjs'
 import type { Renderer } from '@pixi/core'
 import { Container } from '@pixi/display'
-import { Subject, ReplaySubject } from 'rxjs'
+import { Subject, BehaviorSubject } from 'rxjs'
 import { Awareness } from 'y-protocols/awareness'
 import {
   Matrix,
   Rect,
+  identityMatrix,
 } from 'vectorial'
 import {
   SceneNodeData,
@@ -31,7 +32,7 @@ import {
 } from './plugins'
 
 
-type SelectedIds = Set<SceneNode>
+type SelectedNodes = Set<SceneNode>
 
 export interface ScenePlugins {
   [name: ScenePlugin['name']]: ScenePlugin | undefined;
@@ -66,14 +67,14 @@ export class Scene {
   protected _lastCursor: string | undefined
   /** absolute rect to page layout */
   protected _marquee: Rect | undefined
-  protected _selected: SelectedIds = new Set()
+  protected _selected: SelectedNodes = new Set()
   protected _hovered?: SceneNode
 
   public events = {
     interactEvent$: new Subject<InteractEvent>(),
-    viewMatrix$: new ReplaySubject<Matrix>(1),
+    viewMatrix$: new BehaviorSubject<Matrix>(identityMatrix()),
     marquee$: new Subject<Rect | undefined>(),
-    selected$: new Subject<SelectedIds>(),
+    selected$: new Subject<SelectedNodes>(),
     hovered$: new Subject<SceneNode | undefined>(),
   }
 
@@ -118,7 +119,10 @@ export class Scene {
     this.events.interactEvent$ = this.eventManager.interactEvent$
 
     this.setCursor({ icon: arrow })
-    this.events.viewMatrix$.next(this.viewMatrix)
+
+    if (import.meta.env.DEV) {
+      (window as any).scene = this
+    }
   }
 
   public destroy() {
@@ -164,11 +168,11 @@ export class Scene {
     this.events.marquee$.next(marquee)
   }
 
-  public get selected(): SelectedIds {
+  public get selected(): SelectedNodes {
     return this._selected
   }
 
-  public set selected(selected: SelectedIds) {
+  public set selected(selected: SelectedNodes) {
     this._selected = selected
     this.events.selected$.next(selected)
   }

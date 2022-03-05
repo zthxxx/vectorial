@@ -7,9 +7,6 @@ import type {
   VectorToolMachine,
 } from './types'
 import {
-  unsubscribeAll,
-} from './utils'
-import {
   enterCreating,
   exitCreating,
   enterIndicating,
@@ -37,6 +34,9 @@ import {
   enterMarqueeing,
   selectingInsertAnchor,
 } from './editing'
+import {
+  createEventGuard,
+} from './utils'
 
 
 export const createVectorToolMachine = (context: StateContext): VectorToolMachine =>
@@ -60,12 +60,13 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
       creating: {
         id: 'creating',
         initial: 'indicating',
-        entry: enterCreating,
-        exit: exitCreating,
+        ...createEventGuard(
+          enterCreating,
+          exitCreating,
+        ),
         states: {
           indicating: {
-            entry: enterIndicating,
-            exit: unsubscribeAll,
+            ...createEventGuard(enterIndicating),
             on: {
               move: {
                 actions: indicatingMove,
@@ -98,8 +99,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
             },
           },
           condition: {
-            entry: enterAdjustOrCondition,
-            exit: unsubscribeAll,
+            ...createEventGuard(enterAdjustOrCondition),
             on: {
               move: {
                 target: 'adjusting',
@@ -112,8 +112,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
             }
           },
           doubleClickConfirming: {
-            entry: enterDoubleClickConfirming,
-            exit: unsubscribeAll,
+            ...createEventGuard(enterDoubleClickConfirming),
             after: {
               400: 'indicating',
             },
@@ -126,8 +125,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
             }
           },
           adjusting: {
-            entry: enterAdjustOrCondition,
-            exit: unsubscribeAll,
+            ...createEventGuard(enterAdjustOrCondition),
             on: {
               move: {
                 actions: adjustingMove,
@@ -150,8 +148,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
         initial: 'selecting',
         states: {
           selecting: {
-            entry: enterSelecting,
-            exit: unsubscribeAll,
+            ...createEventGuard(enterSelecting),
             on: {
               move: {
                 actions: hoverIndicate,
@@ -174,8 +171,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
             },
           },
           selectConfirming: {
-            entry: enterSelectConfirming,
-            exit: unsubscribeAll,
+            ...createEventGuard(enterSelectConfirming),
             on: {
               adjust: {
                 target: 'adjusting',
@@ -199,8 +195,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
             },
           },
           adjusting: {
-            entry: enterAdjusting,
-            exit: unsubscribeAll,
+            ...createEventGuard(enterAdjusting),
             on: {
               adjust: {
                 actions: adjustingAdjust,
@@ -211,8 +206,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
             },
           },
           marqueeing: {
-            entry: enterMarqueeing,
-            exit: unsubscribeAll,
+            ...createEventGuard(enterMarqueeing),
             on: {
               marquee: {
 
@@ -223,8 +217,7 @@ export const createVectorToolMachine = (context: StateContext): VectorToolMachin
             },
           },
           doubleClickConfirming: {
-            entry: enterDoubleClickConfirming,
-            exit: unsubscribeAll,
+            ...createEventGuard(enterDoubleClickConfirming),
             after: {
               400: 'selecting',
             },

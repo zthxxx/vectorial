@@ -105,3 +105,9 @@ export const toSharedTypes = <T>(value: T): SharedTypes<T> => {
     }
   }
 }
+
+export const assignMap = (yMap: Y.Map<any>, obj: object) => {
+  Object.entries(obj).forEach(([key, value]) => {
+    yMap.set(key, toSharedTypes(value))
+  })
+}

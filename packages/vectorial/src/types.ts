@@ -38,6 +38,7 @@ export interface AnchorHitResult {
   type: PathHitType.Anchor | PathHitType.InHandler | PathHitType.OutHandler;
   point: VectorAnchor;
   ends: [VectorAnchor, VectorAnchor];
+  anchorIndex: number;
 }
 
 export interface PathHitResult {
@@ -51,6 +52,7 @@ export interface PathHitResult {
 
 export interface AreaHitResult {
   type: PathHitType.Fill;
+  point: null
 }
 
 

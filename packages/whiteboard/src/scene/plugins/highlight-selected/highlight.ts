@@ -3,7 +3,7 @@ import { Graphics } from '@pixi/graphics'
 import { isEqual } from 'lodash-es'
 import {
   tap,
-  map,
+  filter,
 } from 'rxjs/operators'
 import {
   Rect,
@@ -28,6 +28,7 @@ import {
   drawBounds,
   getNodesBounds,
 } from './draw'
+import { AnchorNode } from './anchor'
 
 
 declare module '@vectorial/whiteboard/scene/scene' {
@@ -53,7 +54,9 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     super(props)
     this.isActive = true
 
-    const { interactLayer, usersLayer } = this.scene
+    const { interactLayer, usersLayer, app } = this.scene
+
+    AnchorNode.renderer = app.renderer
 
     this.selectLayer = new Container()
     this.hoverLayer = new Graphics()
@@ -82,11 +85,21 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     this.setupViewport()
   }
 
+
+  public activate() {
+    this.isActive = true
+  }
+
   /**
-   * ViewportPlugin is always active
+   * but users's awareness is always active
    */
-  public activate() {}
-  public deactivate() {}
+  public deactivate() {
+    this.isActive = false
+
+    this.selectLayer.removeChildren()
+    this.hoverLayer.clear()
+    this.boundaryLayer.clear()
+  }
 
   public drawMarquee = () => {
     const { marquee, viewMatrix } = this.scene
@@ -145,10 +158,14 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     const { hovered, viewMatrix } = this.scene
     this.hoverLayer.clear()
     if (!hovered) return
-    if ([NodeType.Frame, NodeType.Group].includes(hovered.type)) {
+    if ([NodeType.Frame, NodeType.Group, NodeType.Vector].includes(hovered.type)) {
+      const parent = this.scene.page.get(hovered.parent)
       drawBounds(
         this.hoverLayer,
-        getPointsFromRect(hovered.bounds, multiply(viewMatrix, hovered.absoluteTransform)),
+        getPointsFromRect(
+          hovered.bounds,
+          multiply(viewMatrix, parent?.absoluteTransform),
+        ),
         currentUserColor,
         2,
       )
@@ -161,12 +178,14 @@ export class HighlightSelectedPlugin extends ScenePlugin {
       .filter(node => node && !node.removed)
 
     this.boundaryLayer.clear()
+    if (!nodes.length) return
     this.selectLayer.removeChildren()
     const bounds = getNodesBounds(nodes)
     drawBounds(
       this.boundaryLayer,
       getPointsFromRect(bounds, viewMatrix),
       currentUserColor,
+      2,
     )
   }
 
@@ -209,10 +228,12 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     const { selected$, hovered$ } = this.scene.events
 
     hovered$.pipe(
+      filter(() => this.isActive),
       tap(this.drawHovered),
     ).subscribe()
 
     selected$.pipe(
+      filter(() => this.isActive),
       tap(this.drawSelected),
     ).subscribe()
 
@@ -222,17 +243,20 @@ export class HighlightSelectedPlugin extends ScenePlugin {
   public setupViewport() {
     const { viewMatrix$ } = this.scene.events
     viewMatrix$.pipe(
-      tap(this.drawMarquee),
-      tap(this.drawHovered),
-      tap(this.drawSelected),
       tap(this.drawUsersMarquee),
       tap(() => this.drawUsersSelected()),
+      tap(this.drawMarquee),
       tap(viewMatrix => this.lastViewMatrix = viewMatrix),
+      filter(() => this.isActive),
+      tap(this.drawHovered),
+      tap(this.drawSelected),
     ).subscribe()
 
     this.scene.page.binding.observeDeep(() => {
-      this.drawSelected()
       this.drawUsersSelected(true)
+
+      if (!this.isActive) return
+      this.drawSelected()
     })
   }
 }

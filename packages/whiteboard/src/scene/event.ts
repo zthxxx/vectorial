@@ -18,6 +18,9 @@ import {
   Vector,
   applyInverse,
 } from 'vectorial'
+import {
+  isSameSet,
+} from '@vectorial/whiteboard/utils'
 import type {
   Scene,
 } from './scene'
@@ -559,20 +562,6 @@ export class EventManager {
 
     return from(releaseKeys)
   }
-}
-
-
-
-const isSameSet = (setA: Set<any>, setB: Set<any>): boolean => {
-  if (setA.size !== setB.size) {
-    return false
-  }
-  for (const key of setA) {
-    if (!setB.has(key)) {
-      return false
-    }
-  }
-  return true
 }
 
 export const isDeadDrag = (prev: Vector, next: Vector): boolean =>

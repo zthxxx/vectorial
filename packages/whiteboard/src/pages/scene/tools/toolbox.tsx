@@ -1,7 +1,15 @@
-import { memo, useEffect, useRef, useCallback } from 'react'
+import { memo, useEffect, useCallback } from 'react'
 import { atom, useAtom } from 'jotai'
+import {
+  tap,
+  map,
+  filter,
+} from 'rxjs/operators'
 import { keyBy } from 'lodash-es'
-import { ScenePluginProps } from '@vectorial/whiteboard/scene'
+import {
+  ScenePluginProps,
+  KeyTriggerType,
+} from '@vectorial/whiteboard/scene'
 import {
   ToolDefine,
   ToolProps,
@@ -12,13 +20,22 @@ import { PanTool } from './pan'
 
 type Tools = ToolDefine[]
 
-export const state = {
-  tools: atom<Tools>([]),
-  current: atom<string>(''),
+export const toolState = {
+  tools: [] as Tools,
+  toolsMap: {} as { [name: string]: ToolDefine },
+  current: '',
+}
+
+const useTools = (): [Tools, (set: Tools) => void] => {
+  const set = (tools: Tools) => {
+    toolState.tools = tools
+    toolState.toolsMap = keyBy(tools, 'name')
+  }
+  return [toolState.tools, set]
 }
 
 const useSetupTools = (toolProps: ToolProps): Tools => {
-  const [tools, setTools] = useAtom(state.tools)
+  const [tools, setTools] = useTools()
   if (tools.length) return tools
 
   setTools([
@@ -28,6 +45,8 @@ const useSetupTools = (toolProps: ToolProps): Tools => {
   ])
   return tools
 }
+
+export const currentToolAtom = atom('')
 
 export interface ToolboxProps extends ScenePluginProps {
 
@@ -39,19 +58,17 @@ export const Toolbox = memo((props: ToolboxProps) => {
     scene,
   } = props
 
-  const [current, setCurrent] = useAtom(state.current)
-  const toolsMapRef = useRef<{ [name: string]: ToolDefine }>({})
-  const toolNameRef = useRef('')
+  const [current, setCurrent] = useAtom(currentToolAtom)
 
   const switchTool = useCallback((name: string) => {
-    const current = toolNameRef.current
-    const toolsMap = toolsMapRef.current
+    const { current, toolsMap } = toolState
     const currentTool = toolsMap[current]
     const nextTool = toolsMap[name]
-    currentTool?.isActive && currentTool.deactivate()
-    !nextTool?.isActive && nextTool?.activate()
+    if (name === current) return
+    currentTool?.deactivate()
+    nextTool?.activate()
+    toolState.current = name
     setCurrent(name)
-    toolNameRef.current = name
   }, [])
 
   const tools = useSetupTools({
@@ -60,13 +77,18 @@ export const Toolbox = memo((props: ToolboxProps) => {
     switchTool,
   })
 
-  const toolsMap = keyBy(tools, 'name')
-  toolsMapRef.current = toolsMap
-
   useEffect(() => {
-    if (tools.length) {
-      switchTool('SelectTool')
-    }
+    if (!tools.length) return
+    const { events } = scene
+    switchTool('SelectTool')
+    const hotkey = events.interactEvent$.pipe(
+      filter(event => (
+        event.key?.type === KeyTriggerType.Down
+      )),
+      map(event => tools.find(item => event.match(item.hotkey))),
+      tap(tool => tool && switchTool(tool.name)),
+    ).subscribe()
+    return () => hotkey.unsubscribe()
   }, [tools])
 
   return (
@@ -80,7 +102,7 @@ export const Toolbox = memo((props: ToolboxProps) => {
       {tools.map((tool) => (
         <div
           key={tool.name}
-          title={`${tool.label}`}  // (${tool.hotkeyLabel})
+          title={`${tool.label} (${tool.hotkeyLabel})`}
           className={[
             `
               flex justify-center items-center

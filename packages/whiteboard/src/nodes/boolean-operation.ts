@@ -1,5 +1,3 @@
-import { proxy, snapshot } from 'valtio'
-import { bindProxyAndYMap } from 'valtio-yjs'
 import { SVGPathNode, FILL_RULE} from '@pixi-essentials/svg'
 import {
   Rect,
@@ -31,7 +29,7 @@ import {
   BooleanOperationNode as BooleanOperationNodeType,
 } from './types'
 import {
-  sceneContext,
+  pixiSceneContext,
   drawPath,
   VectorNode,
 } from './vector-path'
@@ -59,7 +57,7 @@ export class BooleanOperationNode
       type: NodeType.BooleanOperation,
     })
 
-    this.container = new SVGPathNode(sceneContext)
+    this.container = new SVGPathNode(pixiSceneContext)
     this.booleanOperator = booleanOperator
 
     /** @TODO two-way binding */
@@ -152,20 +150,9 @@ export class BooleanOperationNode
         this.shape.areas.forEach((path: VectorPath) => {
           drawPath(
             this.container,
-            path as PathData,
+            path,
           )
         })
-
-        // https://github.com/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGPathNode.ts#L331-L336
-        // @ts-ignore
-        const currentPath: Path = this.container.currentPath2
-        if (currentPath) {
-          currentPath.fillRule = FILL_RULE.EVENODD
-          // @ts-ignore
-          this.container.drawShape(currentPath);
-          // @ts-ignore
-          this.container.currentPath2 = null
-        }
       })
 
     if (stroke.width) {
@@ -183,10 +170,23 @@ export class BooleanOperationNode
           this.shape.areas.forEach((path: VectorPath) => {
             drawPath(
               this.container,
-              path as PathData,
+              path,
             )
           })
         })
+    }
+  }
+
+  public drawEnd() {
+    // https://github.com/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGPathNode.ts#L331-L336
+    // @ts-ignore
+    const currentPath: Path = this.container.currentPath2
+    if (currentPath) {
+      currentPath.fillRule = FILL_RULE.EVENODD
+      // @ts-ignore
+      this.container.drawShape(currentPath);
+      // @ts-ignore
+      this.container.currentPath2 = null
     }
   }
 }
