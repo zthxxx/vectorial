@@ -1,14 +1,16 @@
 import { Graphics } from '@pixi/graphics'
-import { proxy } from 'valtio'
 import { CanvasTextureAllocator } from '@pixi-essentials/texture-allocator'
 import type { Path, SVGSceneContext } from '@pixi-essentials/svg'
 import { SVGPathNode, FILL_RULE} from '@pixi-essentials/svg'
+import * as Y from 'yjs'
 import {
   Rect,
   Vector,
   VectorPath,
   PathData,
   emptyPath,
+  VectorAnchor,
+  AnchorData,
 } from 'vectorial'
 import {
   NodeType,
@@ -77,10 +79,8 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
     this.updateRelativeTransform()
     this.draw()
 
-    this.binding.observeDeep((events) => {
-      this.updateRelativeTransform()
-      this.updateAbsoluteTransform()
-      this.draw()
+    this.binding.observeDeep((events, transaction) => {
+      events.forEach((event) => this.bindingUpdate(event, transaction))
     })
   }
 
@@ -191,6 +191,120 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
       this.container.drawShape(currentPath);
       // @ts-ignore
       this.container.currentPath2 = null
+    }
+  }
+
+  public bindingUpdate = (event: Y.YMapEvent<any>, transaction: Y.Transaction) => {
+    const { changes, path, delta, keys } = event
+
+    switch (path.shift()) {
+      case undefined: {
+        for (const [key, { action }] of keys.entries()) {
+          if (action === 'update') {
+            switch (key) {
+              case 'position': {
+                const position = this.binding.get('position')!.toJSON()
+                this.container.position.set(position.x, position.y)
+                this.updateRelativeTransform()
+                this.updateAbsoluteTransform()
+                break
+              }
+              case 'rotation': {
+                const rotation = this.binding.get('rotation')!
+                this.container.rotation = rotation
+                this.updateRelativeTransform()
+                this.updateAbsoluteTransform()
+                break
+              }
+            }
+          }
+        }
+        break
+      }
+
+      case 'path': {
+        const { vectorPath } = this
+        switch (path.shift()) {
+          case 'anchors': {
+            const { anchors } = vectorPath
+            if (path.length) {
+              const index = path.shift() as number
+              const anchor = anchors[index]
+              /** update keys for anchor */
+              if (!path.length) {
+                const point = this.binding.get('path')!.get('anchors')!.get(index)!.toJSON()
+                for (const [key, { action }] of keys.entries()) {
+                  if (action !== 'update') {
+                    this.draw()
+                    break
+                  }
+                  anchor[key] = point[key]
+                }
+              }
+            } else {
+              /**
+               * we are not set origin in transact manually,
+               * so origin will be null in local client, but be Room from remote
+               */
+              if (!transaction.origin) break
+
+              let current = 0
+              for (const item of delta) {
+                Object.entries(item).forEach(([key, value]) => {
+                  switch (key) {
+                    case 'retain': {
+                      current += value as number
+                      break
+                    }
+                    case 'insert': {
+                      const anchors = (value as Y.Map<any>[])
+                        .map(item => VectorAnchor.from(item.toJSON() as AnchorData))
+                      anchors.forEach((anchor, i) => {
+                        vectorPath.addAnchorAt(anchor, current + i)
+                        current += 1
+                      })
+                    }
+                  }
+                })
+              }
+            }
+            this.updateRelativeTransform()
+            this.updateAbsoluteTransform()
+            this.draw()
+            break
+          }
+
+          case undefined: {
+            const path = this.binding.get('path')!
+            for (const [key] of keys.entries()) {
+              switch (key) {
+                case 'rotation':
+                case 'parity':
+                case 'closed': {
+                  vectorPath[key] = path.get(key)!
+                  break
+                }
+                case 'position': {
+                  vectorPath[key] = path.get(key)!.toJSON()
+                  break
+                }
+              }
+            }
+
+            this.updateRelativeTransform()
+            this.updateAbsoluteTransform()
+            this.draw()
+            break
+          }
+        }
+        break
+      }
+
+      default: {
+        this.updateRelativeTransform()
+        this.updateAbsoluteTransform()
+        this.draw()
+      }
     }
   }
 }

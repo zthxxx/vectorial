@@ -104,7 +104,8 @@ export const getHandlerHit = (
   const point = mouse
 
   const index = vectorPath.anchors.findIndex(anchor => {
-    const anchorNode = anchorNodes.get(anchor)!
+    const anchorNode = anchorNodes.get(anchor)
+    if (!anchorNode) return false
     return (
       (anchorNode.style?.outHandler && anchor.isOutHandlerNear(point))
       || (anchorNode.style?.inHandler && anchor.isInHandlerNear(point))

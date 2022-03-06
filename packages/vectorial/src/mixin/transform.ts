@@ -27,7 +27,7 @@ export const TransformMixin = <T extends { width: number, height: number }>(Supe
      * rotation point is the center of the self
      */
     public _rotation: number;
-    public _relativeTransform: Matrix
+    public _relativeTransform: Matrix | null
 
     constructor(...args: any[])
     constructor(props: TransformMixinProps, ...args: any[]) {
@@ -44,23 +44,26 @@ export const TransformMixin = <T extends { width: number, height: number }>(Supe
     }
 
     public get relativeTransform(): Matrix {
+      if (!this._relativeTransform) {
+        const { width, height } = this
+        // make rotate around own center
+        this._relativeTransform = multiply(
+          toTranslation(
+            this.position.x + width / 2,
+            this.position.y + height / 2
+          ),
+          toRotation(this.rotation),
+          toTranslation(
+            -width / 2,
+            -height / 2
+          ),
+        )
+      }
       return this._relativeTransform
     }
 
     public updateRelativeTransform() {
-      const { width, height } = this
-      // make rotate around own center
-      this._relativeTransform = multiply(
-        toTranslation(
-          this.position.x + width / 2,
-          this.position.y + height / 2
-        ),
-        toRotation(this.rotation),
-        toTranslation(
-          -width / 2,
-          -height / 2
-        ),
-      )
+      this._relativeTransform = null
     }
 
     public get position(): Vector {

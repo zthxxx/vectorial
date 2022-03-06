@@ -101,12 +101,13 @@ export const NodeManagerMixin = <T extends ChildrenMixinType & BaseNodeMixin>(Su
 
 const getAfterOrder = (children: SceneNode[], after?: string): [string, number] => {
   if (!after) {
-    const order = generateKeyBetween(null, children[0]?.order ?? null)
-    return [order, 0]
+    const order = generateKeyBetween(children.at(-1)?.order ?? null, null)
+    return [order, children.length]
   } else {
     const index = children.findIndex(child => child.order === after)
     const order = generateKeyBetween(
-      children[index]?.order ?? null, index === -1
+      children[index]?.order ?? null,
+      index === -1
         ? null
         : children[index + 1]?.order ?? null
     )

@@ -1,4 +1,5 @@
 import { Graphics } from '@pixi/graphics'
+import * as Y from 'yjs'
 import {
   Rect,
   Vector,
@@ -8,10 +9,12 @@ import {
 import {
   NodeType,
   FrameData,
+  SolidPaint,
 } from '@vectorial/whiteboard/model'
 import {
   SharedMap,
   nanoid,
+  toPixiColor,
 } from '@vectorial/whiteboard/utils'
 import {
   BaseNodeMixin,
@@ -19,6 +22,7 @@ import {
   LayoutMixinProps,
   LayoutMixin,
   BlendMixin,
+  GeometryMixin,
 } from './mixin'
 import {
   FrameNode as FrameNodeType,
@@ -31,7 +35,10 @@ export interface FrameNodeProps extends Partial<FrameData>, LayoutMixinProps {
 }
 
 
-export class FrameNode extends LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixin()))) implements FrameNodeType {
+export class FrameNode
+  extends GeometryMixin(LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixin()))))
+  implements FrameNodeType {
+
   declare binding: SharedMap<FrameData>
   declare type: NodeType.Frame
 
@@ -53,14 +60,9 @@ export class FrameNode extends LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixi
     this.container.addChild(this.graphics)
 
     this.updateRelativeTransform()
-    this.updateAbsoluteTransform()
     this.draw()
 
-    this.binding.observe(() => {
-      this.updateRelativeTransform()
-      this.updateAbsoluteTransform()
-      this.draw()
-    })
+    this.binding.observe(this.bindingUpdate)
   }
 
   public get bounds(): Rect {
@@ -104,6 +106,7 @@ export class FrameNode extends LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixi
       ...this.serializeBaseData(),
       ...this.serializeLayout(),
       ...this.serializeBlend(),
+      ...this.serializeGeometry(),
       type: NodeType.Frame,
       width: this.width,
       height: this.height,
@@ -134,24 +137,84 @@ export class FrameNode extends LayoutMixin(BlendMixin(ChildrenMixin(BaseNodeMixi
     return cover
   }
 
-  draw() {
+  public draw() {
     const {
-      bounds,
+      width,
+      height,
+      fill,
+      stroke,
       graphics,
     } = this
 
-    // super called but not initialized yet
-    if (!graphics) return
+    graphics.clear()
 
-    this.graphics
-      .clear()
-      .beginFill(0xffffff)
-      .drawRect(
-        0,
-        0,
-        bounds.width,
-        bounds.height,
-      )
-      .endFill()
+    fill.paints
+      .filter(paint => !paint.invisible)
+      /** @TODO gradient */
+      .filter(paint => paint.type === 'Solid')
+      .forEach((paint: SolidPaint) => {
+        graphics
+          .beginFill(
+            toPixiColor(paint.color),
+            paint.opacity,
+          )
+          .drawRect(
+            0,
+            0,
+            width,
+            height,
+          )
+          .endFill()
+      })
+
+    if (stroke.width) {
+      stroke.paints
+        .filter(paint => !paint.invisible)
+        /** @TODO gradient */
+        .filter(paint => paint.type === 'Solid')
+        .forEach((paint: SolidPaint) => {
+          graphics
+            .lineStyle({
+              width: stroke.width,
+              color: toPixiColor(paint.color),
+            })
+            .drawRect(
+              0,
+              0,
+              width,
+              height,
+            )
+        })
+      }
+  }
+
+  public bindingUpdate = (event: Y.YMapEvent<any>) => {
+    const { changes, path, delta, keys } = event
+
+    for (const [key, { action }] of keys.entries()) {
+      if (action === 'update') {
+        switch (key) {
+          case 'position': {
+            const position = this.binding.get('position')!.toJSON()
+            this.container.position.set(position.x, position.y)
+            this.updateRelativeTransform()
+            this.updateAbsoluteTransform()
+            break
+          }
+          case 'rotation': {
+            const rotation = this.binding.get('rotation')!
+            this.container.rotation = rotation
+            this.updateRelativeTransform()
+            this.updateAbsoluteTransform()
+            break
+          }
+          case 'width':
+          case 'height': {
+            this.draw()
+            break
+          }
+        }
+      }
+    }
   }
 }

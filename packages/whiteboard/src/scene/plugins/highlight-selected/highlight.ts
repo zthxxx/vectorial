@@ -43,7 +43,7 @@ export class HighlightSelectedPlugin extends ScenePlugin {
   protected hoverLayer: Graphics
   protected boundaryLayer: Graphics
   protected marqueeLayer: Graphics
-  protected usersSelectLayer: Container
+  protected usersSelectLayer: Graphics
   protected usersBoundaryLayer: Graphics
   protected usersMarqueeLayer: Graphics
   protected lastViewMatrix: Matrix = identityMatrix()
@@ -63,7 +63,7 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     this.boundaryLayer = new Graphics()
     this.marqueeLayer = new Graphics()
 
-    this.usersSelectLayer = new Container()
+    this.usersSelectLayer = new Graphics()
     this.usersBoundaryLayer = new Graphics()
     this.usersMarqueeLayer = new Graphics()
 
@@ -105,6 +105,7 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     const { marquee, viewMatrix } = this.scene
     this.marqueeLayer.clear()
     if (!marquee) return
+
     drawMarquee(
       this.marqueeLayer,
       currentUserColor,
@@ -180,6 +181,7 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     this.boundaryLayer.clear()
     if (!nodes.length) return
     this.selectLayer.removeChildren()
+
     const bounds = getNodesBounds(nodes)
     drawBounds(
       this.boundaryLayer,
@@ -197,7 +199,7 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     })
 
     const usersSelected = updatedUsers
-      .filter(([, user]) => user.selected)
+      .filter(([, user]) => user.selected?.length)
       .map(([uid, user]) => [
         getUidColor(uid),
         user.selected,
@@ -210,16 +212,19 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     ) return
     this.lastUsersSelected = usersSelected
 
-    this.usersMarqueeLayer.clear()
+    this.usersSelectLayer.clear()
     usersSelected.forEach(([color, selected]) => {
       const { viewMatrix } = this.scene
-      const nodes = selected.map(id => page.get(id)!)
-      const bounds = getNodesBounds(nodes)
-      drawBounds(
-        this.usersMarqueeLayer,
-        getPointsFromRect(bounds, viewMatrix),
-        color as Color,
-      )
+      selected.map(id => page.get(id)!)
+        .filter(Boolean)
+        .forEach(node => {
+          const bounds = getNodesBounds([node])
+          drawBounds(
+            this.usersSelectLayer,
+            getPointsFromRect(bounds, viewMatrix),
+            color as Color,
+          )
+        })
     })
   }
 

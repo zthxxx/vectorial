@@ -1,5 +1,6 @@
 import { ReactElement } from 'react'
 import { Container } from '@pixi/display'
+import * as Y from 'yjs'
 import { Subject, Observable, from } from 'rxjs'
 import {
   filter,
@@ -197,6 +198,7 @@ export class VectorTool extends ToolDefine {
       } else {
         scene.selected = new Set([this.vectorNode])
       }
+      this.vectorNode.draw()
     }
     this.vectorNode = undefined
   }
@@ -230,6 +232,8 @@ export class ToolLayer {
   public anchorNodes: Map<VectorAnchor, AnchorNode>
   public indicativeAnchor: AnchorNode
   public indicativePath: PathNode
+  public lastMousePosition: Vector
+  public anchorNodesLayer: Container
   public selected: HitResult[] = []
   public changes: Array<
     | [AnchorNode | undefined, AnchorNode['style']]
@@ -274,6 +278,7 @@ export class ToolLayer {
       viewMatrix$: scene.events.viewMatrix$,
     })
 
+    this.lastMousePosition = lastMousePosition
 
     this.doneSignal$ = new Subject()
     this.interactEvent$ = new Subject()
@@ -303,7 +308,7 @@ export class ToolLayer {
       viewMatrix$: scene.events.viewMatrix$,
     })
 
-    const anchorNodesLayer = new Container()
+    this.anchorNodesLayer = new Container()
     this.anchorNodes = new DrawsMap(
       this.vectorPath.anchors.map(vectorAnchor => [
         vectorAnchor,
@@ -314,14 +319,14 @@ export class ToolLayer {
           viewMatrix$: scene.events.viewMatrix$,
         }),
       ]),
-      anchorNodesLayer,
+      this.anchorNodesLayer,
     )
 
     for (const anchor of this.anchorNodes.values()) { anchor.draw() }
 
     this.container.addChild(this.pathNode.container)
     this.container.addChild(this.indicativePath.container)
-    this.container.addChild(anchorNodesLayer)
+    this.container.addChild(this.anchorNodesLayer)
     this.container.addChild(this.indicativeAnchor.container)
 
     this.machine = interpret(createVectorToolMachine(this))
@@ -336,6 +341,11 @@ export class ToolLayer {
     )
 
     this.startMachine()
+
+    /**
+     * @TODO ugly now, should be more accurate
+     */
+    this.vectorNode.binding.observeDeep(this.bindingUpdate)
   }
 
   public drawChanges(context: StateContext) {
@@ -363,5 +373,77 @@ export class ToolLayer {
     this.indicativePath.destroy()
     this.anchorNodes.forEach(anchor => anchor.destroy())
     this.container.destroy({ children: true })
+    this.vectorNode.binding.unobserveDeep(this.bindingUpdate)
+  }
+
+  public bindingUpdate = (events: Y.YEvent<any>[], transaction: Y.Transaction) => {
+
+    /**
+     * we are not set origin in transact manually,
+     * so origin will be null in local client, but be Room from remote
+     */
+    if (!transaction.origin) return
+    this.load()
+  }
+
+  public load() {
+    const {
+      vectorNode,
+      scene,
+    } = this
+    this.pathNode.destroy()
+
+    this.container.removeChild(this.pathNode.container)
+    this.pathNode = new PathNode({
+      path: this.vectorPath,
+      style: {
+        strokeWidth: 2,
+        strokeColor: DefaultPathColor.normal,
+      },
+      absoluteTransform: vectorNode.absoluteTransform,
+      viewMatrix$: scene.events.viewMatrix$,
+    })
+    this.container.addChild(this.pathNode.container)
+
+    this.container.removeChild(this.indicativeAnchor.container)
+    this.indicativeAnchor.destroy()
+    this.indicativeAnchor = new AnchorNode({
+      vectorAnchor: new VectorAnchor(this.lastMousePosition),
+      absoluteTransform: vectorNode.absoluteTransform,
+      viewMatrix$: scene.events.viewMatrix$,
+    })
+    this.container.addChild(this.indicativeAnchor.container)
+
+    this.container.removeChild(this.indicativePath.container)
+    this.indicativePath.destroy()
+    this.indicativePath = new PathNode({
+      path: new VectorPath(),
+      style: {
+        strokeWidth: 2,
+        strokeColor: DefaultPathColor.highlight,
+      },
+      absoluteTransform: vectorNode.absoluteTransform,
+      viewMatrix$: scene.events.viewMatrix$,
+    })
+    this.container.addChild(this.indicativePath.container)
+
+    this.anchorNodesLayer.removeChildren()
+    const originAnchorNodes = this.anchorNodes
+    this.anchorNodes = new DrawsMap(
+      this.vectorPath.anchors.map(vectorAnchor => [
+        vectorAnchor,
+        new AnchorNode({
+          vectorAnchor,
+          style: this.anchorNodes.get(vectorAnchor)?.style ?? { anchor: 'normal' },
+          absoluteTransform: vectorNode.absoluteTransform,
+          viewMatrix$: scene.events.viewMatrix$,
+        }),
+      ]),
+      this.anchorNodesLayer,
+    )
+
+    {
+      [...originAnchorNodes.values()].forEach(anchor => anchor.destroy())
+    }
   }
 }

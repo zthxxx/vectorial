@@ -135,13 +135,15 @@ export interface BooleanOperationData extends
   }
 
 export interface GroupData extends
-  BaseDataMixin, LayoutDataMixin, BlendMixin,
+  BaseDataMixin, LayoutDataMixin,
+  BlendMixin, GeometryMixin,
   ChildrenDataMixin {
     type: NodeType.Group;
   }
 
 export interface FrameData extends
-  BaseDataMixin, LayoutDataMixin, BlendMixin,
+  BaseDataMixin, LayoutDataMixin,
+  BlendMixin, GeometryMixin,
   ChildrenDataMixin {
     type: NodeType.Frame;
     width: number;
@@ -176,7 +178,7 @@ export interface User {
 export interface UserAwareness extends User {
   pageId: string;
   position?: Vector;
-  marquee?: Rect;
+  marquee?: Rect | null;
   selected?: SceneNodeData['id'][];
 }
 

@@ -1,25 +1,22 @@
 import { ReactElement } from 'react'
-import { Container } from '@pixi/display'
-import { Graphics } from '@pixi/graphics'
-import { isEqual, throttle } from 'lodash-es'
-import { Observable, from } from 'rxjs'
+import { isEqual } from 'lodash-es'
+import {
+  Observable,
+  BehaviorSubject,
+  from,
+  combineLatest,
+  asyncScheduler,
+} from 'rxjs'
 import {
   filter,
   tap,
+  throttleTime,
 } from 'rxjs/operators'
 import {
   interpret,
-  State,
-  StateValue,
 } from 'xstate'
 import {
-  Vector,
   Rect,
-  add,
-  getInverseMatrix,
-  getPointsFromRect,
-  applyMatrix,
-  applyInverse,
 } from 'vectorial'
 import {
   cursor,
@@ -48,9 +45,6 @@ import {
   createSelectToolMachine,
 } from './state-machine'
 import {
-  MouseEvent,
-  StateEvent,
-  StateContext,
   SelectToolService,
 } from './types'
 
@@ -66,10 +60,10 @@ export class SelectTool extends ToolDefine {
   public hotkeyLabel: string = 'V'
 
   public interactEvent$: Observable<InteractEvent>
-
   public selectCache = new Set<SceneNode>()
-
   public machine?: SelectToolService
+  public marquee$: BehaviorSubject<Rect | null>;
+  public selected$: BehaviorSubject<string[]>;
 
   constructor(props: ToolProps) {
     super(props)
@@ -78,6 +72,17 @@ export class SelectTool extends ToolDefine {
     this.interactEvent$ = scene.events.interactEvent$.pipe(
       filter(() => this.isActive),
     )
+
+    this.marquee$ = new BehaviorSubject(null)
+    this.selected$ = new BehaviorSubject([])
+
+    combineLatest({
+      marquee: this.marquee$,
+      selected: this.selected$,
+    }).pipe(
+      throttleTime(150, asyncScheduler, { trailing: true }),
+      tap(this.setAwareness),
+    ).subscribe()
   }
 
   public activate() {
@@ -109,42 +114,21 @@ export class SelectTool extends ToolDefine {
 
   public setMarquee = (marquee?: Rect) => {
     if (isEqual(marquee, this.scene.marquee)) return
-    const { awareness, viewMatrix } = this.scene
     if (!marquee) {
       this.scene.marquee = marquee
-      awareness.setLocalStateField('marquee', marquee)
+      this.marquee$.next(null)
       return
     }
 
-    const topLeft = applyInverse(marquee, viewMatrix)
-    const rightBottom = applyInverse(
-      {
-        x: marquee.x + marquee.width,
-        y: marquee.y + marquee.height,
-      },
-      viewMatrix,
-    )
-
-    const area: Rect = {
-      ...topLeft,
-      width: rightBottom.x - topLeft.x,
-      height: rightBottom.y - topLeft.y,
-    }
-
     this.scene.marquee = marquee
-    this.setAwareness({
-      marquee: area,
-      position: rightBottom,
-    })
+    this.marquee$.next(marquee)
   }
 
   public setSelected = (selected: Set<SceneNode>) => {
     if (isSameSet(selected, this.scene.selected)) return
 
     this.scene.selected = selected
-    this.setAwareness({
-      selected: [...selected].map(node => node.id),
-    })
+    this.selected$.next([...selected].map(node => node.id))
   }
 
   public get icon(): ReactElement | null {
@@ -153,11 +137,11 @@ export class SelectTool extends ToolDefine {
     )
   }
 
-  public setAwareness = throttle((change: Partial<UserAwareness>) => {
+  public setAwareness = (change: Partial<UserAwareness>) => {
     const { awareness } = this.scene
     awareness.setLocalState({
       ...awareness.getLocalState(),
       ...change,
     } as UserAwareness)
-  }, 100)
+  }
 }

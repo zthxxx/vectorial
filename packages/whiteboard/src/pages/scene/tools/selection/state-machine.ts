@@ -1,6 +1,9 @@
 import {
   createMachine,
 } from 'xstate'
+import {
+  NodeType,
+} from '@vectorial/whiteboard/model'
 import type {
   StateEvent,
   StateContext,
@@ -51,6 +54,10 @@ export const createSelectToolMachine = (context: StateContext): SelectToolMachin
           },
           enterNode: {
             target: 'editVector',
+            cond: ({ scene }) => (
+              scene.selected.size === 1
+              && [...scene.selected][0].type === NodeType.Vector
+            ),
           },
           delete: {
             actions: selectingDelete,

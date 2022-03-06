@@ -22,12 +22,8 @@ export interface GeometryMixinProps extends Partial<GeometryMixinType>{
 
 
 export const defaultStroke = (): Stroke => ({
-  width: 1,
-  paints: [{
-    id: nanoid(),
-    type: 'Solid',
-    color: '#c4c4c4',
-  }],
+  width: 0,
+  paints: [],
 })
 
 export const GeometryMixin = <T extends BaseNodeMixin, S extends Constructor<T>>(Super: S) => {

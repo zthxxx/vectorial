@@ -52,11 +52,11 @@ export const ChildrenMixin = <
     }
 
     resumeChildren(children: string[]) {
-      children.reverse().forEach(id => {
+      children.forEach(id => {
         const node = this.page.get(id)
         if (!node) return
         this.container.addChild(node.container)
-        this.children.unshift(node.id)
+        this.children.push(node.id)
       })
     }
 
@@ -71,7 +71,7 @@ export const ChildrenMixin = <
       this.page.insert(
         child,
         this,
-        this.page.get(this.children[index - 1])?.order,
+        this.page.get(this.children[index])?.order,
       )
     }
 

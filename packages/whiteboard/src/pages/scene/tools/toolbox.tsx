@@ -24,6 +24,7 @@ export const toolState = {
   tools: [] as Tools,
   toolsMap: {} as { [name: string]: ToolDefine },
   current: '',
+  switchTool: (name: string) => {},
 }
 
 const useTools = (): [Tools, (set: Tools) => void] => {
@@ -60,7 +61,7 @@ export const Toolbox = memo((props: ToolboxProps) => {
 
   const [current, setCurrent] = useAtom(currentToolAtom)
 
-  const switchTool = useCallback((name: string) => {
+  const switchTool = (name: string) => {
     const { current, toolsMap } = toolState
     const currentTool = toolsMap[current]
     const nextTool = toolsMap[name]
@@ -69,16 +70,17 @@ export const Toolbox = memo((props: ToolboxProps) => {
     nextTool?.activate()
     toolState.current = name
     setCurrent(name)
-  }, [])
+  }
 
   const tools = useSetupTools({
     user,
     scene,
-    switchTool,
+    switchTool: (name: string) => toolState.switchTool(name),
   })
 
   useEffect(() => {
     if (!tools.length) return
+    toolState.switchTool = switchTool
     const { events } = scene
     switchTool('SelectTool')
     const hotkey = events.interactEvent$.pipe(
@@ -88,7 +90,10 @@ export const Toolbox = memo((props: ToolboxProps) => {
       map(event => tools.find(item => event.match(item.hotkey))),
       tap(tool => tool && switchTool(tool.name)),
     ).subscribe()
-    return () => hotkey.unsubscribe()
+    return () => {
+      hotkey.unsubscribe()
+      toolState.switchTool = () => {}
+    }
   }, [tools])
 
   return (

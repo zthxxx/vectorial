@@ -16,6 +16,7 @@ export const newFrame = (): FrameData => {
     type: NodeType.Frame,
     order: generateKeyBetween(null, null),
     children: [],
+
     // position: { x: 0, y: 0 },
     // width,
     // height,
@@ -26,8 +27,21 @@ export const newFrame = (): FrameData => {
     },
     width: width * 2 / 3,
     height: height * 2 / 3,
+
     rotation: 0,
     opacity: 1,
     blendMode: BlendMode.PassThrough,
+
+    stroke: {
+      width: 0,
+      paints: [],
+    },
+    fill: {
+      paints: [{
+        id: nanoid(),
+        type: 'Solid',
+        color: '#ffffff',
+      }],
+    },
   }
 }

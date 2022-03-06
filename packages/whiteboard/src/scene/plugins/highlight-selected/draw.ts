@@ -11,6 +11,7 @@ import {
   Color,
 } from '@vectorial/whiteboard/model'
 import {
+  BaseNodeMixin,
   LayoutMixin,
 } from '@vectorial/whiteboard/nodes/types'
 import {
@@ -49,7 +50,7 @@ export const drawMarquee = (
   drawArea(marqueeLayer, area)
 }
 
-export const getNodesBounds = (nodes: LayoutMixin[]): Rect => {
+export const getNodesBounds = (nodes: (LayoutMixin & BaseNodeMixin)[]): Rect => {
   if (!nodes.length) return {
     x: 0,
     y: 0,
@@ -60,7 +61,7 @@ export const getNodesBounds = (nodes: LayoutMixin[]): Rect => {
   const topLeft: Vector = { x: Infinity, y: Infinity }
   const rightBottom: Vector = { x: -Infinity, y: -Infinity }
 
-  nodes.forEach(node => {
+  nodes.filter(node => !node.removed).forEach(node => {
     const inverse = getInverseMatrix(
       multiply(node.absoluteTransform, getInverseMatrix(node.relativeTransform)),
     )
