@@ -1,4 +1,4 @@
-import { memo, useEffect, useCallback } from 'react'
+import { memo, useEffect, useState, useCallback } from 'react'
 import { atom, useAtom } from 'jotai'
 import {
   tap,
@@ -11,12 +11,18 @@ import {
   KeyTriggerType,
 } from '@vectorial/whiteboard/scene'
 import {
+  Bar,
+  Tray,
+} from './components'
+import {
   ToolDefine,
   ToolProps,
 } from './types'
 import { SelectTool } from './selection'
 import { VectorTool } from './vector'
 import { PanTool } from './pan'
+import { BooleanOperation } from './boolean'
+
 
 type Tools = ToolDefine[]
 
@@ -28,7 +34,9 @@ export const toolState = {
 }
 
 const useTools = (): [Tools, (set: Tools) => void] => {
+  const [, setup] = useState<number>(Math.random())
   const set = (tools: Tools) => {
+    setup(Math.random())
     toolState.tools = tools
     toolState.toolsMap = keyBy(tools, 'name')
   }
@@ -97,36 +105,27 @@ export const Toolbox = memo((props: ToolboxProps) => {
   }, [tools])
 
   return (
-    <div
-      className='
-        absolute top-2 px-8 py-1
-        flex justify-center items-center
-        rounded-lg drop-shadow  bg-white
-      '
-    >
+    <Bar>
       {tools.map((tool) => (
-        <div
+        <Tray
           key={tool.name}
           title={`${tool.label} (${tool.hotkeyLabel})`}
-          className={[
-            `
-              flex justify-center items-center
-              w-10 h-10 mx-1
-              rounded-md
-              cursor-pointer
-            `,
-            tool.name === current
-              ? `bg-pink-400 text-white`
-              : `
-                text-gray-800
-                hover:text-pink-400
-              `
-          ].join(' ')}
+          active={tool.name === current}
           onClick={() => switchTool(tool.name)}
         >
           {tool.icon}
-        </div>
+        </Tray>
       ))}
-    </div>
+
+      <div
+        className='w-px h-6 bg-gray-300 mx-2'
+      />
+
+      <BooleanOperation
+        user={user}
+        scene={scene}
+        switchTool={switchTool}
+      />
+    </Bar>
   )
 })

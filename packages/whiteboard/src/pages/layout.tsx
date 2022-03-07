@@ -24,7 +24,7 @@ const useLoading = () => {
       setTimeout(
         () => setLoading(false),
         // time to loading documents from peers
-        2500,
+        1000,
       )
     }
   }, [store, documents, loading])

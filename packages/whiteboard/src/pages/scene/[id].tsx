@@ -62,6 +62,10 @@ export const userScene = ({ user, page, awareness }: {
       docTransact: documentsTransact,
     })
 
+    if (import.meta.env.DEV) {
+      (window as any).scene = scene
+    }
+
     scene.use(new ViewportPlugin({ user, scene }))
     scene.use(new UndoRedoPlugin({ user, scene }))
     scene.use(new AwareCursorsPlugin({ user, scene }))

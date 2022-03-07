@@ -57,12 +57,22 @@ export class BooleanOperationNode
       type: NodeType.BooleanOperation,
     })
 
-    this.container = new SVGPathNode(pixiSceneContext)
     this.booleanOperator = booleanOperator
+    this.container = new SVGPathNode(pixiSceneContext)
+    this.container.position.set(this.position.x, this.position.y)
+
+    this.updateRelativeTransform()
 
     /** @TODO two-way binding */
-    this.shape = new VectorShape({
-      booleanOperator,
+    this.shape = this.createShape()
+    if (this.children.length) {
+      this.draw()
+    }
+  }
+
+  public createShape(): VectorShape {
+    return new VectorShape({
+      booleanOperator: this.booleanOperator,
       children: this.forEachChild(child =>
         (child as BooleanOperationNode).shape
         || (child as VectorNode).vectorPath,
@@ -80,10 +90,12 @@ export class BooleanOperationNode
   }
 
   public get bounds(): Rect {
-    const { width, height } = this.shape.bounds
+    const { x, y } = this.position
+    const { bounds } = this.shape
+    const { width, height } = bounds
     return {
-      x: 0,
-      y: 0,
+      x: x + bounds.x,
+      y: y + bounds.y,
       width,
       height,
     }
@@ -152,6 +164,7 @@ export class BooleanOperationNode
             this.container,
             path,
           )
+          this.drawEnd()
         })
       })
 
@@ -172,6 +185,7 @@ export class BooleanOperationNode
               this.container,
               path,
             )
+            this.drawEnd()
           })
         })
     }

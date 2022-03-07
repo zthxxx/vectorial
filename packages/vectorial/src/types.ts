@@ -17,10 +17,10 @@ export enum HandlerType {
 }
 
 export enum BooleanOperator {
-  Union = 'union',
-  Intersect = 'intersect',
-  Subtract = 'subtract',
-  Exclude = 'exclude',
+  Union = 'Union',
+  Subtract = 'Subtract',
+  Intersect = 'Intersect',
+  Exclude = 'Exclude',
 }
 
 

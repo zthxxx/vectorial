@@ -28,7 +28,7 @@ import {
 } from '@vectorial/whiteboard/scene'
 import {
   NodeType,
-  newVectorNode,
+  newVectorData,
 } from '@vectorial/whiteboard/model'
 import {
   toSharedTypes,
@@ -145,7 +145,7 @@ export class VectorTool extends ToolDefine {
     if (this.vectorNode) return
 
     const { scene } = this
-    const path = newVectorNode()
+    const path = newVectorData()
 
     scene.docTransact(() => {
       const binding = toSharedTypes(path)
@@ -377,16 +377,15 @@ export class ToolLayer {
   }
 
   public bindingUpdate = (events: Y.YEvent<any>[], transaction: Y.Transaction) => {
-
     /**
      * we are not set origin in transact manually,
      * so origin will be null in local client, but be Room from remote
      */
     if (!transaction.origin) return
-    this.load()
+    this.reload()
   }
 
-  public load() {
+  public reload() {
     const {
       vectorNode,
       scene,

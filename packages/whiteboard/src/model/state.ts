@@ -5,6 +5,7 @@ import {
   atom,
   useAtom,
   useSetAtom,
+  useAtomValue,
 } from 'jotai'
 import {
   YDoc,
@@ -96,3 +97,11 @@ export const useRootDoc = (): {
   }
 }
 
+/**
+ * always used after initialize state
+ */
+export const useUser = (): User => {
+  const store = useAtomValue(state.store)!
+  const user = store.get('user')!.toJSON()
+  return user
+}

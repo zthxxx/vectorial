@@ -50,13 +50,14 @@ export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implement
   public booleanOperator: BooleanOperator
   public _compoundPath: paper.CompoundPath | paper.Path | undefined
 
-  constructor({
-    children,
-    booleanOperator,
-    position = emptyVector(),
-    rotation = 0,
-  }: VectorShapeProps) {
-    super()
+  constructor(props: VectorShapeProps) {
+    super(props)
+    const {
+      children,
+      booleanOperator,
+      position = emptyVector(),
+      rotation = 0,
+    } = props
     this.children = children
     this.booleanOperator = booleanOperator
 
@@ -75,15 +76,16 @@ export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implement
 
   get compoundPath(): paper.CompoundPath | paper.Path {
     if (!this._compoundPath) {
-      const operator: 'unite' | 'intersect' | 'subtract' | 'exclude' =
+      const operator = (
         this.booleanOperator === BooleanOperator.Union ? 'unite' : this.booleanOperator
+      ).toLocaleLowerCase() as 'unite' | 'intersect' | 'subtract' | 'exclude'
 
       this._compoundPath = this.children
         .map(item => (item instanceof VectorShape)
           ? item.compoundPath
           : item.path
         )
-        .reduceRight((bottom, top) => bottom[operator](top) as paper.CompoundPath)
+        .reduce((bottom, top) => bottom[operator](top) as paper.CompoundPath)
     }
     return this._compoundPath
   }

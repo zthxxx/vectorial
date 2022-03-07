@@ -17,16 +17,16 @@ export const newFrame = (): FrameData => {
     order: generateKeyBetween(null, null),
     children: [],
 
-    // position: { x: 0, y: 0 },
-    // width,
-    // height,
+    position: { x: 0, y: 0 },
+    width,
+    height,
 
-    position: {
-      x: width / 6,
-      y: height / 6,
-    },
-    width: width * 2 / 3,
-    height: height * 2 / 3,
+    // position: {
+    //   x: width / 6,
+    //   y: height / 6,
+    // },
+    // width: width * 2 / 3,
+    // height: height * 2 / 3,
 
     rotation: 0,
     opacity: 1,

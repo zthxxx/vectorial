@@ -82,7 +82,7 @@ export const getPointsFromRect = (rect: Rect, transform?: Matrix): Vector[] => {
   return points.map(point => transform ? applyMatrix(point, transform) : point)
 }
 
-export const rectCoverTest = (rect: Rect, target: Rect, transform: Matrix): boolean => {
+export const rectCoverTest = (rect: Rect, target: Rect, transform?: Matrix): boolean => {
   return polygonsIntersectTest(
     getPointsFromRect(rect),
     getPointsFromRect(target, transform),

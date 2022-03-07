@@ -103,5 +103,57 @@ export const ChildrenMixin = <
         .filter(Boolean)
         .map(callback)
     }
+
+    /**
+     * yjs update handler, use like this in constructor
+     * this.binding.get('children')!.observe(this.childrenUpdate)
+     */
+    public childrenUpdate = (event: Y.YArrayEvent<any>, transaction: Y.Transaction) => {
+      const { delta } = event
+      /**
+       * we are not set origin in transact manually,
+       * so origin will be null in local client, but be Room from remote
+       */
+      if (!transaction.origin) return
+      let current = 0
+      for (const item of delta) {
+        Object.entries(item).forEach(([key, value]) => {
+          switch (key) {
+            case 'retain': {
+              current += value as number
+              break
+            }
+            case 'insert': {
+              const list = Array.isArray(value) ? value : [value]
+              this.children.splice(current, 0, ...list as SceneNode['id'][])
+              list.forEach((id, i) => {
+                const index = current + i
+                // require page nodes binding add before children insert
+                const node = this.page.get(id)
+                if (node) {
+                  this.container.addChildAt(node.container, index)
+                }
+              })
+              break
+            }
+            case 'delete': {
+              const len = value as number
+              let index = len
+              while (index) {
+                const childId = this.children[current + index - 1]
+                // require page nodes binding delete after children update
+                const node = this.page.get(childId)
+                if (node) {
+                  this.container.removeChild(node.container)
+                }
+                index = index - 1
+              }
+              this.children.splice(current, len)
+              break
+            }
+          }
+        })
+      }
+    }
   }
 }

@@ -38,7 +38,8 @@ export interface BaseDataMixin {
 
 export interface ChildrenDataMixin<T extends BaseDataMixin = BaseDataMixin> {
   /**
-   * order fractional-indexing from small to large
+   * [bottom ... top] children item id
+   * order fractional-indexing from small to large,
    * a node only can be a child of one parent
    */
   children: Array<T['id']>;

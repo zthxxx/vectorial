@@ -62,6 +62,7 @@ export interface LayoutMixin extends LayoutDataMixin {
   /** absolute to its PageNode (also scene) */
   readonly absoluteTransform: Transform;
   updateAbsoluteTransform(): void;
+  updateRelativeTransform(): void;
 
   bounds: Rect;
   width: number;
@@ -145,7 +146,7 @@ export interface NodeManagerMixin {
   ): void;
   relocate(
     /** a existed node to be reorder */
-    node: BaseNodeMixin,
+    nodes: BaseNodeMixin[],
     parent: ChildrenMixin,
     /** fractional-indexing of parent's child, none to insert at top */
     after?: string,

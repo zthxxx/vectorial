@@ -5,4 +5,5 @@ export * from './frame'
 export * from './user'
 export * from './document'
 export * from './vector'
+export * from './boolean-operation'
 

@@ -6,7 +6,7 @@ import {
   BlendMode,
 } from './types'
 
-export const newVectorNode = ({ id, name }: {
+export const newVectorData = ({ id, name }: {
   id?: string;
   name?: string;
 } = {}): VectorData => {

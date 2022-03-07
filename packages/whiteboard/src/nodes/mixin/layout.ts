@@ -137,7 +137,7 @@ export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
     }
 
     public coverTest(viewRect: Rect): boolean {
-      return rectCoverTest(viewRect, this.bounds, this.absoluteTransform)
+      return rectCoverTest(viewRect, this.bounds)
     }
 
     public serializeLayout(): LayoutDataMixin {

@@ -1,25 +1,33 @@
 import { generateKeyBetween } from 'fractional-indexing'
 import { Container } from '@pixi/display'
-import { SharedMap } from '@vectorial/whiteboard/utils'
 import {
-  Constructor,
-  EmptyMixin,
-  BaseNodeMixin,
-  ChildrenMixin as ChildrenMixinType,
-  SceneNode,
-  NodeManagerMixin as NodeManagerMixinType,
-} from '../types'
+  decomposeMatrix,
+  getInverseMatrix,
+  multiply,
+  identityMatrix,
+} from 'vectorial'
+import { SharedMap } from '@vectorial/whiteboard/utils'
 import {
   BaseDataMixin,
   SceneNodeData,
   ChildrenDataMixin,
   documentsTransact,
 } from '@vectorial/whiteboard/model'
+import {
+  Constructor,
+  EmptyMixin,
+  BaseNodeMixin,
+  LayoutMixin,
+  ChildrenMixin as ChildrenMixinType,
+  SceneNode,
+  NodeManagerMixin as NodeManagerMixinType,
+} from '../types'
 
 
 export type ParentNode = (
-  & ChildrenMixinType
   & BaseNodeMixin
+  & ChildrenMixinType
+  & LayoutMixin
   & { binding: SharedMap<{ children: BaseDataMixin['id'][] }> }
 )
 
@@ -43,6 +51,7 @@ export const NodeManagerMixin = <T extends ChildrenMixinType & BaseNodeMixin>(Su
     }
 
     get(id?: string): SceneNode | undefined {
+      if (id === this.id) return this as any as SceneNode
       return id ? this.nodes[id] : undefined
     }
 
@@ -68,24 +77,83 @@ export const NodeManagerMixin = <T extends ChildrenMixinType & BaseNodeMixin>(Su
       })
     }
 
+    /**
+     * Intention to insert an new node into page
+     */
     insert(node: SceneNode, parent: ParentNode, after?: string): void {
       const children = parent.children.map(id => this.get(id)!)
 
       documentsTransact(() => {
-        node.removed = false
-        const [order, index] = getAfterOrder(children, after)
+        if (node.removed) node.removed = false
+
+        const {
+          index,
+          order,
+        } = getAfterOrder(children, after)
         node.order = order
         node.parent = parent.id
 
-        parent.container.addChild(node.container)
+        parent.container.addChildAt(node.container, index)
         parent.children.splice(index, 0, node.id)
         parent.binding.get('children')!.insert(index, [node.id])
         this.add(node)
       })
     }
 
-    relocate(node: SceneNode, parent: ParentNode, after?: string): void {
-      throw new Error('Not Implemented')
+    relocate(nodes: SceneNode[], parent: ParentNode, after?: string): void {
+      documentsTransact(() => {
+        const removeFromOrigin = (node: SceneNode) => {
+          const originParent = this.get(node.parent)! as ParentNode
+          const originIndex = originParent.children.indexOf(node.id)
+          originParent.children.splice(originIndex, 1)
+          originParent.container.removeChild(node.container)
+          originParent.binding.get('children')!.delete(originIndex, 1)
+        }
+
+        const insertToParent = (node: SceneNode, order: string, index: number) => {
+          const { absoluteTransform } = node
+          const originParent = this.get(node.parent)! as ParentNode
+          const relativeTransform = multiply(
+            absoluteTransform,
+            getInverseMatrix(originParent.absoluteTransform ?? identityMatrix()),
+          )
+          if (node.removed) node.removed = false
+
+          node.order = order
+          node.parent = parent.id
+
+          const {
+            translation,
+            rotation,
+          } = decomposeMatrix(relativeTransform)
+          node.position = translation
+          node.rotation = rotation
+          node.updateAbsoluteTransform()
+          node.updateRelativeTransform()
+
+          parent.container.addChildAt(node.container, index)
+          parent.children.splice(index, 0, node.id)
+          parent.binding.get('children')!.insert(index, [node.id])
+          this.add(node)
+        }
+
+        const children: SceneNode[] = parent.children.map(id => this.get(id)!)
+        const {
+          index: insertIndex,
+          order: insertOrder,
+          nextOrder,
+        } = getAfterOrder(children, after)
+
+        let index = insertIndex
+        let order = insertOrder
+
+        nodes.forEach(node => {
+          removeFromOrigin(node)
+          insertToParent(node, order, index)
+          index += 1
+          order = generateKeyBetween(order, nextOrder)
+        })
+      })
     }
 
     find(predicate: (node: SceneNode) => any): SceneNode | undefined {
@@ -99,19 +167,35 @@ export const NodeManagerMixin = <T extends ChildrenMixinType & BaseNodeMixin>(Su
 }
 
 
-const getAfterOrder = (children: SceneNode[], after?: string): [string, number] => {
+const getAfterOrder = (children: SceneNode[], after?: string): {
+  index: number;
+  order: string;
+  nextOrder: string | null;
+} => {
   if (!after) {
     const order = generateKeyBetween(children.at(-1)?.order ?? null, null)
-    return [order, children.length]
+    return {
+      index: children.length,
+      order,
+      nextOrder: null,
+    }
+
   } else {
     const index = children.findIndex(child => child.order === after)
+    if (index === -1) {
+      return getAfterOrder(children)
+    }
+
+    const nextOrder = children[index + 1]?.order ?? null
     const order = generateKeyBetween(
-      children[index]?.order ?? null,
-      index === -1
-        ? null
-        : children[index + 1]?.order ?? null
+      children[index].order ?? null,
+      nextOrder
     )
-    return [order, index]
+    return {
+      index,
+      order,
+      nextOrder,
+    }
   }
 }
 

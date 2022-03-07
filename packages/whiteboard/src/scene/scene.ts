@@ -32,7 +32,7 @@ import {
 } from './plugins'
 
 
-type SelectedNodes = Set<SceneNode>
+export type SelectedNodes = Set<SceneNode>
 
 export interface ScenePlugins {
   [name: ScenePlugin['name']]: ScenePlugin | undefined;
@@ -119,10 +119,6 @@ export class Scene {
     this.events.interactEvent$ = this.eventManager.interactEvent$
 
     this.setCursor({ icon: arrow })
-
-    if (import.meta.env.DEV) {
-      (window as any).scene = this
-    }
   }
 
   public destroy() {

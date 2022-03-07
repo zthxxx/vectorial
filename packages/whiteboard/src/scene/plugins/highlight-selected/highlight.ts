@@ -159,7 +159,11 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     const { hovered, viewMatrix } = this.scene
     this.hoverLayer.clear()
     if (!hovered) return
-    if ([NodeType.Frame, NodeType.Group, NodeType.Vector].includes(hovered.type)) {
+    if ([
+      NodeType.Frame, NodeType.Group,
+      /** @TODO Vector and BooleanOperation node need to show highlight path */
+      NodeType.Vector, NodeType.BooleanOperation,
+    ].includes(hovered.type)) {
       const parent = this.scene.page.get(hovered.parent)
       drawBounds(
         this.hoverLayer,
