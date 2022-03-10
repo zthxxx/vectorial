@@ -31,7 +31,7 @@ export const booleanOperate = (
     if (node?.type !== NodeType.BooleanOperation) return
     node.booleanOperator = operator
     node.draw()
-
+    scene.selected = new Set([node])
     return
   }
 

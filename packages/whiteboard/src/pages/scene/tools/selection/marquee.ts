@@ -27,6 +27,7 @@ import {
 } from './types'
 import {
   normalizeMouseEvent,
+  findMarqueeCover,
 } from './utils'
 
 export const enterMarqueeing: GuardAction = (interactEvent$, context) => {
@@ -47,7 +48,7 @@ export const enterMarqueeing: GuardAction = (interactEvent$, context) => {
       const {
         isDrag,
         isClickUp,
-      } = normalizeMouseEvent(event, scene.page)
+      } = normalizeMouseEvent(event, scene.page, scene.selected)
 
       if (isDrag) {
         return of<StateMouseEvent>({ type: 'marquee', event })
@@ -96,8 +97,9 @@ export const marqueeAction: StateAction = (context, { event }: StateMouseEvent) 
 
   setMarquee(marqueeBounds)
 
-  const overlaps = findMarquee(
+  const overlaps = findMarqueeCover(
     scene.page,
+    scene.selected,
     marqueeBounds,
   )
 
@@ -114,8 +116,3 @@ export const marqueeAction: StateAction = (context, { event }: StateMouseEvent) 
   })
   setSelected(selected)
 }
-
-export const findMarquee = (
-  page: PageNode,
-  bounds: Rect,
-): SceneNode[] => page.filter(node => node.coverTest(bounds))

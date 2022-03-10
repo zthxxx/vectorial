@@ -121,6 +121,8 @@ export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
     public moveDelta(viewDelta: Vector) {
       // due to we are not make scale as matrix transform
       this.position = add(this.position, viewDelta)
+      this.updateAbsoluteTransform()
+      this.updateRelativeTransform()
     }
 
     public toLocalPoint(viewPoint: Vector): Vector {

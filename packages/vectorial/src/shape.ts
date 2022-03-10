@@ -47,8 +47,8 @@ export interface VectorShapeProps {
 export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implements AreaHitMixin {
   public type = 'Shape'
   public children: (VectorPath | VectorShape)[] = []
-  public booleanOperator: BooleanOperator
-  public _compoundPath: paper.CompoundPath | paper.Path | undefined
+  protected _booleanOperator!: BooleanOperator
+  protected _compoundPath: paper.CompoundPath | paper.Path | undefined
 
   constructor(props: VectorShapeProps) {
     super(props)
@@ -64,6 +64,17 @@ export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implement
     this._position = position
     this._rotation = rotation
     this.updateRelativeTransform()
+  }
+
+
+  public get booleanOperator(): BooleanOperator {
+    return this._booleanOperator
+  }
+
+  public set booleanOperator(operator: BooleanOperator) {
+    if (this.booleanOperator === operator) return
+    this._booleanOperator = operator
+    this._compoundPath = undefined
   }
 
   public get bounds(): Rect {
@@ -113,12 +124,11 @@ export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implement
   }
 
 
-  public hitPathTest(viewPoint: Vector): PathHitResult | undefined {
-    const point = this.toLocalPoint(viewPoint)
+  public hitPathTest(point: Vector): PathHitResult | undefined {
     const compound = this.compoundPath
 
     const hitResult: paper.HitResult | undefined = compound.hitTest(
-      new paper.Point(point.x, point.y),
+      new paper.Point(point),
       {
         stroke: true,
         segments: false,
@@ -139,17 +149,16 @@ export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implement
     }
   }
 
-  public hitAreaTest(viewPoint: Vector): boolean {
-    const point = this.toLocalPoint(viewPoint)
+  public hitAreaTest(point: Vector): boolean {
     const compound = this.compoundPath
 
     const hitResult: paper.HitResult | undefined = compound.hitTest(
-      new paper.Point(point.x, point.y),
+      new paper.Point(point),
       {
-        stroke: true,
+        stroke: false,
         segments: false,
         handles: false,
-        fill: false,
+        fill: true,
       },
     )
 

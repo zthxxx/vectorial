@@ -117,6 +117,7 @@ export const NodeManagerMixin = <T extends ChildrenMixinType & BaseNodeMixin>(Su
             absoluteTransform,
             getInverseMatrix(originParent.absoluteTransform ?? identityMatrix()),
           )
+
           if (node.removed) node.removed = false
 
           node.order = order

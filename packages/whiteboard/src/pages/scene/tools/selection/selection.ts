@@ -37,7 +37,7 @@ export const enterSelecting: GuardAction = (interactionEvent$, context) => {
         hit,
         isMove,
         isClickDown,
-      } = normalizeMouseEvent(event, scene.page)
+      } = normalizeMouseEvent(event, scene.page, scene.selected)
 
       if (isMove) {
         return of<StateMouseEvent>({ type: 'move', event, hit })
@@ -160,7 +160,7 @@ export const enterSelectConfirming: GuardAction = (interactionEvent$, context) =
         hit,
         isDrag,
         isClickUp,
-      } = normalizeMouseEvent(event, scene.page)
+      } = normalizeMouseEvent(event, scene.page, scene.selected)
 
 
       if (isDrag) {

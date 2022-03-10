@@ -30,7 +30,7 @@ export const enterMovingNode: GuardAction = (interactionEvent$, context) => {
       const {
         isDrag,
         isClickUp,
-      } = normalizeMouseEvent(event, scene.page)
+      } = normalizeMouseEvent(event, scene.page, scene.selected)
 
       if (isDrag) {
         return of<StateMouseEvent>({ type: 'move', event })

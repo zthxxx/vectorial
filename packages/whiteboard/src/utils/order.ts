@@ -3,7 +3,7 @@ import {
   SceneNode,
 } from '@vectorial/whiteboard/nodes'
 
-export const getAncestors = (node: SceneNode, page: PageNode): SceneNode[] => {
+export const getAncestors = (node: SceneNode, page: PageNode): (SceneNode | PageNode)[] => {
   const ancestors: SceneNode[] = []
   let parent = page.get(node.parent)
   while (parent) {
@@ -13,9 +13,9 @@ export const getAncestors = (node: SceneNode, page: PageNode): SceneNode[] => {
   return ancestors
 }
 
-export const getCommonAncestors = (nodes: SceneNode[], page: PageNode): SceneNode[] => {
-  const ancestorsList: SceneNode[][] = nodes.map(node => getAncestors(node, page))
-  const commonAncestors: SceneNode[] = []
+export const getCommonAncestors = (nodes: SceneNode[], page: PageNode): (SceneNode | PageNode)[] => {
+  const ancestorsList: (SceneNode | PageNode)[][] = nodes.map(node => getAncestors(node, page))
+  const commonAncestors: (SceneNode | PageNode)[] = []
 
   let index = 0
   while (ancestorsList.every(ancestors => ancestors[index])) {
@@ -33,7 +33,7 @@ export const getCommonAncestors = (nodes: SceneNode[], page: PageNode): SceneNod
 /**
  * order nodes to [bottom ... top]
  */
-export const orderNodes = (nodes: SceneNode[], page: PageNode): SceneNode[] => {
+export const orderNodes = (nodes: Iterable<SceneNode>, page: PageNode): SceneNode[] => {
   const ordered: SceneNode[] = [...nodes]
   return ordered.sort((a, b) => {
     const ancestorsA = getAncestors(a, page)
