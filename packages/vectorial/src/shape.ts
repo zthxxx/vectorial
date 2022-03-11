@@ -77,8 +77,30 @@ export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implement
     this._compoundPath = undefined
   }
 
+  public get position(): Vector {
+    return this._position
+  }
+
+  public set position({ x, y }: Vector) {
+    this._position = { x, y }
+    const { width, height } = this.bounds
+    this.compoundPath.position = new paper.Point(x + width / 2, y + height / 2)
+    this.updateRelativeTransform()
+  }
+
+  public get rotation(): number {
+    return this._rotation
+  }
+
+  public set rotation(degree: number) {
+    this._rotation = degree
+    this.compoundPath.rotation = degree
+    this.updateRelativeTransform()
+  }
+
   public get bounds(): Rect {
-    return this.compoundPath.bounds
+    const { x, y, width, height } = this.compoundPath.bounds
+    return { x, y, width, height }
   }
 
   get composed(): boolean {

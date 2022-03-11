@@ -68,7 +68,7 @@ export const booleanOperate = (
     booleanOperationNode.fill.paints = geometry.fill.paints
     booleanOperationNode.stroke.width = geometry.stroke.width
     booleanOperationNode.stroke.paints = geometry.stroke.paints
-    nodes.forEach(node => node.draw())
+    nodes.forEach(node => node.clear())
     booleanOperationNode.draw()
 
     scene.selected = new Set([booleanOperationNode])

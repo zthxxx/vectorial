@@ -4,7 +4,7 @@ import {
   Vector,
   VectorPath,
   VectorShape,
-  PathData,
+  add,
   BooleanOperator,
 } from 'vectorial'
 import {
@@ -71,10 +71,16 @@ export class BooleanOperationNode
   public createShape(): VectorShape {
     return new VectorShape({
       booleanOperator: this.booleanOperator,
-      children: this.forEachChild(child =>
-        (child as BooleanOperationNode).shape
-        || (child as VectorNode).vectorPath,
-      ),
+      // @TODO more robust and clear
+      children: this.forEachChild(child => {
+        const item: VectorShape | VectorPath = (
+          (child as BooleanOperationNode).shape
+          || (child as VectorNode).vectorPath
+        ).clone()
+        item.position = add(item.bounds, child.position)
+        item.rotation = item.rotation + child.rotation
+        return item
+      }),
     })
   }
 
