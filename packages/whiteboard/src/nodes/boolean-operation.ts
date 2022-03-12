@@ -73,13 +73,19 @@ export class BooleanOperationNode
       booleanOperator: this.booleanOperator,
       // @TODO more robust and clear
       children: this.forEachChild(child => {
-        const item: VectorShape | VectorPath = (
-          (child as BooleanOperationNode).shape
-          || (child as VectorNode).vectorPath
-        ).clone()
-        item.position = add(item.bounds, child.position)
-        item.rotation = item.rotation + child.rotation
-        return item
+        let shape: VectorShape | VectorPath | undefined = undefined
+        if (child instanceof BooleanOperationNode) {
+          shape = child.createShape()
+        } else if (child instanceof VectorNode) {
+          shape = child.vectorPath.clone()
+        } else {
+          throw new Error(
+            `BooleanOperationNode must only contain VectorNodes or BooleanOperationNodes, not ${child.type} (id: ${child.id})`,
+          )
+        }
+        shape.position = add(shape.bounds, child.position)
+        shape.rotation = shape.rotation + child.rotation
+        return shape
       }),
     })
   }

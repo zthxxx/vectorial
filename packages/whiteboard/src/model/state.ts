@@ -23,7 +23,7 @@ import { initUser } from './user'
 
 export const storeDocId = `vectorial:store-doc`
 export const documentsDocId = `vectorial:documents-doc`
-export const cooperationDocsId = `vectorial:cooperation-documents-doc`
+export const cooperationDocsId = `vectorial:cooperation-documents-doc:${location.host}`
 
 export const storeDoc = new YDoc<Store>()
 

@@ -57,11 +57,22 @@ export const NodeManagerMixin = <T extends ChildrenMixinType & BaseNodeMixin>(Su
 
     delete(id: string): void {
       documentsTransact(() => {
-        const node = this.get(id)!
+        const node = this.get(id)
+        if (!node) return
         node.removed = true
 
+        const getDescendant = (node?: SceneNode | ParentNode): SceneNode['id'][] => {
+          if (!node) return []
+          if (!('children' in node)) return []
+          return [
+            ...node.forEachChild(({ id }) => id),
+            ...node.forEachChild(getDescendant).flat(),
+          ]
+        }
+
         const parent: ParentNode = node.parent === this.id
-          ? this as ParentNode
+          // now this is PageNode
+          ? this as any as ParentNode
           : this.get(node.parent) as ParentNode
 
         if (parent) {
@@ -71,6 +82,12 @@ export const NodeManagerMixin = <T extends ChildrenMixinType & BaseNodeMixin>(Su
           parent.container.removeChild(node.container)
           parent.binding.get('children')!.delete(index, 1)
         }
+
+        const descendant = getDescendant(node)
+        descendant.forEach(id => {
+          delete this.nodes[id]
+          this.binding.get('nodes')!.delete(id)
+        })
 
         delete this.nodes[id]
         this.binding.get('nodes')!.delete(id)
