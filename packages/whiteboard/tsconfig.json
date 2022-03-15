@@ -12,6 +12,7 @@
     "jsxImportSource": "@emotion/react",
     "types": ["vite-plugin-svgr/client"],
     "paths": {
+      "vectorial": ["../vectorial/src"],
       "@vectorial/whiteboard/*": ["src/*"],
     },
   },
