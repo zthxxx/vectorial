@@ -20,6 +20,7 @@ export interface DocumentNodeProps extends Partial<DocumentData> {
 }
 
 export class DocumentNode extends BaseNodeMixin() implements DocumentNodeType {
+  // @ts-expect-error
   declare type: NodeType.Document
   binding: SharedMap<DocumentData>
   pages: { [key: PageNode['id']]: PageNode }

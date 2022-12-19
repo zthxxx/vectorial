@@ -1,4 +1,5 @@
 import { Graphics } from '@pixi/graphics'
+import { match } from 'ts-pattern'
 import * as Y from 'yjs'
 import {
   Rect,
@@ -62,7 +63,15 @@ export class FrameNode
     this.updateRelativeTransform()
     this.draw()
 
-    this.binding.observe(this.bindingUpdate)
+    this.binding.observe((event, transaction) => {
+      /**
+       * we are not set origin in transact manually,
+       * so origin will be null in local client, but be Room from remote
+       */
+      if (!transaction.origin) return
+
+      this.bindingUpdate(event)
+    })
   }
 
   public get bounds(): Rect {
@@ -76,10 +85,12 @@ export class FrameNode
     }
   }
 
+  // @ts-expect-error
   public get width(): number {
     return this.binding.get('width')!
   }
 
+  // @ts-expect-error
   public get height(): number {
     return this.binding.get('height')!
   }
@@ -193,27 +204,24 @@ export class FrameNode
 
     for (const [key, { action }] of keys.entries()) {
       if (action === 'update') {
-        switch (key) {
-          case 'position': {
+        match(key as keyof FrameData)
+          .with('position', () => {
             const position = this.binding.get('position')!.toJSON()
             this.container.position.set(position.x, position.y)
             this.updateRelativeTransform()
             this.updateAbsoluteTransform()
-            break
-          }
-          case 'rotation': {
+          })
+
+          .with('rotation', () => {
             const rotation = this.binding.get('rotation')!
             this.container.rotation = rotation
             this.updateRelativeTransform()
             this.updateAbsoluteTransform()
-            break
-          }
-          case 'width':
-          case 'height': {
+          })
+
+          .with('width', 'height', () => {
             this.draw()
-            break
-          }
-        }
+          })
       }
     }
   }

@@ -2,6 +2,7 @@ import { Graphics } from '@pixi/graphics'
 import { CanvasTextureAllocator } from '@pixi-essentials/texture-allocator'
 import type { Path, SVGSceneContext } from '@pixi-essentials/svg'
 import { SVGPathNode, FILL_RULE} from '@pixi-essentials/svg'
+import { match, isMatching, P } from 'ts-pattern'
 import * as Y from 'yjs'
 import {
   Rect,
@@ -80,7 +81,21 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
     this.draw()
 
     this.binding.observeDeep((events, transaction) => {
-      events.forEach((event) => this.bindingUpdate(event, transaction))
+      events.forEach((event) => {
+        if (
+          /**
+           * we are not set origin in transact manually,
+           * so origin will be null in local client, but be Room from remote
+           */
+          transaction.origin
+          /**
+           * redraw if anchors changed when editing
+           */
+          || isMatching(['path', 'anchors', P.any], event.path.slice(0, 3))
+        ) {
+          this.bindingUpdate(event)
+        }
+      })
     })
   }
 
@@ -194,118 +209,107 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
     }
   }
 
-  public bindingUpdate = (event: Y.YMapEvent<any>, transaction: Y.Transaction) => {
+  public bindingUpdate = (event: Y.YEvent<any>) => {
     const { changes, path, delta, keys } = event
 
-    switch (path.shift()) {
-      case undefined: {
+    match(path.shift() as undefined | keyof VectorData)
+      .with(undefined, () => {
         for (const [key, { action }] of keys.entries()) {
           if (action === 'update') {
-            switch (key) {
-              case 'position': {
+            match(key)
+              .with('position', () => {
                 const position = this.binding.get('position')!.toJSON()
                 this.container.position.set(position.x, position.y)
                 this.updateRelativeTransform()
                 this.updateAbsoluteTransform()
-                break
-              }
-              case 'rotation': {
+              })
+
+              .with('rotation', () => {
                 const rotation = this.binding.get('rotation')!
                 this.container.rotation = rotation
                 this.updateRelativeTransform()
                 this.updateAbsoluteTransform()
-                break
-              }
-            }
+              })
+              .otherwise(() => {})
           }
         }
-        break
-      }
+      })
 
-      case 'path': {
+      .with('path', () => {
         const { vectorPath } = this
-        switch (path.shift()) {
-          case 'anchors': {
+        match(path.shift() as undefined | keyof PathData)
+          .with('anchors', () => {
             const { anchors } = vectorPath
             if (path.length) {
               const index = path.shift() as number
               const anchor = anchors[index]
               /** update keys for anchor */
               if (!path.length) {
-                const point = this.binding.get('path')!.get('anchors')!.get(index)!.toJSON()
+                const point: AnchorData = this.binding.get('path')!.get('anchors')!.get(index)!.toJSON()
                 for (const [key, { action }] of keys.entries()) {
                   if (action !== 'update') {
                     this.draw()
-                    break
+                    return
                   }
+                  // @ts-expect-error
                   anchor[key] = point[key]
                 }
               }
             } else {
-              /**
-               * we are not set origin in transact manually,
-               * so origin will be null in local client, but be Room from remote
-               */
-              if (!transaction.origin) break
-
               let current = 0
               for (const item of delta) {
                 Object.entries(item).forEach(([key, value]) => {
-                  switch (key) {
-                    case 'retain': {
+                  match(key as keyof typeof item)
+                    .with('retain', () => {
                       current += value as number
-                      break
-                    }
-                    case 'insert': {
+                    })
+                    .with('insert', () => {
                       const anchors = (value as Y.Map<any>[])
                         .map(item => VectorAnchor.from(item.toJSON() as AnchorData))
                       anchors.forEach((anchor, i) => {
                         vectorPath.addAnchorAt(anchor, current + i)
                         current += 1
                       })
-                    }
-                  }
+                    })
+                    .otherwise(() => {})
                 })
               }
             }
             this.updateRelativeTransform()
             this.updateAbsoluteTransform()
             this.draw()
-            break
-          }
+          })
 
-          case undefined: {
+          .with(undefined, () => {
             const path = this.binding.get('path')!
-            for (const [key] of keys.entries()) {
-              switch (key) {
-                case 'rotation':
-                case 'parity':
-                case 'closed': {
+            for (const key of keys.keys() as IterableIterator<keyof PathData>) {
+              match(key)
+                .with('rotation', 'parity', 'closed', (key) => {
+                  // @ts-expect-error
                   vectorPath[key] = path.get(key)!
-                  break
-                }
-                case 'position': {
+                })
+                .with('position', (key) => {
                   vectorPath[key] = path.get(key)!.toJSON()
-                  break
-                }
-              }
+                })
+                .otherwise(() => {})
             }
 
             this.updateRelativeTransform()
             this.updateAbsoluteTransform()
             this.draw()
-            break
-          }
-        }
-        break
-      }
+          })
+          .otherwise(() => {
+            this.updateRelativeTransform()
+            this.updateAbsoluteTransform()
+            this.draw()
+          })
+      })
 
-      default: {
+      .otherwise(() => {
         this.updateRelativeTransform()
         this.updateAbsoluteTransform()
         this.draw()
-      }
-    }
+      })
   }
 }
 

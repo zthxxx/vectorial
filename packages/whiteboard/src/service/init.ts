@@ -2,9 +2,8 @@ import { useEffect } from 'react'
 import {
   useNavigate,
 } from 'react-router-dom'
-import { atom, useAtomValue } from 'jotai'
 import {
-  state,
+  useStore,
   createDefaultDocumentPage,
   DocumentData,
 } from '@vectorial/whiteboard/model'
@@ -32,20 +31,18 @@ export const useCheckToNewScene = (condition: boolean, id?: string | null) => {
 export const genDocId = () => nanoid(18)
 
 
-export const documentPageAtom = atom<{
+export const docsRef: {
   document?: DocumentNode,
   page?: PageNode,
-}>({})
+} = {}
 
-export const pageAtom = atom<PageNode | null>(null)
 
 export const useGetDocumentPage = (id?: string): {
   document?: DocumentNode,
   page?: PageNode,
 } => {
-  const store = useAtomValue(state.store)
-  const documents = useAtomValue(state.documents)
-  const docsRef = useAtomValue(documentPageAtom)
+  const store = useStore(state => state.store)
+  const documents = useStore(state => state.documents)
 
   if (!store || !documents || !id) return {}
   if (docsRef.document && docsRef.page) {

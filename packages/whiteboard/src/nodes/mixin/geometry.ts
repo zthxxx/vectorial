@@ -3,7 +3,6 @@ import { bindProxyAndYMap } from 'valtio-yjs'
 import {
   SharedMap,
   toSharedTypes,
-  nanoid,
 } from '@vectorial/whiteboard/utils'
 import {
   BaseDataMixin,
@@ -13,7 +12,6 @@ import {
 } from '@vectorial/whiteboard/model'
 import {
   Constructor,
-  EmptyMixin,
   BaseNodeMixin,
 } from '../types'
 
@@ -26,8 +24,8 @@ export const defaultStroke = (): Stroke => ({
   paints: [],
 })
 
-export const GeometryMixin = <T extends BaseNodeMixin, S extends Constructor<T>>(Super: S) => {
-  return class GeometryMixin extends (Super ?? EmptyMixin) implements GeometryMixinType {
+export const GeometryMixin = <S extends Constructor<BaseNodeMixin>>(Super: S) => {
+  return class GeometryMixin extends Super implements GeometryMixinType {
     declare binding: SharedMap<BaseDataMixin & GeometryMixinType>
     public stroke: Stroke;
     public fill: Fill;

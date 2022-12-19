@@ -2,7 +2,6 @@ import {
   Vector,
   Matrix,
   Constructor,
-  EmptyMixin,
 } from '../types'
 import {
   emptyVector,
@@ -19,8 +18,8 @@ export interface TransformMixinProps {
   rotation?: number
 }
 
-export const TransformMixin = <T extends { width: number, height: number }>(Super: Constructor<T>) => {
-  return class Transformable extends (Super ?? EmptyMixin) {
+export const TransformMixin = <S extends Constructor<{ width: number, height: number }>>(Super: S) => {
+  return class Transformable extends Super {
     public _position: Vector;
     /**
      * euler rotation in degree,

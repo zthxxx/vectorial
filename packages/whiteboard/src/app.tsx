@@ -2,6 +2,7 @@ import { Suspense, FC, lazy, ReactElement } from 'react'
 import { useRoutes } from 'react-router-dom'
 import { ErrorBoundary } from '@vectorial/whiteboard/components'
 import { LoadingPage } from '@vectorial/whiteboard/pages'
+import { vectorDebugger } from '@vectorial/whiteboard/model'
 
 const SceneIdGuard = lazy(() => import('./pages/id-guard'))
 
@@ -42,6 +43,8 @@ const useAppRoutes = (): ReactElement | null => {
 }
 
 export const App: FC = () => {
+  window.vectorDebugger = vectorDebugger
+
   return (
     <Suspense
       fallback={<LoadingPage />}

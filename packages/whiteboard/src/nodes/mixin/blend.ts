@@ -6,19 +6,15 @@ import {
 } from '@vectorial/whiteboard/model'
 import {
   Constructor,
-  EmptyMixin,
   BaseNodeMixin,
 } from '../types'
 
 export interface BlendMixinProps extends Partial<BlendMixinType>{
 }
 
-export const BlendMixin = <
-  T extends BaseNodeMixin,
-  S extends Constructor<T> = Constructor<T>
->(Super: S) => {
-  return class BlendMixin extends (Super ?? EmptyMixin) implements BlendMixinType {
-    declare binding: SharedMap<BaseDataMixin & BlendMixinType>;
+export const BlendMixin = <S extends Constructor<BaseNodeMixin>>(Super: S) => {
+  return class BlendMixin extends Super implements BlendMixinType {
+    declare binding: SharedMap<BaseDataMixin & BlendMixinType>
 
     constructor(...args: any[])
     constructor(props: BlendMixinProps, ...args: any[]) {

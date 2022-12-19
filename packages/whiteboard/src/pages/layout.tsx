@@ -1,23 +1,16 @@
-import { FC, useEffect, memo } from 'react'
+import { FC, useEffect, useState, memo } from 'react'
 import {
   useOutlet,
 } from 'react-router-dom'
-import {
-  atom,
-  useAtom,
-} from 'jotai'
 import { Spin } from '@vectorial/whiteboard/components'
 import {
   useRootDoc,
 } from '@vectorial/whiteboard/model'
 import { logger } from '@vectorial/whiteboard/utils'
 
-
-const layoutLoadingAtom = atom<boolean>(true)
-
 const useLoading = () => {
   const { store, documents } = useRootDoc()
-  const [loading, setLoading] = useAtom(layoutLoadingAtom)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (store && documents && loading) {

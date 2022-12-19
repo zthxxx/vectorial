@@ -41,8 +41,11 @@ export const booleanOperate = (
 
   const { page } = scene
   const nodes = orderNodes([...selected], page) as (VectorNode | BooleanOperationNode)[]
+  const topNode = nodes[nodes.length - 1]
+  const geometry = topNode.serializeGeometry()
   const booleanOperationData = newBooleanOperationData({
     booleanOperator: operator,
+    geometry,
   })
 
   scene.docTransact(() => {
@@ -63,11 +66,6 @@ export const booleanOperate = (
     page.relocate(nodes, booleanOperationNode)
 
     booleanOperationNode.shape = booleanOperationNode.createShape()
-    const topNode = nodes[nodes.length - 1]
-    const geometry = topNode.serializeGeometry()
-    booleanOperationNode.fill.paints = geometry.fill.paints
-    booleanOperationNode.stroke.width = geometry.stroke.width
-    booleanOperationNode.stroke.paints = geometry.stroke.paints
     nodes.forEach(node => node.clear())
     booleanOperationNode.draw()
 

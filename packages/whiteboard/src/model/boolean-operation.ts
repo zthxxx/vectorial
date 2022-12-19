@@ -1,4 +1,5 @@
 import { generateKeyBetween } from 'fractional-indexing'
+import { cloneDeep } from 'lodash-es'
 import {
   BooleanOperator,
 } from 'vectorial'
@@ -7,12 +8,14 @@ import {
   NodeType,
   BooleanOperationData,
   BlendMode,
+  GeometryMixin,
 } from './types'
 
-export const newBooleanOperationData = ({ id, name, booleanOperator }: {
+export const newBooleanOperationData = ({ id, name, booleanOperator, geometry }: {
   id?: string;
   name?: string;
   booleanOperator?: BooleanOperator;
+  geometry?: GeometryMixin;
 } = {}): BooleanOperationData => {
   return {
     id: id ?? nanoid(),
@@ -27,13 +30,17 @@ export const newBooleanOperationData = ({ id, name, booleanOperator }: {
     opacity: 1,
     blendMode: BlendMode.PassThrough,
 
-    stroke: {
-      width: 0,
-      paints: [],
-    },
-    fill: {
-      paints: [],
-    },
+    stroke: geometry?.stroke 
+      ? cloneDeep(geometry.stroke) 
+      : {
+        width: 0,
+        paints: [],
+      },
+    fill: geometry?.fill
+      ? cloneDeep(geometry.fill)
+      : {
+        paints: [],
+      },
     children: [],
   }
 }

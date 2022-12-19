@@ -15,7 +15,6 @@ import {
 } from '@vectorial/whiteboard/model'
 import {
   Constructor,
-  EmptyMixin,
   BaseNodeMixin,
   LayoutMixin,
   ChildrenMixin as ChildrenMixinType,
@@ -27,13 +26,12 @@ import {
 export type ParentNode = (
   & BaseNodeMixin
   & ChildrenMixinType
-  & LayoutMixin
   & { binding: SharedMap<{ children: BaseDataMixin['id'][] }> }
 )
 
 
-export const NodeManagerMixin = <T extends ChildrenMixinType & BaseNodeMixin>(Super: Constructor<T>) => {
-  return class NodeManagerMixin extends (Super ?? EmptyMixin) implements NodeManagerMixinType {
+export const NodeManagerMixin = <S extends Constructor<ChildrenMixinType & BaseNodeMixin>>(Super: S) => {
+  return class NodeManagerMixin extends Super implements NodeManagerMixinType {
     declare binding: SharedMap<ChildrenDataMixin & BaseDataMixin & {
       nodes: { [key: SceneNodeData['id']]: SceneNodeData };
     }>;
@@ -72,7 +70,7 @@ export const NodeManagerMixin = <T extends ChildrenMixinType & BaseNodeMixin>(Su
 
         const parent: ParentNode = node.parent === this.id
           // now this is PageNode
-          ? this as any as ParentNode
+          ? this
           : this.get(node.parent) as ParentNode
 
         if (parent) {
@@ -129,7 +127,7 @@ export const NodeManagerMixin = <T extends ChildrenMixinType & BaseNodeMixin>(Su
 
         const insertToParent = (node: SceneNode, order: string, index: number) => {
           const { absoluteTransform } = node
-          const originParent = this.get(node.parent)! as ParentNode
+          const originParent = this.get(node.parent)! as ParentNode & LayoutMixin
           const relativeTransform = multiply(
             absoluteTransform,
             getInverseMatrix(originParent.absoluteTransform ?? identityMatrix()),

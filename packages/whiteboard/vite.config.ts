@@ -16,7 +16,6 @@ export default defineConfig({
       fastRefresh: false,
       babel: {
         plugins: [
-          'jotai/babel/plugin-debug-label',
           '@emotion/babel-plugin',
         ],
       },

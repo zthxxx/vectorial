@@ -3,9 +3,9 @@ import paper from 'paper'
 /**
  * make paper.js render-independent
  */
-// @ts-ignore
+// @ts-expect-error
 paper.setup()
-// @ts-ignore
+// @ts-expect-error
 paper.project.draw = () => {}
 
 

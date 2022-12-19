@@ -8,6 +8,7 @@ import {
   filter,
   mergeMap,
 } from 'rxjs/operators'
+import { match } from 'ts-pattern'
 import {
   HandlerType,
   PathHitType,
@@ -143,11 +144,8 @@ export const confirmingToggleHandler: StateAction = ({
   anchorNodes,
   selected,
 }, { hit }: StateMouseEvent) => {
-  // hit will always be existed, code only for defense and type guard
-  if (!hit) return
-
-  switch (hit.type) {
-    case (PathHitType.Anchor): {
+  const hitResult = match(hit)
+    .with({ type: PathHitType.Anchor }, (hit) => {
       const anchor = hit.point
       if (anchor.inHandler && anchor.outHandler) {
         anchor.handlerType = HandlerType.None
@@ -155,32 +153,34 @@ export const confirmingToggleHandler: StateAction = ({
         toggleAnchorHandler(hit as HitResult & { type: PathHitType.Anchor })
       )
       selected.splice(0, selected.length, hit)
-      break
-    }
-    case (PathHitType.InHandler): {
+      return hit
+    })
+
+    .with({ type: PathHitType.InHandler }, (hit) => {
       hit.point.inHandler = undefined
       selected.splice(0, selected.length, {
         ...hit,
         type: PathHitType.Anchor,
       })
-      break
-    }
-    case (PathHitType.OutHandler): {
+      return hit
+    })
+
+    .with({ type: PathHitType.OutHandler }, (hit) => {
       hit.point.outHandler = undefined
       selected.splice(0, selected.length, {
         ...hit,
         type: PathHitType.Anchor,
       })
-      break
-    }
-    default: {
-      return
-    }
-  }
+      return hit
+    })
+
+    .otherwise(() => undefined)
+
+  if (!hitResult) return
 
   const anchors = vectorNode.binding.get('path')!.get('anchors')!
 
-  const { point, anchorIndex } = hit
+  const { point, anchorIndex } = hitResult
   scene.docTransact(() => {
     assignMap(anchors.get(anchorIndex), {
       inHandler: point.inHandler,

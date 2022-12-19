@@ -9,6 +9,7 @@ import {
   filter,
   mergeMap,
 } from 'rxjs/operators'
+import { match } from 'ts-pattern'
 import {
   PathHitType,
   HitResult,
@@ -174,8 +175,8 @@ export const hoverIndicate: StateAction = ({
 
   indicativeAnchor.vectorAnchor = hit.point!.clone()
 
-  switch (hit.type) {
-    case (PathHitType.Anchor): {
+  match(hit)
+    .with({ type: PathHitType.Anchor }, (hit) => {
       const isSelected = anchorNodes.get(hit.point)!.style?.anchor === 'selected'
       changes.push([indicativeAnchor, {
         anchor: isSelected ? 'selected' : 'highlight',
@@ -184,38 +185,38 @@ export const hoverIndicate: StateAction = ({
       }])
 
       changes.push([indicativePath, undefined])
-      break
-    }
-    case (PathHitType.InHandler): {
+    })
+
+    .with({ type: PathHitType.InHandler }, (hit) => {
       const isSelected = anchorNodes.get(hit.point)!.style?.inHandler === 'selected'
       changes.push([indicativeAnchor, { inHandler: isSelected ? 'selected' : 'highlight' }])
       changes.push([indicativePath, undefined])
-      break
-    }
-    case (PathHitType.OutHandler): {
+    })
+
+    .with({ type: PathHitType.OutHandler }, (hit) => {
       const isSelected = anchorNodes.get(hit.point)!.style?.outHandler === 'selected'
       changes.push([indicativeAnchor, { outHandler: isSelected ? 'selected' : 'highlight' }])
       changes.push([indicativePath, undefined])
-      break
-    }
-    case (PathHitType.Path): {
+    })
+
+    .with({ type: PathHitType.Path }, (hit) => {
       scene.setCursor({ icon: cursor.pen })
       indicativePath.path.anchors = hit.ends
       changes.push(
         [indicativeAnchor, { anchor: 'normal', inHandler: undefined, outHandler: undefined }],
         [indicativePath, { strokeWidth: 2, strokeColor: 0x18a0fb }],
       )
-      break
-    }
-    case (PathHitType.Fill): {
+    })
+
+    .with({ type: PathHitType.Fill }, () => {
       indicativePath.path = vectorPath.clone()
       changes.push(
         [indicativeAnchor, { anchor: undefined, inHandler: undefined, outHandler: undefined }],
         [indicativePath, { strokeWidth: 2, strokeColor: 0x18a0fb }],
       )
-      break
-    }
-  }
+    })
+
+    .exhaustive()
 }
 
 export const indicatingClosingHover: StateAction = ({
@@ -230,7 +231,7 @@ export const indicatingClosingHover: StateAction = ({
   if (!hit || !('point' in hit)) return
 
   scene.setCursor({ icon: cursor.pen })
-  indicativeAnchor.vectorAnchor = hit.point.clone()
+  indicativeAnchor.vectorAnchor = hit.point!.clone()
 
   const first = vectorPath.anchors.at(0)
   const last = vectorPath.anchors.at(-1)
@@ -258,5 +259,6 @@ export const indicatingClosePath: StateAction = (context, event, meta) => {
   } = context
   vectorPath.closed = true
   vectorNode.binding.get('path')!.set('closed', true)
+  vectorNode.draw()
   createDone(context, event, meta)
 }

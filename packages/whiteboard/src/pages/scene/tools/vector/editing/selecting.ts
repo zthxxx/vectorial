@@ -8,6 +8,7 @@ import {
   filter,
   mergeMap,
 } from 'rxjs/operators'
+import { match } from 'ts-pattern'
 import {
   add,
   PathHitType,
@@ -106,8 +107,8 @@ export const selectingSelect: StateAction = (context, stateEvent: StateMouseEven
 
   changes.push([indicativeAnchor, undefined])
 
-  switch (hit.type) {
-    case (PathHitType.Anchor): {
+  match(hit)
+    .with({ type: PathHitType.Anchor }, (hit) => {
       let anchors: HitResult[] = []
       const isSelected = anchorNodes.get(hit.point)!.style?.anchor === 'selected'
       context.dragBase = { ...hit.point.position }
@@ -130,20 +131,20 @@ export const selectingSelect: StateAction = (context, stateEvent: StateMouseEven
       }
 
       selected.splice(0, selected.length, ...anchors)
-      break
-    }
+    })
 
-    case (PathHitType.InHandler): {
+
+    .with({ type: PathHitType.InHandler }, (hit) => {
       context.dragBase = add(hit.point.position, hit.point.inHandler!)
       selected.splice(0, selected.length, hit)
-      break
-    }
-    case (PathHitType.OutHandler): {
+    })
+
+    .with({ type: PathHitType.OutHandler }, (hit) => {
       context.dragBase = add(hit.point.position, hit.point.outHandler!)
       selected.splice(0, selected.length, hit)
-      break
-    }
-  }
+    })
+
+    .otherwise(() => {})
 
   resetStyles()
 

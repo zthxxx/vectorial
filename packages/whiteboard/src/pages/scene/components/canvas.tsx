@@ -1,15 +1,16 @@
 import { memo } from 'react'
-import { atom, useSetAtom } from 'jotai'
+import {
+  useStore,
+} from '@vectorial/whiteboard/model'
 
-export const containerAtom = atom<HTMLDivElement | null>(null)
 
 export const CanvasContainer = memo(() => {
-  const setRef = useSetAtom(containerAtom)
+  const setState = useStore.setState
 
   return (
     <div
       className="absolute w-full h-full overflow-hidden"
-      ref={(ref) => setRef(() => ref)}
+      ref={(ref) => setState({ sceneContainer: ref })}
     />
   )
 })

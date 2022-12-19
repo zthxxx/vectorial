@@ -8,6 +8,7 @@ import {
   filter,
   mergeMap,
 } from 'rxjs/operators'
+import { match } from 'ts-pattern'
 import {
   HandlerType,
   sub,
@@ -84,8 +85,8 @@ export const adjustingAdjust: StateAction = (context, { event }: StateMouseEvent
   const anchors = vectorNode.binding.get('path')!.get('anchors')!
 
   scene.docTransact(() => {
-    switch (hitResult.type) {
-      case (PathHitType.Anchor): {
+    match(hitResult)
+      .with({ type: PathHitType.Anchor }, () => {
         if (event.metaKey || event.altKey) {
           const hitAnchor = selected.find(({ point }) => (
             point!.position.x === dragBase.x
@@ -110,9 +111,9 @@ export const adjustingAdjust: StateAction = (context, { event }: StateMouseEvent
           changes.push([anchorNode, {}])
           assignMap(anchors.get(anchorIndex), { position: point.position })
         })
-        break
-      }
-      case (PathHitType.InHandler): {
+      })
+
+      .with({ type: PathHitType.InHandler }, (hitResult) => {
         changeHandlerType(anchor)
         anchor.inHandler = sub(event.mouse, anchor.position)
         changes.push([anchorNode, {}])
@@ -121,9 +122,9 @@ export const adjustingAdjust: StateAction = (context, { event }: StateMouseEvent
           outHandler: anchor.outHandler,
           handlerType: anchor.handlerType,
         })
-        break
-      }
-      case (PathHitType.OutHandler): {
+      })
+
+      .with({ type: PathHitType.OutHandler }, (hitResult) => {
         changeHandlerType(anchor)
         anchor.outHandler = sub(event.mouse, anchor.position)
         changes.push([anchorNode, {}])
@@ -132,9 +133,9 @@ export const adjustingAdjust: StateAction = (context, { event }: StateMouseEvent
           outHandler: anchor.outHandler,
           handlerType: anchor.handlerType,
         })
-        break
-      }
-    }
+      })
+
+      .otherwise(() => {})
   })
 
   context.dragBase = {

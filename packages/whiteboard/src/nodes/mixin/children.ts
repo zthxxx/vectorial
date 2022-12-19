@@ -1,11 +1,11 @@
 import * as Y from 'yjs'
+import { match } from 'ts-pattern'
 import { SharedMap } from '@vectorial/whiteboard/utils'
 import {
   BaseDataMixin
 } from '@vectorial/whiteboard/model'
 import {
   Constructor,
-  EmptyMixin,
   PageNode,
   BaseNodeMixin,
   ChildrenMixin as ChildrenMixinType,
@@ -16,11 +16,8 @@ export interface ChildrenMixinProps extends Partial<ChildrenMixinType>{
   page: PageNode;
 }
 
-export const ChildrenMixin = <
-  T extends BaseNodeMixin,
-  S extends Constructor<T> = Constructor<T>
->(Super: S) => {
-  return class ChildrenMixin extends (Super ?? EmptyMixin) implements ChildrenMixinType {
+export const ChildrenMixin = <S extends Constructor<BaseNodeMixin>>(Super: S) => {
+  return class ChildrenMixin extends Super implements ChildrenMixinType {
     declare binding: SharedMap<BaseDataMixin & { children: string[] }>;
 
     readonly children: string[]
@@ -118,12 +115,11 @@ export const ChildrenMixin = <
       let current = 0
       for (const item of delta) {
         Object.entries(item).forEach(([key, value]) => {
-          switch (key) {
-            case 'retain': {
+          match(key as keyof typeof item)
+            .with('retain', () => {
               current += value as number
-              break
-            }
-            case 'insert': {
+            })
+            .with('insert', () => {
               const list = Array.isArray(value) ? value : [value]
               this.children.splice(current, 0, ...list as SceneNode['id'][])
               list.forEach((id, i) => {
@@ -134,9 +130,8 @@ export const ChildrenMixin = <
                   this.container.addChildAt(node.container, index)
                 }
               })
-              break
-            }
-            case 'delete': {
+            })
+            .with('delete', () => {
               const len = value as number
               let index = len
               while (index) {
@@ -149,9 +144,9 @@ export const ChildrenMixin = <
                 index = index - 1
               }
               this.children.splice(current, len)
-              break
-            }
-          }
+            })
+            .with('attributes', ()=> {}) 
+            .exhaustive()
         })
       }
     }

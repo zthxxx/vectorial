@@ -32,7 +32,7 @@ export interface LayoutMixinProps extends Partial<LayoutDataMixin> {
   page: PageNode;
 }
 
-export const LayoutMixin = <T extends BaseNodeMixin>(Super: Constructor<T>) => {
+export const LayoutMixin = <S extends Constructor<BaseNodeMixin>>(Super: S) => {
   return class LayoutMixin extends TransformMixin(AreaMixin(Super)) implements LayoutMixinType {
     declare binding: SharedMap<BaseDataMixin & LayoutDataMixin>
     declare parent: BaseNodeMixin['id']

@@ -1,5 +1,6 @@
 export * from './types'
 export * from './state'
+export * from './debug'
 export * from './page'
 export * from './frame'
 export * from './user'

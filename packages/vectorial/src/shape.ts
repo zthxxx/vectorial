@@ -142,7 +142,8 @@ export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implement
       return [toVectorPath(compound)]
     }
 
-    return compound.children.map(toVectorPath)
+    const children = compound.children as paper.Path[]
+    return children.map(toVectorPath)
   }
 
 

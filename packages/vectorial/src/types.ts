@@ -7,7 +7,9 @@ export type {
 
 export type Constructor<T = {}> = new (...args: any[]) => T;
 
-export class EmptyMixin {}
+export class EmptyMixin {
+  constructor(...args: any[]) {}
+}
 
 export enum HandlerType {
   None = 'None',

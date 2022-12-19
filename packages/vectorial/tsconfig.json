@@ -1,11 +1,14 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@zthxxx/tsconfig/tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "baseUrl": ".",
     "outDir": "es",
+    "baseUrl": ".",
     "paths": {
       "vectorial": ["src"],
     },
   },
+  "include": [
+    "src",
+  ],
 }

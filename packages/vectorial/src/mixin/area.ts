@@ -21,8 +21,8 @@ export interface AreaMixinProps {
   position?: Vector
 }
 
-export const AreaMixin = <T extends {}>(Super: Constructor<T>) => {
-  return class Area extends (Super ?? EmptyMixin) {
+export const AreaMixin = <S extends Constructor>(Super?: S) => {
+  return class Area extends (Super ?? EmptyMixin as S) {
     public _position: Vector;
 
     constructor(...args: any[])

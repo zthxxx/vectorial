@@ -16,7 +16,7 @@ export interface AnchorData {
   radius?: number;
 }
 
-export class VectorAnchor {
+export class VectorAnchor implements AnchorData {
   public segment: paper.Segment
   public handlerType: HandlerType
   /**

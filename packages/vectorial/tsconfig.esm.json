@@ -1,0 +1,22 @@
+/**
+ * NOTE: this file is copied to '@zthxxx/tsconfig/build.esm.json'
+ */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "es",
+    "target": "ES2019",
+    "module": "ESNext",
+    "noEmit": false,
+    "sourceMap": false,
+    "declarationMap": false,
+  },
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.stories.tsx",
+    "**/*.mock.ts",
+    "**/tests",
+    "**/mocks",
+  ],
+}

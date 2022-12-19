@@ -1,5 +1,4 @@
-import { memo, useEffect, useState, useCallback } from 'react'
-import { atom, useAtom } from 'jotai'
+import { memo, useEffect } from 'react'
 import {
   tap,
   map,
@@ -10,6 +9,7 @@ import {
   ScenePluginProps,
   KeyTriggerType,
 } from '@vectorial/whiteboard/scene'
+import { create } from 'zustand'
 import {
   Bar,
   Tray,
@@ -26,40 +26,53 @@ import { BooleanOperation } from './boolean'
 
 type Tools = ToolDefine[]
 
-export const toolState = {
-  tools: [] as Tools,
-  toolsMap: {} as { [name: string]: ToolDefine },
-  current: '',
-  switchTool: (name: string) => {},
+interface ToolsStore {
+  tools: Tools,
+  toolsMap: { [name: string]: ToolDefine },
+  current: string,
+  switchTool: (name: string) => void,
 }
 
-const useTools = (): [Tools, (set: Tools) => void] => {
-  const [, setup] = useState<number>(Math.random())
-  const set = (tools: Tools) => {
-    setup(Math.random())
-    toolState.tools = tools
-    toolState.toolsMap = keyBy(tools, 'name')
-  }
-  return [toolState.tools, set]
-}
+const useToolsStore = create<ToolsStore>(() => ({
+  tools: [],
+  toolsMap: {},
+  current: '',
+  switchTool: () => {},
+}))
+
 
 const useSetupTools = (toolProps: ToolProps): Tools => {
-  const [tools, setTools] = useTools()
+  const tools = useToolsStore(state => state.tools)
+
   if (tools.length) return tools
+
+  const setTools = (tools: Tools) => {
+    useToolsStore.setState({
+      tools,
+      toolsMap: keyBy(tools, 'name'),
+    })
+  }
 
   setTools([
     new SelectTool(toolProps),
     new VectorTool(toolProps),
     new PanTool(toolProps),
   ])
+
   return tools
 }
 
-export const currentToolAtom = atom('')
-
-export interface ToolboxProps extends ScenePluginProps {
-
+const switchTool = (name: string) => {
+  const { current, toolsMap } = useToolsStore.getState()
+  const currentTool = toolsMap[current]
+  const nextTool = toolsMap[name]
+  if (name === current) return
+  currentTool?.deactivate()
+  nextTool?.activate()
+  useToolsStore.setState({ current: name })
 }
+
+export interface ToolboxProps extends ScenePluginProps {}
 
 export const Toolbox = memo((props: ToolboxProps) => {
   const {
@@ -67,30 +80,20 @@ export const Toolbox = memo((props: ToolboxProps) => {
     scene,
   } = props
 
-  const [current, setCurrent] = useAtom(currentToolAtom)
-
-  const switchTool = (name: string) => {
-    const { current, toolsMap } = toolState
-    const currentTool = toolsMap[current]
-    const nextTool = toolsMap[name]
-    if (name === current) return
-    currentTool?.deactivate()
-    nextTool?.activate()
-    toolState.current = name
-    setCurrent(name)
-  }
+  const current = useToolsStore(state => state.current)
 
   const tools = useSetupTools({
     user,
     scene,
-    switchTool: (name: string) => toolState.switchTool(name),
+    switchTool,
   })
 
   useEffect(() => {
     if (!tools.length) return
-    toolState.switchTool = switchTool
+
     const { events } = scene
     switchTool('SelectTool')
+
     const hotkey = events.interactEvent$.pipe(
       filter(event => (
         event.key?.type === KeyTriggerType.Down
@@ -98,9 +101,9 @@ export const Toolbox = memo((props: ToolboxProps) => {
       map(event => tools.find(item => event.match(item.hotkey))),
       tap(tool => tool && switchTool(tool.name)),
     ).subscribe()
+
     return () => {
       hotkey.unsubscribe()
-      toolState.switchTool = () => {}
     }
   }, [tools])
 

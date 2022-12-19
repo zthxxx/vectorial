@@ -1,5 +1,6 @@
 import { ReactElement } from 'react'
 import { isEqual } from 'lodash-es'
+import { match } from 'ts-pattern'
 import {
   Observable,
   BehaviorSubject,
@@ -94,12 +95,13 @@ export class SelectTool extends ToolDefine {
 
     from(this.machine!).subscribe({
       complete: () => {
-        const state = this.machine!.state.value
-        switch (state) {
-          case 'editVector': {
+        const state = this.machine!.getSnapshot().value
+
+        match(state)
+          .with('editVector', () => {
             this.switchTool('VectorTool')
-          }
-        }
+          })
+          .otherwise(() => {})
       }
     })
   }

@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern'
 import * as Y from 'yjs'
 import {
   NodeType,
@@ -130,10 +131,10 @@ export class PageNode extends NodeManagerMixin(ChildrenMixin(BaseNodeMixin())) i
 
     const nodesBinding = this.binding.get('nodes')!
     for (const [key, { action }] of keys.entries()) {
-      switch (action) {
-        case 'delete': {
+      match(action)
+        .with('delete', () => {
           const node = this.nodes[key]
-          if (!node) continue
+          if (!node) return
           node.removed = true
           const parent: ParentNode = node.parent === this.id
             ? this
@@ -142,12 +143,12 @@ export class PageNode extends NodeManagerMixin(ChildrenMixin(BaseNodeMixin())) i
           parent?.container.removeChild(node.container)
           delete this.nodes[key]
           // dont remove child here, due to we are directly listening on children change
-          break
-        }
-        case 'add': {
-          const nodeBinding = nodesBinding.get(key)
-          if (!nodeBinding) continue
-          const NodeType = NodeTypeMap[nodeBinding.get('type')! as SceneNode['type']]
+        })
+
+        .with('add', () => {
+          const nodeBinding = nodesBinding.get(key) as unknown as YMap<SceneNode> | undefined
+          if (!nodeBinding) return
+          const NodeType = NodeTypeMap[nodeBinding.get('type')!]
           if (!NodeType) return
           const node = nodeBinding.toJSON()
           const item = new NodeType({
@@ -158,9 +159,11 @@ export class PageNode extends NodeManagerMixin(ChildrenMixin(BaseNodeMixin())) i
           })
 
           this.nodes[node.id] = item
-          break
-        }
-      }
+        })
+
+        .with('update', () => {})
+
+        .exhaustive()
     }
   }
 }

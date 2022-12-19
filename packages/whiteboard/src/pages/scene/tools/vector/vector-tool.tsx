@@ -329,6 +329,7 @@ export class ToolLayer {
     this.container.addChild(this.anchorNodesLayer)
     this.container.addChild(this.indicativeAnchor.container)
 
+    // @ts-expect-error
     this.machine = interpret(createVectorToolMachine(this))
 
     this.machineSignal$ = from(this.machine).pipe(

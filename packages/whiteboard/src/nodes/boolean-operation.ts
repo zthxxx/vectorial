@@ -1,4 +1,6 @@
 import { SVGPathNode, FILL_RULE} from '@pixi-essentials/svg'
+import { match } from 'ts-pattern'
+import * as Y from 'yjs'
 import {
   Rect,
   Vector,
@@ -66,6 +68,16 @@ export class BooleanOperationNode
     /** @TODO two-way binding */
     this.shape = this.createShape()
     this.draw()
+
+    this.binding.observeDeep((events, transaction) => {
+      /**
+       * we are not set origin in transact manually,
+       * so origin will be null in local client, but be Room from remote
+       */
+      if (!transaction.origin) return
+
+      events.forEach((event) => this.bindingUpdate(event))
+    })
   }
 
   public createShape(): VectorShape {
@@ -187,7 +199,6 @@ export class BooleanOperationNode
         /** @TODO gradient */
         .filter(paint => paint.type === 'Solid')
         .forEach((paint: SolidPaint) => {
-
           this.container.lineStyle({
             width: stroke.width,
             color: toPixiColor(paint.color),
@@ -215,5 +226,42 @@ export class BooleanOperationNode
       // @ts-ignore
       this.container.currentPath2 = null
     }
+  }
+
+  public bindingUpdate = (event: Y.YEvent<any>) => {
+    const { changes, path, delta, keys } = event
+
+    match(path.shift())
+      .with(undefined, () => {
+        for (const [key, { action }] of keys.entries()) {
+          if (action === 'update') {
+            match(key)
+              .with('position', () => {
+                const position = this.binding.get('position')!.toJSON()
+                this.container.position.set(position.x, position.y)
+                this.updateRelativeTransform()
+                this.updateAbsoluteTransform()
+              })
+
+              .with('rotation', () => {
+                const rotation = this.binding.get('rotation')!
+                this.container.rotation = rotation
+                this.updateRelativeTransform()
+                this.updateAbsoluteTransform()
+              })
+
+              .with('booleanOperator', () => {
+                const booleanOperator = this.binding.get('booleanOperator')!
+                this.shape.booleanOperator = booleanOperator
+              })
+
+              .otherwise(() => {})
+          }
+        }
+      })
+
+      .otherwise(() => {})
+
+    this.draw()
   }
 }

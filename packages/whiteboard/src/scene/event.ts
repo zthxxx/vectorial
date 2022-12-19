@@ -12,6 +12,7 @@ import {
   filter,
   mergeMap,
 } from 'rxjs/operators'
+import { match, isMatching } from 'ts-pattern'
 import {
   sub,
   len,
@@ -348,32 +349,39 @@ export class EventManager {
       return
     }
 
-    let eventType: MouseTriggerType
 
-    switch (type) {
-      case 'mousedown': {
+    event.mouse = {
+      ...position,
+      type: MouseTriggerType.Down,
+      trigger: button,
+    }
+
+    return match(type)
+      .with('mousedown', () => {
         if (event.downMouse.has(button)) {
           return
         }
         event.downMouse.add(button)
-        eventType = MouseTriggerType.Down
+        event.mouse!.type = MouseTriggerType.Down
         if (!this.dragBase) {
           this.dragBase = { ...position }
         }
-        break
-      }
-      case 'mouseup': {
+        return event
+      })
+
+      .with('mouseup', () => {
         event.downMouse.delete(button)
-        eventType = MouseTriggerType.Up
+        event.mouse!.type = MouseTriggerType.Up
 
         if (!event.downMouse.size) {
           event.dragging = undefined
           this.dragBase = undefined
         }
-        break
-      }
-      case 'mousemove': {
-        eventType = MouseTriggerType.Move
+        return event
+      })
+
+      .with('mousemove', () => {
+        event.mouse!.type = MouseTriggerType.Move
 
         if (!this.dragBase) {
           if (event.dragging) event.dragging = undefined
@@ -391,20 +399,10 @@ export class EventManager {
           event.dragging.offset = sub(position, this.dragBase)
         }
 
-        break
-      }
-      default: {
-        return
-      }
-    }
+        return event
+      })
 
-    event.mouse = {
-      ...position,
-      type: eventType,
-      trigger: button,
-    }
-
-    return event
+      .otherwise(() => undefined)
   }
 
   public handleWheelEvent = (ev: WheelEvent): InteractEvent => {
@@ -453,7 +451,10 @@ export class EventManager {
     event.metaKey = metaKey
 
     if (EventManager.modifierKeys.has(code)) {
-      if (isSameSet(event.modifiers, this.lastEvent.modifiers)) {
+      if (
+        type === 'keydown'
+        && isSameSet(event.modifiers, this.lastEvent.modifiers)
+      ) {
         return of()
       } else if (type === 'keyup' && ['MetaLeft', 'MetaRight'].includes(code)) {
         // https://stackoverflow.com/questions/11818637/why-does-javascript-drop-keyup-events-when-the-metakey-is-pressed-on-mac-browser/57153300#57153300
@@ -484,33 +485,33 @@ export class EventManager {
       }
     }
 
-    let eventType: KeyTriggerType
-
-    switch (type) {
-      case 'keydown': {
-        if (event.downKeys.has(code)) {
-          return of()
-        }
-        event.downKeys.add(code)
-        eventType = KeyTriggerType.Down
-        break
-      }
-      case 'keyup': {
-        event.downKeys.delete(code)
-        eventType = KeyTriggerType.Up
-        break
-      }
-      default: {
-        return of()
-      }
-    }
-
     event.key = {
-      type: eventType,
+      type: KeyTriggerType.Down,
       trigger: code
     }
 
-    return of(event)
+    return of(match(type)
+      .with('keydown', () => {
+        // https://stackoverflow.com/questions/11818637/why-does-javascript-drop-keyup-events-when-the-metakey-is-pressed-on-mac-browser/57153300#57153300
+        if (
+          event.downKeys.has(code)
+          && !event.metaKey
+        ) {
+          return
+        }
+
+        event.downKeys.add(code)
+        event.key!.type = KeyTriggerType.Down
+        return event
+      })
+      
+      .with('keyup', () => {
+        event.downKeys.delete(code)
+        event.key!.type = KeyTriggerType.Up
+        return event
+      })
+
+      .otherwise(() => undefined))
   }
 
   public handleBlurEvent = (): Observable<InteractEvent | undefined> => {

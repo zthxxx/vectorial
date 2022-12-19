@@ -13,7 +13,6 @@ import {
   distinctUntilChanged,
 } from 'rxjs/operators'
 import { isEqual } from 'lodash-es'
-import { useAtomValue } from 'jotai'
 import {
   Awareness,
 } from 'y-protocols/awareness'
@@ -28,7 +27,7 @@ import {
 import {
   UserAwareness,
   getUidColor,
-  state,
+  useStore,
   User,
   ClientAwareness,
   filterUserAwareness,
@@ -101,8 +100,9 @@ export const useUsersAware = ({ pageId, interactEvent$ }: {
   const [initialized, setInitial] = useState(false)
   const [users, setUsers] = useState<ClientAwareness>([])
   const usersRef = useRef<ClientAwareness>(users)
-  const user: User | undefined = useAtomValue(state.store)?.get('user')?.toJSON()
-  const awareness: Awareness | undefined = useAtomValue(state.awareness)
+  const store = useStore(state => state.store)
+  const user: User | undefined = store?.get('user')?.toJSON()
+  const awareness: Awareness | undefined = useStore(state => state.awareness)
   if (
     initialized
     || !user

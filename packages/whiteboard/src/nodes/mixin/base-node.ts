@@ -13,11 +13,12 @@ export interface BaseNodeMixinProps extends Partial<BaseDataMixin> {
   binding?: Y.Map<BaseDataMixin[keyof BaseDataMixin]>;
 }
 
-export const BaseNodeMixin = <T extends Constructor>(Super?: T) => {
-  return class BaseMixin extends (Super ?? EmptyMixin) implements BaseNodeMixinType {
+export const BaseNodeMixin = <S extends Constructor>(Super?: S) => {
+  return class BaseMixin extends (Super ?? EmptyMixin as S) implements BaseNodeMixinType {
     binding: SharedMap<BaseDataMixin>
     container: Container
 
+    constructor(...args: any[])
     constructor(props: BaseNodeMixinProps, ...args: any[]) {
       super(props, ...args)
       const {

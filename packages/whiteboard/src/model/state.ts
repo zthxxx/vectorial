@@ -1,12 +1,8 @@
 import { IndexeddbPersistence } from 'y-indexeddb'
 import { WebrtcProvider } from 'y-webrtc'
 import { Awareness } from 'y-protocols/awareness'
-import {
-  atom,
-  useAtom,
-  useSetAtom,
-  useAtomValue,
-} from 'jotai'
+import { create } from 'zustand'
+import { shallow } from 'zustand/shallow'
 import {
   YDoc,
   logger,
@@ -33,23 +29,41 @@ export const documentsTransact = documentsDoc.transact.bind(documentsDoc)
 export const storePersistence = new IndexeddbPersistence(storeDocId, storeDoc)
 export const documentsPersistence = new IndexeddbPersistence(documentsDocId, documentsDoc)
 
-export const state = {
-  initial: atom(false),
-  store: atom<LocalStore | null>(null),
-  documents: atom<SharedDocuments | null>(null),
-  cooperation: atom<WebrtcProvider | null>(null),
-  awareness: atom<Awareness | undefined>(undefined),
+
+export interface State {
+  initial: boolean;
+  store: LocalStore | null;
+  documents: SharedDocuments | null;
+  cooperation: WebrtcProvider | null;
+  awareness?: Awareness;
+  updateStore: (state: Partial<State>) => void;
+  sceneContainer: HTMLDivElement | null;
 }
+
+export const useStore = create<State>((set) => ({
+  initial: false,
+  store: null,
+  documents: null,
+  cooperation: null,
+  awareness: undefined,
+  updateStore: (state: Partial<State>) => set(state),
+  sceneContainer: null,
+}))
+
 
 export const useRootDoc = (): {
   store: LocalStore | null;
   documents: SharedDocuments | null;
 } => {
-  const [initial, setInitial] = useAtom(state.initial)
-  const [store, setStore] = useAtom(state.store)
-  const [documents, setDocuments] = useAtom(state.documents)
-  const setCooperation = useSetAtom(state.cooperation)
-  const setAwareness = useSetAtom(state.awareness)
+  const { initial, store, documents, updateStore } = useStore(
+    state => ({
+      initial: state.initial,
+      store: state.store,
+      documents: state.documents,
+      updateStore: state.updateStore,
+    }),
+    shallow,
+  )
 
   if (initial) return { store, documents }
 
@@ -66,19 +80,25 @@ export const useRootDoc = (): {
 
     const user: User = store.get('user')!.toJSON()
     logger.info(`User: ${user.name} (${user.id})`)
-    setStore(store)
+    updateStore({ store })
   }
 
   const initializeDocuments = async () => {
     const documents = documentsDoc.getMap()
-    const cooperation = new WebrtcProvider(cooperationDocsId, documentsDoc)
-    const awareness = cooperation.awareness
-    setCooperation(cooperation)
-    setAwareness(awareness)
+    const awareness = new Awareness(documentsDoc)
+    const cooperation = new WebrtcProvider(cooperationDocsId, documentsDoc, {
+      signaling: ['wss://signaling.yjs.dev'],
+      password: undefined,
+      awareness,
+      maxConns: 20 + Math.floor(Math.random() * 15),
+      filterBcConns: true,
+      peerOpts: {}
+    })
 
     const keys = [...documents.keys()]
     logger.info(`Documents persistence synced, found ${keys.length}:`, keys)
-    setDocuments(documents)
+
+    updateStore({ cooperation, awareness, documents })
   }
 
   storePersistence.synced
@@ -89,7 +109,7 @@ export const useRootDoc = (): {
     ? initializeDocuments()
     : documentsPersistence.once('synced', initializeDocuments)
 
-  setInitial(true)
+  updateStore({ initial: true })
 
   return {
     store,
@@ -101,7 +121,7 @@ export const useRootDoc = (): {
  * always used after initialize state
  */
 export const useUser = (): User => {
-  const store = useAtomValue(state.store)!
+  const store = useStore(state => state.store)!
   const user = store.get('user')!.toJSON()
   return user
 }

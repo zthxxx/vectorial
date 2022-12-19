@@ -1,13 +1,12 @@
-import { FC, useEffect, memo } from 'react'
+import { FC, useEffect, useState, memo } from 'react'
 import {
   useParams,
 } from 'react-router-dom'
 import {
   Awareness,
 } from 'y-protocols/awareness'
-import { atom, useAtom, useAtomValue } from 'jotai'
 import {
-  state,
+  useStore,
   User,
   documentsTransact,
 } from '@vectorial/whiteboard/model'
@@ -30,22 +29,19 @@ import {
 } from '@vectorial/whiteboard/scene'
 import {
   CanvasContainer,
-  containerAtom,
 } from './components'
 import {
   Toolbox,
 } from './tools'
 
 
-export const sceneAtom = atom<Scene | null>(null)
-
 export const userScene = ({ user, page, awareness }: {
   user?: User,
   page?: PageNode;
   awareness?: Awareness;
 }) => {
-  const container = useAtomValue(containerAtom)
-  const [scene, setScene] = useAtom(sceneAtom)
+  const container = useStore(state => state.sceneContainer)
+  const [scene, setScene] = useState<Scene | null>(null)
   const ready = !!scene
 
   useEffect(() => {
@@ -79,8 +75,9 @@ export const userScene = ({ user, page, awareness }: {
 
 export const SceneView: FC = memo(() => {
   const { id } = useParams<{ id: string }>()
-  const user: User | undefined = useAtomValue(state.store)?.get('user')?.toJSON()
-  const awareness: Awareness | undefined = useAtomValue(state.awareness)
+  const store = useStore(state => state.store)
+  const user: User | undefined = store?.get('user')?.toJSON()
+  const awareness: Awareness | undefined = useStore(state => state.awareness)
 
   useCheckToNewScene(!id)
 
