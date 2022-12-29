@@ -1,14 +1,12 @@
-import { FC, useEffect, useState, memo } from 'react'
+import { FC, useEffect, memo } from 'react'
 import {
   useParams,
 } from 'react-router-dom'
-import {
-  Awareness,
-} from 'y-protocols/awareness'
+import { shallow } from 'zustand/shallow'
 import {
   useStore,
+  useLoadDocument,
   User,
-  documentsTransact,
 } from '@vectorial/whiteboard/model'
 import {
   useCheckToNewScene,
@@ -28,6 +26,9 @@ import {
   HighlightSelectedPlugin,
 } from '@vectorial/whiteboard/scene'
 import {
+  Spin,
+} from '@vectorial/whiteboard/components'
+import {
   CanvasContainer,
 } from './components'
 import {
@@ -35,19 +36,27 @@ import {
 } from './tools'
 
 
-export const userScene = ({ user, page, awareness }: {
+export const userScene = ({ user, page }: {
   user?: User,
   page?: PageNode;
-  awareness?: Awareness;
 }) => {
-  const container = useStore(state => state.sceneContainer)
-  const [scene, setScene] = useState<Scene | null>(null)
+  const { scene, container, docTransact, updateStore, awareness } = useStore(
+    state => ({
+      scene: state.scene,
+      container: state.sceneContainer,
+      docTransact: state.docTransact,
+      updateStore: state.updateStore,
+      awareness: state.awareness,
+    }),
+    shallow,
+  )
+
   const ready = !!scene
 
   useEffect(() => {
     if (
       ready
-      || !container || !user || !page || !awareness
+      || !container || !user || !page || !awareness || !docTransact
     ) return
 
     logger.info('Creating the world scene ...')
@@ -55,19 +64,15 @@ export const userScene = ({ user, page, awareness }: {
       element: container,
       page,
       awareness,
-      docTransact: documentsTransact,
+      docTransact,
     })
-
-    if (import.meta.env.DEV) {
-      (window as any).scene = scene
-    }
 
     scene.use(new ViewportPlugin({ user, scene }))
     scene.use(new UndoRedoPlugin({ user, scene }))
     scene.use(new AwareCursorsPlugin({ user, scene }))
     scene.use(new HighlightSelectedPlugin({ user, scene }))
 
-    setScene(scene)
+    updateStore({ scene })
   }, [container, user, page, awareness, ready])
 
   return scene
@@ -75,25 +80,36 @@ export const userScene = ({ user, page, awareness }: {
 
 export const SceneView: FC = memo(() => {
   const { id } = useParams<{ id: string }>()
-  const store = useStore(state => state.store)
-  const user: User | undefined = store?.get('user')?.toJSON()
-  const awareness: Awareness | undefined = useStore(state => state.awareness)
+
+  useLoadDocument(id)
+
+  const { loading, store } = useStore(
+    state => ({
+      loading: !state.initial,
+      store: state.store,
+    }),
+    shallow,
+  )
 
   useCheckToNewScene(!id)
 
-  logger.info('Getting current page ...')
-  const { page } = useGetDocumentPage(id)
+  const { pageNode } = useGetDocumentPage(id)
 
-  const scene = userScene({ user, page, awareness })
+  const user: User | undefined = store?.get('user')?.toJSON()
+  const scene = userScene({ user, page: pageNode })
+
+  if (loading) {
+    return (<Spin />)
+  }
 
   if (scene) {
-    logger.info('Current page', page)
+    logger.info('Current page', pageNode)
   }
 
   return (
     <>
       <CanvasContainer />
-      {user && scene && page && (
+      {user && scene && pageNode && (
         <>
           {scene.plugins['AwareCursorsPlugin']?.cursors}
           <Toolbox

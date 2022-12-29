@@ -174,6 +174,8 @@ export interface DocumentData extends
 export interface User {
   name: string;
   id: string;
+  /** use for api authenticate */
+  token: string;
 }
 
 export interface UserAwareness extends User {
@@ -183,13 +185,27 @@ export interface UserAwareness extends User {
   selected?: SceneNodeData['id'][];
 }
 
+export type DocumentMeta = {
+  id: DocumentData['id'];
+  name: DocumentData['name'];
+  /** Y.Doc size for bytes */
+  size: number;
+}
+
 export type Store = {
-  user: YMap<User>;
+  user: User;
+  documents: { [id: DocumentData['id']]: DocumentMeta };
   currentDocId: string | null;
   currentPageId: string | null;
 }
 
-export type Documents = { [id: DocumentData['id']]: DocumentData }
+export type LocalStore = SharedMap<Store>
+export type SharedDocument = SharedMap<{
+  document: DocumentData;
+}>
 
-export type LocalStore = YMap<Store>
+
+/** @deprecated */
+export type Documents = { [id: DocumentData['id']]: DocumentData }
+/** @deprecated */
 export type SharedDocuments = SharedMap<Documents>

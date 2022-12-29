@@ -8,6 +8,15 @@ export default defineConfig({
   clearScreen: false,
   server: {
     open: true,
+    proxy: {
+      // Proxying websockets or socket.io: 
+      // ws://${host}/socket.io -> ws://localhost:5174/socket.io
+      '/socket.io': {
+        // dev websocket server in `packages/simple-server`
+        target: 'ws://localhost:2234',
+        ws: true,
+      },
+    }
   },
 
   plugins: [
@@ -27,5 +36,9 @@ export default defineConfig({
         icon: true,
       },
     }),
-  ]
+  ],
+
+  build: {
+    minify: false,
+  },
 })

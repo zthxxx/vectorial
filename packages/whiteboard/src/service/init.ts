@@ -2,9 +2,9 @@ import { useEffect } from 'react'
 import {
   useNavigate,
 } from 'react-router-dom'
+import { shallow } from 'zustand/shallow'
 import {
   useStore,
-  createDefaultDocumentPage,
   DocumentData,
 } from '@vectorial/whiteboard/model'
 import {
@@ -14,7 +14,6 @@ import {
 import {
   nanoid,
   logger,
-  toSharedTypes,
 } from '@vectorial/whiteboard/utils'
 
 
@@ -28,41 +27,37 @@ export const useCheckToNewScene = (condition: boolean, id?: string | null) => {
   }, [condition, id])
 }
 
-export const genDocId = () => nanoid(18)
+export const genDocId = () => nanoid(16)
 
 
-export const docsRef: {
-  document?: DocumentNode,
-  page?: PageNode,
-} = {}
 
-
-export const useGetDocumentPage = (id?: string): {
-  document?: DocumentNode,
-  page?: PageNode,
+export const useGetDocumentPage = (documentId?: string): {
+  documentNode?: DocumentNode;
+  pageNode?: PageNode;
 } => {
-  const store = useStore(state => state.store)
-  const documents = useStore(state => state.documents)
+  const { store, documentDoc, updateStore, ...documentRef } = useStore(
+    state => ({
+      store: state.store,
+      documentDoc: state.documentDoc,
+      updateStore: state.updateStore,
+      documentNode: state.documentNode,
+      pageNode: state.pageNode,
+    }),
+    shallow,
+  )
 
-  if (!store || !documents || !id) return {}
-  if (docsRef.document && docsRef.page) {
-    return docsRef
+  if (documentRef.documentNode && documentRef.pageNode) {
+    return documentRef
   }
 
-  if (store.get('currentDocId') !== id) {
-    store.set('currentDocId', id)
-  }
+  if (!documentId || !store || !documentDoc) return {}
 
-  if (!documents.get(id)) {
-    logger.info(`Document of id ${id} missed, creating a default one ...`)
-    const { document, page } = createDefaultDocumentPage(id)
-    documents.set(id, toSharedTypes(document))
-    store.set('currentPageId', page.id)
-  }
+  logger.info('Getting current page ...')
 
-  const binding = documents.get(id)!
+  const binding = documentDoc.get('document')!
+
   const documentData = binding.toJSON() as DocumentData
-  logger.info(`Document ${id} loaded.`, documentData)
+  logger.info(`Document (${documentId}) loaded.`, documentData)
 
   const documentNode = new DocumentNode({
     ...documentData,
@@ -70,16 +65,23 @@ export const useGetDocumentPage = (id?: string): {
   })
 
   const pages = documentData.pages
+
   if (!pages[store.get('currentPageId')!]) {
     const firstPageId = Object.keys(pages)[0]
     store.set('currentPageId', firstPageId)
   }
+
   const currentPageId = store.get('currentPageId')!
   const pageNode = documentNode.get(currentPageId)!
 
-  docsRef.document = documentNode
-  docsRef.page = pageNode
+  updateStore({
+    documentNode,
+    pageNode,
+  })
 
-  return docsRef
+  return {
+    documentNode,
+    pageNode,
+  }
 }
 

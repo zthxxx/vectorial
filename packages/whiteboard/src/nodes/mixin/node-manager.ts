@@ -11,7 +11,6 @@ import {
   BaseDataMixin,
   SceneNodeData,
   ChildrenDataMixin,
-  documentsTransact,
 } from '@vectorial/whiteboard/model'
 import {
   Constructor,
@@ -54,7 +53,7 @@ export const NodeManagerMixin = <S extends Constructor<ChildrenMixinType & BaseN
     }
 
     delete(id: string): void {
-      documentsTransact(() => {
+      this.binding.doc!.transact(() => {
         const node = this.get(id)
         if (!node) return
         node.removed = true
@@ -98,7 +97,7 @@ export const NodeManagerMixin = <S extends Constructor<ChildrenMixinType & BaseN
     insert(node: SceneNode, parent: ParentNode, after?: string): void {
       const children = parent.children.map(id => this.get(id)!)
 
-      documentsTransact(() => {
+      this.binding.doc!.transact(() => {
         if (node.removed) node.removed = false
 
         const {
@@ -116,7 +115,7 @@ export const NodeManagerMixin = <S extends Constructor<ChildrenMixinType & BaseN
     }
 
     relocate(nodes: SceneNode[], parent: ParentNode, after?: string): void {
-      documentsTransact(() => {
+      this.binding.doc!.transact(() => {
         const removeFromOrigin = (node: SceneNode) => {
           const originParent = this.get(node.parent)! as ParentNode
           const originIndex = originParent.children.indexOf(node.id)

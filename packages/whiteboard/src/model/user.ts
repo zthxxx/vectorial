@@ -87,7 +87,9 @@ export const initUser = async (store: LocalStore): Promise<User> => {
   const user: User = {
     id: nanoid(),
     name: getRandName(),
+    token: nanoid(24),
   }
+
   store.set('user', toSharedTypes(user))
   return user
 }

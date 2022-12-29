@@ -3,7 +3,8 @@ import {
   useMatch,
 } from 'react-router-dom'
 import {
-  useRootDoc,
+  useStore,
+  useLoadStore,
 } from '@vectorial/whiteboard/model'
 import { useCheckToNewScene } from '@vectorial/whiteboard/service'
 
@@ -15,12 +16,13 @@ export const SceneIdGuard: FC<{
   children,
   resumeLastScene,
 }) => {
-  const { store, documents } = useRootDoc()
+  useLoadStore()
+  const store = useStore(state => state.store)
   const exactMatch = useMatch(routePath)
 
   const currentDocId = store?.get('currentDocId')
 
-  const willJump = Boolean(exactMatch && store && documents)
+  const willJump = Boolean(exactMatch && store)
 
   useCheckToNewScene(
     willJump,
