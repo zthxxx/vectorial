@@ -172,7 +172,7 @@ export class ViewportPlugin extends ScenePlugin {
 
     const currentScale = viewport.scale.y
     // scroll y axis for scale
-    const scaleDelta = 1 - delta.y / 100
+    const scaleDelta = 1 - delta.y / 150
 
     if (currentScale * scaleDelta < 0.1) return
     if (currentScale * scaleDelta > 10) return

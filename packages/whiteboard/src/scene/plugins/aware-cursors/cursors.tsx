@@ -28,7 +28,7 @@ import {
   UserAwareness,
   getUidColor,
   useStore,
-  User,
+  useUser,
   ClientAwareness,
   filterUserAwareness,
 } from '@vectorial/whiteboard/model'
@@ -100,9 +100,8 @@ export const useUsersAware = ({ pageId, interactEvent$ }: {
   const [initialized, setInitial] = useState(false)
   const [users, setUsers] = useState<ClientAwareness>([])
   const usersRef = useRef<ClientAwareness>(users)
-  const store = useStore(state => state.store)
-  const user: User | undefined = store?.get('user')?.toJSON()
-  const awareness: Awareness | undefined = useStore(state => state.awareness)
+  const user = useUser()
+  const awareness = useStore(state => state.awareness)
   if (
     initialized
     || !user

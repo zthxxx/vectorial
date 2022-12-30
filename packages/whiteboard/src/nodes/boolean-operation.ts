@@ -1,4 +1,4 @@
-import { SVGPathNode, FILL_RULE} from '@pixi-essentials/svg'
+import { SVGPathNode, FILL_RULE } from '@pixi-essentials/svg'
 import { match } from 'ts-pattern'
 import * as Y from 'yjs'
 import {
@@ -35,6 +35,7 @@ import {
   drawPath,
   VectorNode,
 } from './vector-path'
+import { evenOddFill } from './utils'
 
 export interface BooleanOperationNodeProps extends Partial<BooleanOperationData>, LayoutMixinProps {
   binding?: SharedMap<BooleanOperationData>;
@@ -216,16 +217,7 @@ export class BooleanOperationNode
   }
 
   public drawEnd() {
-    // https://github.com/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGPathNode.ts#L331-L336
-    // @ts-ignore
-    const currentPath: Path = this.container.currentPath2
-    if (currentPath) {
-      currentPath.fillRule = FILL_RULE.EVENODD
-      // @ts-ignore
-      this.container.drawShape(currentPath);
-      // @ts-ignore
-      this.container.currentPath2 = null
-    }
+    evenOddFill(this.container)
   }
 
   public bindingUpdate = (event: Y.YEvent<any>) => {

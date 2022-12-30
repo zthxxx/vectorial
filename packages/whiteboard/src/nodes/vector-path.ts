@@ -1,7 +1,7 @@
 import { Graphics } from '@pixi/graphics'
 import { CanvasTextureAllocator } from '@pixi-essentials/texture-allocator'
 import type { Path, SVGSceneContext } from '@pixi-essentials/svg'
-import { SVGPathNode, FILL_RULE} from '@pixi-essentials/svg'
+import { SVGPathNode, FILL_RULE } from '@pixi-essentials/svg'
 import { match, isMatching, P } from 'ts-pattern'
 import * as Y from 'yjs'
 import {
@@ -34,6 +34,7 @@ import {
 import {
   VectorNode as VectorNodeType,
 } from './types'
+import { evenOddFill } from './utils'
 
 
 // https://github.dev/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGScene.ts#L120-L121
@@ -197,16 +198,7 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
   }
 
   public drawEnd() {
-    // https://github.com/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGPathNode.ts#L331-L336
-    // @ts-ignore
-    const currentPath: Path = this.container.currentPath2
-    if (currentPath) {
-      currentPath.fillRule = FILL_RULE.EVENODD
-      // @ts-ignore
-      this.container.drawShape(currentPath);
-      // @ts-ignore
-      this.container.currentPath2 = null
-    }
+    evenOddFill(this.container)
   }
 
   public bindingUpdate = (event: Y.YEvent<any>) => {

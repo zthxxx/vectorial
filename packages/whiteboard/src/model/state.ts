@@ -36,13 +36,15 @@ export const documentDoc = new YDoc<{ document: DocumentData; }>()
 
 export interface State {
   initial: boolean;
+  loadingMessage: string;
+
   /**
-   * presistent store for user settings
+   * persistent store for user settings
    */
   store: LocalStore | null;
 
   /**
-   * presistent local document
+   * persistent local document
    */
   documentDoc: SharedDocument | null;
   docTransact?: Y.Doc['transact'];
@@ -63,10 +65,12 @@ export interface State {
   sceneContainer: HTMLDivElement | null;
   
   updateStore: (state: Partial<State>) => void;
+  setLoadingMessage: (message: string) => void;
 }
 
 export const useStore = create<State>((set) => ({
   initial: false,
+  loadingMessage: '',
 
   store: null,
 
@@ -79,14 +83,19 @@ export const useStore = create<State>((set) => ({
 
   sceneContainer: null,
   updateStore: (state: Partial<State>) => set(state),
+  setLoadingMessage: (loadingMessage: string) => {
+    logger.info(`[loading] ${loadingMessage}`)
+    set({ loadingMessage })
+  },
 }))
 
 
 export const useLoadStore = () => {
-  const { store, updateStore } = useStore(
+  const { store, updateStore, setLoadingMessage } = useStore(
     state => ({
       store: state.store,
       updateStore: state.updateStore,
+      setLoadingMessage: state.setLoadingMessage,
     }),
     shallow,
   )
@@ -94,14 +103,14 @@ export const useLoadStore = () => {
   useEffect(() => {
     if (store) return
 
-    logger.info(`loading presistent local store`)
+    setLoadingMessage(`Loading local persistent store ...`)
 
     const initializeStore = async () => {
       logger.info(`Store persistence synced`)
       const store = storeDoc.getMap()
   
       if (!store.get('user')) {
-        logger.info('Initializing user ...')
+        setLoadingMessage('Initializing user ...')
         await initUser(store)
       }
   
@@ -122,11 +131,9 @@ export const useLoadStore = () => {
   }, [store])
 }
 
-/**
- * always used after initialize state
- */
-export const useUser = (): User => {
-  const store = useStore(state => state.store)!
-  const user = store.get('user')!.toJSON()
+
+export const useUser = (): User | undefined => {
+  const store = useStore(state => state.store)
+  const user = store?.get('user')?.toJSON()
   return user
 }

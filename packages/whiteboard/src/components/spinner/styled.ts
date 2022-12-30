@@ -14,6 +14,8 @@ export const SpinIcon = styled.div<{ size: number, color?: string }>`
     }
   }
 
+  margin: 20px;
+
   &,
   & > div {
     position: relative;
@@ -22,7 +24,7 @@ export const SpinIcon = styled.div<{ size: number, color?: string }>`
   & {
     display: block;
     font-size: 0;
-    color: ${({ color }) => color ?? '#999'};
+    color: ${({ color }) => color ?? '#679'};
   }
   & > div {
     display: inline-block;

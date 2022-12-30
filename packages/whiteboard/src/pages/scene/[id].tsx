@@ -6,6 +6,7 @@ import { shallow } from 'zustand/shallow'
 import {
   useStore,
   useLoadDocument,
+  useUser,
   User,
 } from '@vectorial/whiteboard/model'
 import {
@@ -26,7 +27,7 @@ import {
   HighlightSelectedPlugin,
 } from '@vectorial/whiteboard/scene'
 import {
-  Spin,
+  Loading,
 } from '@vectorial/whiteboard/components'
 import {
   CanvasContainer,
@@ -83,23 +84,20 @@ export const SceneView: FC = memo(() => {
 
   useLoadDocument(id)
 
-  const { loading, store } = useStore(
-    state => ({
-      loading: !state.initial,
-      store: state.store,
-    }),
-    shallow,
-  )
+  const loading = useStore(state => !state.initial)
+  const loadingMessage = useStore(state => state.loadingMessage)
 
   useCheckToNewScene(!id)
 
   const { pageNode } = useGetDocumentPage(id)
 
-  const user: User | undefined = store?.get('user')?.toJSON()
+  const user = useUser()
   const scene = userScene({ user, page: pageNode })
 
   if (loading) {
-    return (<Spin />)
+    return (
+      <Loading message={loadingMessage} />
+    )
   }
 
   if (scene) {

@@ -35,11 +35,12 @@ const cooperationSocketUrl =
   ?? `//${location.host}`
 
 export const useLoadDocument = (id?: string) => {
-  const { store, document, updateStore } = useStore(
+  const { store, document, updateStore, setLoadingMessage } = useStore(
     state => ({
       store: state.store,
       document: state.documentDoc,
       updateStore: state.updateStore,
+      setLoadingMessage: state.setLoadingMessage,
     }),
     shallow,
   )
@@ -50,8 +51,8 @@ export const useLoadDocument = (id?: string) => {
     if (store.get('currentDocId') !== id) {
       store.set('currentDocId', id)
     }
-  
-    logger.info(`loading presistent local document`)
+
+    setLoadingMessage(`Loading local persistent document (${id}) ...`)
   
     const documentId = `${documentIdPrefix}:${id}`
     const documentPersistence = new IndexeddbPersistence(
@@ -79,34 +80,23 @@ export const useLoadDocument = (id?: string) => {
       cooperationConnected$,
       cooperationSynced$,
     ]).subscribe(() => {
-      logger.info(`Document local persistent loaded, cooperation connected and synced`)
+      setLoadingMessage(`Local document loaded, cooperation server synced.`)
 
-      // mannually trigger sync steps in y-socket.io
-      cooperation.socket.emit(
-        'sync-step-1',
-        Y.encodeStateVector(documentDoc),
-        (update: Uint8Array) => {
-          logger.info(`sync-step-2 in y-socket.io`)
+      loadOrCreateDocument(id)
 
-          Y.applyUpdate(documentDoc, new Uint8Array(update), cooperation)
-          
-          setTimeout(() => {
-            loadOrCreateDocument(id)
-    
-            updateStore({
-              initial: true,
-              documentDoc: documentDoc.getMap(),
-              docTransact: documentDoc.transact.bind(documentDoc),
-              cooperation,
-              awareness,
-            })
-          }, 100)
-        },
-      )
+      updateStore({
+        initial: true,
+        documentDoc: documentDoc.getMap(),
+        docTransact: documentDoc.transact.bind(documentDoc),
+        cooperation,
+        awareness,
+      })
     })
 
     const persistentLoaded = () => {
       logger.info(`Document local persistent loaded (${id})`)
+      setLoadingMessage(`Connecting to remote cooperation sync server ...`)
+
       persistentLoaded$.complete()
     }
   
@@ -116,21 +106,39 @@ export const useLoadDocument = (id?: string) => {
     
     cooperation.on('status', ({ status }: { status: 'disconnected' | 'connecting' | 'connected' }) => {
       logger.info('y-socket.io connect status', status)
-
       const connected = status === 'connected'
+
       if (useStore.getState().cooperationConnected !== connected) {
         updateStore({ cooperationConnected: connected })
       }
-      if (connected) { cooperationConnected$.complete() }
+
+      if (connected && !useStore.getState().documentSynced) {
+        setLoadingMessage(`syncing document with cooperation server (step.1 local to remote) ...`)
+        cooperationConnected$.complete()
+      }
     })
 
     cooperation.on('sync', (isSync: boolean) => {
-      logger.info('y-socket.io sync', isSync)
+      if (!isSync || useStore.getState().documentSynced) return
+      logger.info('y-socket.io synced local to remote')
+      setLoadingMessage(`syncing document with cooperation server (step.2 remote to local) ...`)
 
-      if (useStore.getState().documentSynced !== isSync) {
-        updateStore({ documentSynced: isSync })
-      }
-      if (isSync) { cooperationSynced$.complete() }
+      /**
+       * need manually trigger sync steps in y-socket.io, use callback of 'sync-step-1'
+       * for **ensure** fetch and sync with latest remote document into local
+       */
+      cooperation.socket.emit(
+        'sync-step-1',
+        Y.encodeStateVector(documentDoc),
+        // socket.io acknowledgement callback, as ack syncStep2
+        (update: Uint8Array) => {
+          logger.info('y-socket.io acknowledged synced remote to local')
+          Y.applyUpdate(documentDoc, new Uint8Array(update), cooperation)
+
+          updateStore({ documentSynced: isSync })
+          cooperationSynced$.complete()
+        },
+      )
     })
 
     /**

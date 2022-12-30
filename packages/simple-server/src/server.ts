@@ -20,20 +20,20 @@ const io = new Server(httpServer)
 // NOTE: This uses the socket namespaces that match the regular expression /^\/yjs\|.*$/, make sure that when using namespaces
 //       for other logic, these do not match the regular expression, this could cause unwanted problems.
 // TIP: You can export a new instance from another file to manage as singleton and access documents from all app.
-const ysocketio = new YSocketIO(io, {
+const ySocketIO = new YSocketIO(io, {
   // authenticate: (auth) => auth.token === 'valid-token',
   levelPersistenceDir: './.leveldb-storage',
   // gcEnabled: true,
 })
 
-ysocketio.on('document-loaded', (doc: Document) => logger.info(`The document was loaded (${doc.name})`))
-// ysocketio.on('document-update', (doc: Document, update: Uint8Array) => logger.info(`The document ${doc.name} is updated`))
-// ysocketio.on('awareness-update', (doc: Document, update: Uint8Array) => logger.info(`The awareness of the document ${doc.name} is updated`))
-ysocketio.on('document-destroy', async (doc: Document) => logger.info(`The document is being destroyed (${doc.name} )`))
-ysocketio.on('all-document-connections-closed', async (doc: Document) => logger.info(`All clients disconected of document ${doc.name}`))
+ySocketIO.on('document-loaded', (doc: Document) => logger.info(`The document was loaded (${doc.name})`))
+// ySocketIO.on('document-update', (doc: Document, update: Uint8Array) => logger.info(`The document ${doc.name} is updated`))
+// ySocketIO.on('awareness-update', (doc: Document, update: Uint8Array) => logger.info(`The awareness of the document ${doc.name} is updated`))
+ySocketIO.on('document-destroy', async (doc: Document) => logger.info(`The document is being destroyed (${doc.name} )`))
+ySocketIO.on('all-document-connections-closed', async (doc: Document) => logger.info(`All clients disconnected of document ${doc.name}`))
 
 // Execute initialize method
-ysocketio.initialize()
+ySocketIO.initialize()
 
 // Handling another socket namespace
 io.on('connection', (socket: Socket) => {

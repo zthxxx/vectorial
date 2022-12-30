@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid'
 import { Graphics } from '@pixi/graphics'
 import type { Path } from '@pixi-essentials/svg'
-import { SVGPathNode, FILL_RULE} from '@pixi-essentials/svg'
+import { SVGPathNode, FILL_RULE } from '@pixi-essentials/svg'
 import { Subject, Subscription } from 'rxjs'
 import {
   VectorPath,
@@ -14,6 +14,7 @@ import {
 } from 'vectorial'
 import {
   pixiSceneContext,
+  evenOddFill,
 } from '@vectorial/whiteboard/nodes'
 
 
@@ -105,16 +106,11 @@ export class PathNode {
       this.matrix,
     )
 
-    // https://github.com/ShukantPal/pixi-essentials/blob/v1.1.6/packages/svg/src/SVGPathNode.ts#L331-L336
-    // @ts-ignore
-    const currentPath: Path = this.container.currentPath2
-    if (currentPath) {
-      currentPath.fillRule = FILL_RULE.EVENODD
-      // @ts-ignore
-      this.container.drawShape(currentPath);
-      // @ts-ignore
-      this.container.currentPath2 = null
-    }
+    this.drawEnd()
+  }
+
+  public drawEnd() {
+    evenOddFill(this.container)
   }
 
   public clear() {
