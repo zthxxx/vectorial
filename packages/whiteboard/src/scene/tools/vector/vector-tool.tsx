@@ -22,9 +22,12 @@ import {
   Pen,
 } from '@vectorial/whiteboard/assets/icon'
 import {
-  InteractEvent,
-  Scene,
-  EventKeyMatch,
+  type InteractEvent,
+  type Scene,
+  type EventKeyMatch,
+  AnchorNode,
+  PathNode,
+  DefaultPathColor,
 } from '@vectorial/whiteboard/scene'
 import {
   NodeType,
@@ -42,17 +45,13 @@ import {
   ToolProps,
 } from '../types'
 import {
-  AnchorNode,
-  PathNode,
-  DefaultPathColor,
-} from '@vectorial/whiteboard/scene/plugins'
-import {
   createVectorToolMachine,
 } from './state-machine'
 import {
   StateEvent,
   StateContext,
   VectorToolService,
+  CreatingDirection,
 } from './types'
 import { applyToLocalEvent } from './utils'
 
@@ -244,13 +243,14 @@ export class ToolLayer {
    * use for dead drag detection, and for judge whether an Anchor is new in selected or not
    * NOTE: maybe reset by `context.dragBase = ...`
    */
-  dragBase?: Vector;
+  public dragBase?: Vector;
+
   /**
-   * create path point next of creatingBase
-   * use for mark creating direction of new path anchor (prev or next)
-   * NOTE: maybe reset by `context.creatingBase = ...`
+   * the direction of VectorPath for inserting a new anchor
+   *
+   * NOTE: always change `context.creatingDirection = CreatingDirection...`
    */
-  creatingBase?: VectorAnchor;
+  public creatingDirection: CreatingDirection = CreatingDirection.End
 
   public doneSignal$: Subject<void>
   public machineSignal$: Observable<State<StateContext, StateEvent>>
@@ -447,3 +447,4 @@ export class ToolLayer {
     }
   }
 }
+

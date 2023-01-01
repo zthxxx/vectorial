@@ -21,7 +21,7 @@ import {
 } from '@vectorial/whiteboard/model'
 import {
   ScenePlugin,
-  ScenePluginProps,
+  type ScenePluginProps,
 } from '@vectorial/whiteboard/scene'
 import {
   drawMarquee,

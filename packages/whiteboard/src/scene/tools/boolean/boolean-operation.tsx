@@ -17,13 +17,13 @@ import {
 import {
   BooleanOperationNode,
 } from '@vectorial/whiteboard/nodes'
-import {
-  Scene,
+import type {
   SelectedNodes,
 } from '@vectorial/whiteboard/scene'
+
 import {
   Tray,
-} from '../components'
+} from '@vectorial/whiteboard/components'
 import {
   ToolProps,
 } from '../types'
@@ -78,7 +78,7 @@ const getOperator = (selected?: SelectedNodes): BooleanOperator => (
   ? BooleanOperator.Union
   : ([...selected][0] as BooleanOperationNode).shape.booleanOperator
 
-export const BooleanOperation: FC<ToolProps> = (props) => {
+export const BooleanOperationTool: FC<ToolProps> = (props) => {
   const {
     scene,
   } = props

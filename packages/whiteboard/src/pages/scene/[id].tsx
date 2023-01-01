@@ -30,11 +30,9 @@ import {
   Loading,
 } from '@vectorial/whiteboard/components'
 import {
+  Toolbox,
   CanvasContainer,
 } from './components'
-import {
-  Toolbox,
-} from './tools'
 
 
 export const userScene = ({ user, page }: {

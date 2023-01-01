@@ -6,39 +6,21 @@ import {
 } from 'rxjs/operators'
 import { keyBy } from 'lodash-es'
 import {
-  ScenePluginProps,
+  type ScenePluginProps,
   KeyTriggerType,
+  type Tools,
+  type ToolProps,
+  SelectTool,
+  VectorTool,
+  PanTool,
+  BooleanOperationTool,
+  useToolsStore,
 } from '@vectorial/whiteboard/scene'
-import { create } from 'zustand'
 import {
   Bar,
   Tray,
-} from './components'
-import {
-  ToolDefine,
-  ToolProps,
-} from './types'
-import { SelectTool } from './selection'
-import { VectorTool } from './vector'
-import { PanTool } from './pan'
-import { BooleanOperation } from './boolean'
+} from '@vectorial/whiteboard/components'
 
-
-type Tools = ToolDefine[]
-
-interface ToolsStore {
-  tools: Tools,
-  toolsMap: { [name: string]: ToolDefine },
-  current: string,
-  switchTool: (name: string) => void,
-}
-
-const useToolsStore = create<ToolsStore>(() => ({
-  tools: [],
-  toolsMap: {},
-  current: '',
-  switchTool: () => {},
-}))
 
 
 const useSetupTools = (toolProps: ToolProps): Tools => {
@@ -124,7 +106,7 @@ export const Toolbox = memo((props: ToolboxProps) => {
         className='w-px h-6 bg-gray-300 mx-2'
       />
 
-      <BooleanOperation
+      <BooleanOperationTool
         user={user}
         scene={scene}
         switchTool={switchTool}

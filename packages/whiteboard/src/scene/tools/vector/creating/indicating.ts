@@ -19,13 +19,15 @@ import {
 } from '@vectorial/whiteboard/assets'
 import {
   KeyTriggerType,
+  type AnchorNode,
 } from '@vectorial/whiteboard/scene'
-import type {
-  MouseEvent,
-  KeyEvent,
-  StateMouseEvent,
-  GuardAction,
-  StateAction,
+import {
+  type MouseEvent,
+  type KeyEvent,
+  type StateMouseEvent,
+  type GuardAction,
+  type StateAction,
+  CreatingDirection,
 } from '../types'
 import {
   normalizeMouseEvent,
@@ -51,8 +53,10 @@ export const enterIndicating: GuardAction = (interactEvent$, context) => {
         isClickDown,
       } = normalizeMouseEvent(event, vectorPath, anchorNodes)
       const hit: HitResult | undefined = handlerHit ?? anchorHit ?? pathHit
-      const isReverse = context.creatingBase !== vectorPath.anchors.at(-1)
-      const closeTarget = isReverse ? vectorPath.anchors.at(-1) : vectorPath.anchors.at(0)
+
+      const closeTarget = context.creatingDirection === CreatingDirection.Start
+        ? vectorPath.anchors.at(-1)
+        : vectorPath.anchors.at(0)
 
       if (isClickDown) {
         if (
@@ -102,7 +106,7 @@ export const indicatingMove: StateAction = ({
   indicativeAnchor,
   indicativePath,
   vectorPath,
-  creatingBase,
+  creatingDirection,
   changes,
 }, { event }: StateMouseEvent) => {
   const { vectorAnchor } = indicativeAnchor
@@ -116,10 +120,10 @@ export const indicatingMove: StateAction = ({
     { anchor: 'normal', inHandler: undefined, outHandler: undefined },
   ])
 
-  const isReverse = creatingBase !== vectorPath.anchors.at(-1)
-  indicativePath.path.anchors = isReverse
-    ? [vectorAnchor, creatingBase]
-    : [creatingBase, vectorAnchor]
+  indicativePath.path.anchors = match(creatingDirection)
+    .with(CreatingDirection.Start, () => [vectorAnchor, vectorPath.anchors.at(0)])
+    .with(CreatingDirection.End, () => [vectorPath.anchors.at(-1), vectorAnchor])
+    .exhaustive()
 
   changes.push([indicativePath, { strokeWidth: 2, strokeColor: 0x18a0fb }])
 }
@@ -130,21 +134,32 @@ export const indicatingCreate: StateAction = (context, { event }: StateMouseEven
     vectorPath,
     anchorNodes,
     changes,
-    creatingBase,
+    creatingDirection,
   } = context
   const { anchors } = vectorPath
-  const isReverse = creatingBase !== anchors.at(-1)
 
-  changes.push(
-    [
-      anchorNodes.get(anchors.at(isReverse ? 0 : -1)!),
-      { anchor: 'normal' },
-    ],
-    [
-      anchorNodes.get(anchors.at(isReverse ? 1 : -2)!),
-      { anchor: 'normal', inHandler: undefined, outHandler: undefined },
-    ],
-  )
+  const pointStyle: AnchorNode['style'] = {
+    anchor: 'normal',
+    inHandler: undefined,
+    outHandler: undefined
+  }
+  // keep origin in/out handler style
+  const anchorStyle: AnchorNode['style'] = { anchor: 'normal' }
+
+  match(creatingDirection)
+    .with(CreatingDirection.Start, () => {
+      changes.push(
+        [anchorNodes.get(anchors.at(0)!), anchorStyle],
+        [anchorNodes.get(anchors.at(1)!), pointStyle],
+      )
+    })
+    .with(CreatingDirection.End, () => {
+      changes.push(
+        [anchorNodes.get(anchors.at(-1)!), anchorStyle],
+        [anchorNodes.get(anchors.at(-2)!), pointStyle],
+      )
+    })
+    .exhaustive()
 
   context.dragBase = {
     x: event.mouse.x,
@@ -224,7 +239,7 @@ export const indicatingClosingHover: StateAction = ({
   vectorPath,
   indicativeAnchor,
   indicativePath,
-  creatingBase,
+  creatingDirection,
   changes,
 }, { hit }: StateMouseEvent) => {
   // hit will always be existed, code only for defense and type guard
@@ -236,13 +251,15 @@ export const indicatingClosingHover: StateAction = ({
   const first = vectorPath.anchors.at(0)
   const last = vectorPath.anchors.at(-1)
 
-  const isReverse = creatingBase !== last
+  const closeTarget = creatingDirection === CreatingDirection.Start
+    ? last
+    : first
 
   changes.push([indicativeAnchor, { anchor: 'highlight', inHandler: undefined, outHandler: undefined }])
   // endpoint hover to indicate close path
   if (
     !vectorPath.closed
-    && hit.point === (isReverse ? last : first)
+    && hit.point === closeTarget
     && vectorPath.anchors.length >= 2
   ) {
     indicativePath.path.anchors = [last, first]

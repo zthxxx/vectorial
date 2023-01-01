@@ -33,3 +33,12 @@ export type GuardAction = (interactEvent$: Observable<InteractEvent>, context: S
 
 export type VectorToolMachine = StateMachine<StateContext, any, StateEvent>
 export type VectorToolService = Interpreter<StateContext, any, StateEvent>
+
+
+/**
+ * the direction of vector path for insert new anchor
+ */
+export enum CreatingDirection {
+  Start = 'Start',
+  End = 'End',
+}

@@ -22,11 +22,9 @@ import {
 import {
   MouseTriggerType,
   MouseButton,
-  InteractEvent,
-} from '@vectorial/whiteboard/scene'
-import {
+  type InteractEvent,
   AnchorNode,
-} from '@vectorial/whiteboard/scene/plugins'
+} from '@vectorial/whiteboard/scene'
 import type {
   MouseEvent,
   StateContext,

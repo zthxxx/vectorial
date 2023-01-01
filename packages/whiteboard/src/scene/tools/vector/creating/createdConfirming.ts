@@ -8,11 +8,16 @@ import {
   filter,
   mergeMap,
 } from 'rxjs/operators'
-import type {
-  MouseEvent,
-  StateMouseEvent,
-  StateAction,
-  GuardAction,
+import { match } from 'ts-pattern'
+import {
+  type AnchorNode,
+} from '@vectorial/whiteboard/scene'
+import {
+  type MouseEvent,
+  type StateMouseEvent,
+  type StateAction,
+  type GuardAction,
+  CreatingDirection,
 } from '../types'
 
 import {
@@ -54,24 +59,35 @@ export const createDone: StateAction = (context) => {
     indicativePath,
     vectorPath,
     anchorNodes,
-    creatingBase,
+    creatingDirection,
     changes,
   } = context
   const { anchors } = vectorPath
-  const isReverse = creatingBase !== anchors.at(-1)
 
-  changes.push(
-    [
-      anchorNodes.get(anchors.at(isReverse ? 0 : -1)!),
-      { anchor: 'normal', inHandler: undefined, outHandler: undefined },
-    ],
-    [
-      anchorNodes.get(anchors.at(isReverse ? 1 : -2)!),
-      { anchor: 'normal', inHandler: undefined, outHandler: undefined },
-    ],
-  )
+  const style: AnchorNode['style'] = {
+    anchor: 'normal',
+    inHandler: undefined,
+    outHandler: undefined
+  }
+
+  match(creatingDirection)
+    .with(CreatingDirection.Start, () => {
+      changes.push(
+        [anchorNodes.get(anchors.at(0)!), style],
+        [anchorNodes.get(anchors.at(1)!), style],
+      )
+    })
+    .with(CreatingDirection.End, () => {
+      changes.push(
+        [anchorNodes.get(anchors.at(-1)!), style],
+        [anchorNodes.get(anchors.at(-2)!), style],
+      )
+    })
+    .exhaustive()
 
   changes.push([indicativeAnchor, undefined])
   changes.push([indicativePath, undefined])
-  context.creatingBase = undefined
+
+
+  context.creatingDirection = CreatingDirection.End
 }

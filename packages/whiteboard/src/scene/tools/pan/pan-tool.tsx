@@ -18,8 +18,8 @@ import {
   icon,
 } from '@vectorial/whiteboard/assets'
 import {
-  EventKeyMatch,
-  MouseEvent,
+  type EventKeyMatch,
+  type MouseEvent,
   MouseTriggerType,
   MouseButton,
 } from '@vectorial/whiteboard/scene'

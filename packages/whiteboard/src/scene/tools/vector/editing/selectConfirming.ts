@@ -17,11 +17,12 @@ import {
 import {
   assignMap,
 } from '@vectorial/whiteboard/utils'
-import type {
-  MouseEvent,
-  StateMouseEvent,
-  StateAction,
-  GuardAction,
+import {
+  type MouseEvent,
+  type StateMouseEvent,
+  type StateAction,
+  type GuardAction,
+  CreatingDirection,
 } from '../types'
 import {
   normalizeMouseEvent,
@@ -128,10 +129,22 @@ export const selectingResumeCreating: StateAction = (
     anchorNodes,
     selected,
     changes,
+    vectorPath,
   } = context
 
-  if (hit?.type !== PathHitType.Anchor) return
-  context.creatingBase = hit.point
+  const first = vectorPath.anchors.at(0)!
+  const last = vectorPath.anchors.at(0)!
+
+  if (
+    hit?.point !== first
+    && hit?.point !== last
+  ) return
+
+  // when `resumeCreating`, the `hit.point` only can be `first` or `last`
+  context.creatingDirection = hit.point === first
+    ? CreatingDirection.Start
+    : CreatingDirection.End
+
   selected.splice(0, selected.length, hit)
   changes.push(...getResetStyleChanges(anchorNodes))
   changes.push(...getSelectedStyleChanges(selected, anchorNodes))

@@ -5,7 +5,7 @@ import {
   NodeType,
   newBooleanOperationData,
 } from '@vectorial/whiteboard/model'
-import {
+import type {
   Scene,
   SelectedNodes,
 } from '@vectorial/whiteboard/scene'

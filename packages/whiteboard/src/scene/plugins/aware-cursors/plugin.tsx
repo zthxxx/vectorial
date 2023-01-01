@@ -1,7 +1,7 @@
 import { ReactElement } from 'react'
 import {
   ScenePlugin,
-  ScenePluginProps,
+  type ScenePluginProps,
 } from '@vectorial/whiteboard/scene'
 import { AwareCursors } from './cursors'
 

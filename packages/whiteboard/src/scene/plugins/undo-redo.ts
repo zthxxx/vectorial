@@ -1,25 +1,10 @@
 import {
   tap,
   filter,
-  mergeMap,
-  switchMap,
-  takeUntil,
 } from 'rxjs/operators'
 import {
-  Vector,
-  sub,
-  applyMatrix,
-  multiply,
-  toTranslation,
-  toScale,
-} from 'vectorial'
-import {
   InteractEvent,
-  MouseTriggerType,
   KeyTriggerType,
-  KeyEvent,
-  MouseEvent,
-  MouseButton,
 } from '../event'
 import {
   ScenePlugin,

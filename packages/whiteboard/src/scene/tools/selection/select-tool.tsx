@@ -25,7 +25,7 @@ import {
 import {
   Arrow,
 } from '@vectorial/whiteboard/assets/icon'
-import {
+import type {
   InteractEvent,
   EventKeyMatch,
 } from '@vectorial/whiteboard/scene'

@@ -1,8 +1,8 @@
 import { ReactElement } from 'react'
 import {
   ScenePlugin,
-  ScenePluginProps,
-  EventKeyMatch,
+  type ScenePluginProps,
+  type EventKeyMatch,
 } from '@vectorial/whiteboard/scene'
 
 

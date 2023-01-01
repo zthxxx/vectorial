@@ -32,7 +32,7 @@ import {
   ClientAwareness,
   filterUserAwareness,
 } from '@vectorial/whiteboard/model'
-import {
+import type {
   InteractEvent,
 } from '@vectorial/whiteboard/scene'
 

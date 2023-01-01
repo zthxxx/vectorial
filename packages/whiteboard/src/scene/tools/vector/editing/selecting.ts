@@ -16,13 +16,11 @@ import {
 } from 'vectorial'
 import {
   KeyTriggerType,
+  AnchorNode,
 } from '@vectorial/whiteboard/scene'
 import {
   assignMap, toSharedTypes,
 } from '@vectorial/whiteboard/utils'
-import {
-  AnchorNode,
-} from '@vectorial/whiteboard/scene/plugins'
 import type {
   MouseEvent,
   KeyEvent,

@@ -55,7 +55,6 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
   declare type: NodeType.Vector
 
   public container: SVGPathNode
-  public path: PathData
   public vectorPath: VectorPath
 
   constructor(props: VectorNodeProps) {
@@ -67,7 +66,6 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
       type: NodeType.Vector,
     })
 
-    this.path = path
     this.container = new SVGPathNode(pixiSceneContext)
     this.container.position.set(this.position.x, this.position.y)
 
@@ -98,6 +96,11 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
         }
       })
     })
+  }
+
+  // design for save as serialized, but actually not read used, only for type checking
+  public get path(): PathData {
+    return this.vectorPath.serialize()
   }
 
   public get bounds(): Rect {
@@ -263,6 +266,13 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
                         current += 1
                       })
                     })
+                    .with('delete', () => {
+                      const len = value as number
+                      for (let i = len; i > 0; i -= 1) {
+                        vectorPath.removeAnchorAt(current)
+                      }
+                      current -= len
+                    })
                     .otherwise(() => {})
                 })
               }
@@ -304,6 +314,7 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
       })
   }
 }
+  
 
 export const drawPath = (
   graphics: Graphics,

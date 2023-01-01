@@ -15,7 +15,7 @@ import {
   SceneNode,
   PageNode,
 } from '@vectorial/whiteboard/nodes'
-import {
+import type {
   MouseTriggerType,
   MouseButton,
 } from '@vectorial/whiteboard/scene'

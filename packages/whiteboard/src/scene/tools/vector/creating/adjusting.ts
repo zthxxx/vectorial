@@ -9,6 +9,7 @@ import {
   filter,
   mergeMap,
 } from 'rxjs/operators'
+import { match } from 'ts-pattern'
 import {
   HandlerType,
   sub,
@@ -18,14 +19,15 @@ import {
 } from '@vectorial/whiteboard/utils'
 import {
   AnchorNode,
-} from '@vectorial/whiteboard/scene/plugins'
-import type {
-  StateMouseEvent,
-  StateKeyEvent,
-  StateAction,
-  MouseEvent,
-  KeyEvent,
-  GuardAction,
+} from '@vectorial/whiteboard/scene'
+import {
+  type StateMouseEvent,
+  type StateKeyEvent,
+  type StateAction,
+  type MouseEvent,
+  type KeyEvent,
+  type GuardAction,
+  CreatingDirection,
 } from '../types'
 import {
   normalizeMouseEvent,
@@ -66,7 +68,7 @@ export const adjustingMove: StateAction = ({
   indicativeAnchor,
   indicativePath,
   vectorPath,
-  creatingBase,
+  creatingDirection,
   changes,
 }, { event }: StateMouseEvent | StateKeyEvent) => {
   const anchor = indicativeAnchor.vectorAnchor
@@ -79,10 +81,11 @@ export const adjustingMove: StateAction = ({
   anchor.outHandler = sub(event.lastMouse!, anchor.position)
 
   changes.push([indicativeAnchor, { anchor: 'selected', inHandler: 'normal', outHandler: 'normal' }])
-  const isReverse = creatingBase !== vectorPath.anchors.at(-1)
-  indicativePath.path.anchors = isReverse
-    ? [anchor, creatingBase]
-    : [creatingBase, anchor]
+
+  indicativePath.path.anchors = match(creatingDirection)
+    .with(CreatingDirection.Start, () => [anchor, vectorPath.anchors.at(0)])
+    .with(CreatingDirection.End, () => [vectorPath.anchors.at(-1), anchor])
+    .exhaustive()
 
   changes.push([indicativePath, { strokeWidth: 2, strokeColor: 0x18a0fb }])
 }
@@ -98,11 +101,9 @@ export const adjustingRelease: StateAction = (context) => {
     anchorNodes,
     indicativeAnchor,
     indicativePath,
-    creatingBase,
+    creatingDirection,
     changes,
   } = context
-
-  const isReverse = creatingBase !== vectorPath.anchors.at(-1)
 
   const vectorAnchor = indicativeAnchor.vectorAnchor.clone()
   const anchorNode = new AnchorNode({
@@ -111,16 +112,20 @@ export const adjustingRelease: StateAction = (context) => {
     viewMatrix$: scene.events.viewMatrix$,
   })
   const anchors = vectorNode.binding.get('path')!.get('anchors')!
-  if (isReverse) {
-    vectorPath.addAnchorAt(vectorAnchor, 0)
-    anchors.unshift([toSharedTypes(vectorAnchor.serialize())])
-  } else {
-    vectorPath.addAnchor(vectorAnchor)
-    anchors.push([toSharedTypes(vectorAnchor.serialize())])
-  }
+
+  match(creatingDirection)
+    .with(CreatingDirection.Start, () => {
+      vectorPath.addAnchorAt(vectorAnchor, 0)
+      anchors.unshift([toSharedTypes(vectorAnchor.serialize())])
+    })
+    .with(CreatingDirection.End, () => {
+      vectorPath.addAnchor(vectorAnchor)
+      anchors.push([toSharedTypes(vectorAnchor.serialize())])
+    })
+    .exhaustive()
+
   anchorNodes.set(vectorAnchor, anchorNode)
 
-  context.creatingBase = vectorAnchor
   changes.push([anchorNode, { anchor: 'selected', inHandler: 'normal', outHandler: 'normal' }])
 
   changes.push([indicativeAnchor, undefined])

@@ -1,4 +1,7 @@
 import { Component, ErrorInfo } from 'react'
+import {
+  logger,
+} from '@vectorial/whiteboard/utils'
 
 export class ErrorBoundary extends Component<{}, { error?: Error }> {
   constructor(props: {}) {
@@ -12,8 +15,8 @@ export class ErrorBoundary extends Component<{}, { error?: Error }> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('ErrorBoundary error', error)
-    console.error('ErrorBoundary error info', info)
+    logger.error('ErrorBoundary error', error)
+    logger.error('ErrorBoundary error info', info)
   }
 
   render() {
