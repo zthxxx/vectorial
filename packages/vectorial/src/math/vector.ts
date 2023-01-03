@@ -19,6 +19,19 @@ export const scale = (source: Vector, value: number): Vector => ({
   y: source.y * value,
 })
 
+export const dot = (a: Vector, b: Vector): number => (
+  a.x * b.x + a.y * b.y
+)
+
+/**
+ * cross product of 2D-vector is actually a 3D-vector,
+ * like (0, 0, a.x * b.y - a.y * b.x),
+ * here only use value of Z-component
+ */
+export const cross = (a: Vector, b: Vector): number => (
+  a.x * b.y - a.y * b.x
+)
+
 export const division = (source: Vector, value: number): Vector => {
   if (value === 0) return source
   return {

@@ -6,7 +6,7 @@ import {
   Vector,
   VectorPath,
   VectorShape,
-  add,
+  math,
   BooleanOperator,
 } from 'vectorial'
 import {
@@ -96,7 +96,7 @@ export class BooleanOperationNode
             `BooleanOperationNode must only contain VectorNodes or BooleanOperationNodes, not ${child.type} (id: ${child.id})`,
           )
         }
-        shape.position = add(shape.bounds, child.position)
+        shape.position = math.add(shape.bounds, child.position)
         shape.rotation = shape.rotation + child.rotation
         return shape
       }),

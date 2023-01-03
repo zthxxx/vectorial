@@ -1,16 +1,14 @@
 import type {
+  StateContext,
   StateAction,
-  StateMouseEvent,
 } from '../types'
 
 
-export * from './selecting'
-export * from './selectConfirming'
-export * from './adjusting'
-export * from './marqueeing'
+export enum EditingAction {
+  Entry = 'Editing.Entry',
+}
 
-
-export const enterEditing: StateAction = (context, { event }: StateMouseEvent) => {
+const enterEditing: StateAction<StateContext> = (context) => {
   const {
     vectorPath,
     machine,
@@ -21,6 +19,10 @@ export const enterEditing: StateAction = (context, { event }: StateMouseEvent) =
   changes.push([indicativeAnchor, undefined])
   changes.push([indicativePath, undefined])
   if (vectorPath.anchors.length < 2) {
-    machine?.send({ type: 'cancel', event })
+    machine?.stop()
   }
+}
+
+export const editingActions = {
+  [EditingAction.Entry]: enterEditing,
 }

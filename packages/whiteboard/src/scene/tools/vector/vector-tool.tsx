@@ -46,10 +46,10 @@ import {
 } from '../types'
 import {
   createVectorToolMachine,
-} from './state-machine'
-import {
-  StateEvent,
   StateContext,
+  StateEvent,
+} from './machine'
+import {
   VectorToolService,
   CreatingDirection,
 } from './types'
@@ -329,7 +329,6 @@ export class ToolLayer {
     this.container.addChild(this.anchorNodesLayer)
     this.container.addChild(this.indicativeAnchor.container)
 
-    // @ts-expect-error
     this.machine = interpret(createVectorToolMachine(this))
 
     this.machineSignal$ = from(this.machine).pipe(

@@ -44,7 +44,8 @@ import {
 } from '../types'
 import {
   createSelectToolMachine,
-} from './state-machine'
+  Selection,
+} from './machine'
 import {
   SelectToolService,
 } from './types'
@@ -89,16 +90,16 @@ export class SelectTool extends ToolDefine {
   public activate() {
     this.scene.setCursor({ icon: cursor.arrow })
     this.isActive = true
-    // @ts-ignore
+
     this.machine = interpret(createSelectToolMachine(this))
-    this.machine!.start()
+    this.machine.start()
 
     from(this.machine!).subscribe({
       complete: () => {
         const state = this.machine!.getSnapshot().value
 
         match(state)
-          .with('editVector', () => {
+          .with(Selection.EditVector, () => {
             this.switchTool('VectorTool')
           })
           .otherwise(() => {})

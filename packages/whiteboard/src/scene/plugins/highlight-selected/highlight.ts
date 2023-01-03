@@ -39,8 +39,11 @@ declare module '@vectorial/whiteboard/scene/scene' {
 
 export class HighlightSelectedPlugin extends ScenePlugin {
   public name = 'HighlightSelectedPlugin'
+  /** select node path skeleton */
   protected selectLayer: Container
+  /** boundary only for current one hovered node */
   protected hoverLayer: Graphics
+  /** boundary for all for selected node */
   protected boundaryLayer: Graphics
   protected marqueeLayer: Graphics
   protected usersSelectLayer: Graphics

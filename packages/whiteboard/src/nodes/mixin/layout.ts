@@ -1,16 +1,10 @@
 import {
   TransformMixin,
   AreaMixin,
-  add,
+  math,
   Rect,
   Matrix,
   Vector,
-  multiply,
-  isPointInRect,
-  rectCoverTest,
-  applyMatrix,
-  applyInverse,
-  emptyVector,
 } from 'vectorial'
 import {
   LayoutDataMixin,
@@ -47,7 +41,7 @@ export const LayoutMixin = <S extends Constructor<BaseNodeMixin>>(Super: S) => {
       super(props, ...args)
       const {
         page,
-        position = emptyVector(),
+        position = math.emptyVector(),
         rotation = 0,
       } = props
       this.page = page
@@ -86,7 +80,7 @@ export const LayoutMixin = <S extends Constructor<BaseNodeMixin>>(Super: S) => {
       if (!this._absoluteTransform) {
         const parent = this.page.get(this.parent) as undefined | BaseNodeMixin & LayoutMixinType
         if (parent && parent.absoluteTransform) {
-          this._absoluteTransform = multiply(
+          this._absoluteTransform = math.multiply(
             parent.absoluteTransform,
             this.relativeTransform,
           )
@@ -120,26 +114,26 @@ export const LayoutMixin = <S extends Constructor<BaseNodeMixin>>(Super: S) => {
 
     public moveDelta(viewDelta: Vector) {
       // due to we are not make scale as matrix transform
-      this.position = add(this.position, viewDelta)
+      this.position = math.add(this.position, viewDelta)
       this.updateAbsoluteTransform()
       this.updateRelativeTransform()
     }
 
     public toLocalPoint(viewPoint: Vector): Vector {
-      return applyInverse(viewPoint, this.absoluteTransform)
+      return math.applyInverse(viewPoint, this.absoluteTransform)
     }
 
     public toPagePoint(point: Vector): Vector {
-      return applyMatrix(point, this.absoluteTransform)
+      return math.applyMatrix(point, this.absoluteTransform)
     }
 
     public hitTest(viewPoint: Vector): boolean {
       const point = this.toLocalPoint(viewPoint)
-      return isPointInRect(point, this.bounds)
+      return math.isPointInRect(point, this.bounds)
     }
 
     public coverTest(viewRect: Rect): boolean {
-      return rectCoverTest(viewRect, this.bounds)
+      return math.rectCoverTest(viewRect, this.bounds)
     }
 
     public serializeLayout(): LayoutDataMixin {

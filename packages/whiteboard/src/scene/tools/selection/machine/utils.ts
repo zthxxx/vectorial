@@ -1,5 +1,6 @@
 import {
   Subject,
+  Observable,
 } from 'rxjs'
 import {
   takeUntil,
@@ -16,19 +17,56 @@ import {
   PageNode,
 } from '@vectorial/whiteboard/nodes'
 import {
+  type InteractEvent,
   MouseTriggerType,
   MouseButton,
+  type MouseEvent,
 } from '@vectorial/whiteboard/scene'
 import {
   getAncestors,
   orderNodes,
 } from '@vectorial/whiteboard/utils'
-
 import {
-  MouseEvent,
-  StateAction,
-  GuardAction,
+  type GuardAction,
+  type StateAction,
 } from './types'
+
+
+
+export const createInteractGuard = <
+  Context extends {
+    interactEvent$: Observable<InteractEvent>;
+  }
+>({ entry, exit }: {
+  entry: GuardAction<Context>;
+  exit?: StateAction<Context>;
+}): {
+  entry: StateAction<Context>;
+  exit: StateAction<Context>;
+} => {
+  const rests$ = new Subject<void>()
+
+  return {
+    entry: (context, event) => {
+      const { interactEvent$ } = context
+      const interact$ = interactEvent$.pipe(
+        takeUntil(rests$),
+      )
+      entry(
+        context,
+        {
+          ...event,
+          interact$,
+        },
+      )
+    },
+    exit: (context, event) => {
+      rests$.next()
+      exit?.(context, event)
+    },
+  }
+}
+
 
 /**
  * scope node order: [bottom ... top]
@@ -93,30 +131,6 @@ export const findMarqueeCover = (
   return result
 }
 
-export const createEventGuard = (entry: GuardAction, exit?: StateAction): {
-  entry: StateAction;
-  exit: StateAction;
-} => {
-  const rests$ = new Subject<void>()
-
-  return {
-    entry: (context, ev) => {
-      const { interactEvent$ } = context
-      const event$ = interactEvent$.pipe(
-        takeUntil(rests$),
-      )
-      entry(
-        event$,
-        context,
-        ev,
-      )
-    },
-    exit: (context, event, action) => {
-      rests$.next()
-      exit?.(context, event, action)
-    },
-  }
-}
 
 export const normalizeMouseEvent = (
   event: MouseEvent,

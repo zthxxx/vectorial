@@ -6,10 +6,8 @@ import { Circle, Rectangle } from '@pixi/math'
 import { Subject, Subscription } from 'rxjs'
 import {
   VectorAnchor,
-  add,
   Matrix,
-  applyMatrix,
-  multiply,
+  math,
 } from 'vectorial'
 
 
@@ -169,7 +167,7 @@ export class AnchorNode {
 
     this.matrix = absoluteTransform
     this.matrix$ = viewMatrix$.subscribe(viewMatrix => {
-      this.matrix = multiply(absoluteTransform, viewMatrix)
+      this.matrix = math.multiply(absoluteTransform, viewMatrix)
       this.draw()
     })
   }
@@ -187,7 +185,7 @@ export class AnchorNode {
 
   public drawAnchor(texture: Texture) {
     const { matrix } =this
-    const { x, y } = applyMatrix(this.vectorAnchor.position, matrix)
+    const { x, y } = math.applyMatrix(this.vectorAnchor.position, matrix)
 
     if (this.anchor && this.anchor.texture !== texture) {
       this.container.removeChild(this.anchor)
@@ -241,8 +239,8 @@ export class AnchorNode {
       this.container.addChild(this[handlerType]!)
     }
 
-    const position = applyMatrix(
-      add(vectorAnchor.position, vectorAnchor[handlerType]!),
+    const position = math.applyMatrix(
+      math.add(vectorAnchor.position, vectorAnchor[handlerType]!),
       matrix,
     )
     this[handlerType]!.position.set(position.x, position.y)
@@ -273,16 +271,16 @@ export class AnchorNode {
         color: lineColor,
       })
 
-    const viewPoint = applyMatrix(position, matrix)
+    const viewPoint = math.applyMatrix(position, matrix)
     if (inHandler && style?.inHandler) {
-      const handler = applyMatrix(add(position, inHandler), matrix)
+      const handler = math.applyMatrix(math.add(position, inHandler), matrix)
       this.handlerLine
         .moveTo(viewPoint.x, viewPoint.y)
         .lineTo(handler.x, handler.y)
     }
 
     if (outHandler && style?.outHandler) {
-      const handler = applyMatrix(add(position, outHandler), matrix)
+      const handler = math.applyMatrix(math.add(position, outHandler), matrix)
       this.handlerLine
         .moveTo(viewPoint.x, viewPoint.y)
         .lineTo(handler.x, handler.y)
