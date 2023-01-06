@@ -47,6 +47,8 @@ export interface VectorShapeProps {
 export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implements AreaHitMixin {
   public type = 'Shape'
   public children: (VectorPath | VectorShape)[] = []
+
+  protected _hitStrokeWidth = 8
   protected _booleanOperator!: BooleanOperator
   protected _compoundPath: paper.CompoundPath | paper.Path | undefined
 
@@ -127,14 +129,12 @@ export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implement
     const compound = this.compoundPath
     const toVectorPath = (path: paper.Path) => new VectorPath({
       closed: true,
-      anchors: path.segments.map(segment => new VectorAnchor(
-        segment.point,
-        HandlerType.Free,
-        {
-          inHandler: segment.handleIn,
-          outHandler: segment.handleOut,
-        },
-      )),
+      anchors: path.segments.map(segment => new VectorAnchor({
+        position: segment.point,
+        handlerType: HandlerType.Free,
+        inHandler: segment.handleIn,
+        outHandler: segment.handleOut,
+      })),
       parity: path.area > 0 ? 1 : 0,
     })
 
@@ -147,8 +147,15 @@ export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implement
   }
 
 
-  public hitPathTest(point: Vector): PathHitResult | undefined {
+  public hitPathTest(
+    point: Vector,
+    padding?: number,
+  ): PathHitResult | undefined {
     const compound = this.compoundPath
+    if (padding && this._hitStrokeWidth !== padding) {
+      this._hitStrokeWidth = padding
+      compound.strokeWidth = padding
+    }
 
     const hitResult: paper.HitResult | undefined = compound.hitTest(
       new paper.Point(point),
@@ -167,7 +174,7 @@ export class VectorShape extends TransformMixin(AreaMixin(EmptyMixin)) implement
        */
       return {
         type: PathHitType.Path,
-        point: new VectorAnchor(point),
+        point: new VectorAnchor({ position: point }),
       } as any as PathHitResult
     }
   }

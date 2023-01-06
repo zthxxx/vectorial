@@ -1,4 +1,7 @@
-import { SharedMap } from '@vectorial/whiteboard/utils'
+import {
+  SharedMap,
+  binding,
+} from '@vectorial/whiteboard/utils'
 import {
   BaseDataMixin,
   BlendMode,
@@ -29,29 +32,14 @@ export const BlendMixin = <S extends Constructor<BaseNodeMixin>>(Super: S) => {
       this.blendMode = blendMode
     }
 
-    get opacity(): number {
-      return this.binding.get('opacity')!
-    }
+    @binding()
+    accessor opacity!: number
 
-    set opacity(opacity: number) {
-      this.binding.set('opacity', opacity)
-    }
+    @binding()
+    accessor isMask!: boolean
 
-    get isMask(): boolean {
-      return this.binding.get('isMask')!
-    }
-
-    set isMask(isMask: boolean) {
-      this.binding.set('isMask', isMask)
-    }
-
-    get blendMode(): BlendMode {
-      return this.binding.get('blendMode')!
-    }
-
-    set blendMode(blendMode: BlendMode) {
-      this.binding.set('blendMode', blendMode)
-    }
+    @binding()
+    accessor blendMode!: BlendMode
 
     serializeBlend(): BlendMixinType {
       return {

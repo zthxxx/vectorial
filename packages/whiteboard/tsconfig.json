@@ -16,6 +16,10 @@
       "@vectorial/whiteboard/*": ["src/*"],
     },
     "strictFunctionTypes": false,
+    // `experimentalDecorators` support for TC39 stage 2 draft decorators.
+    // disable it in typescript@5 for TC39 stage 3 decorators
+    "experimentalDecorators": false,
+    "emitDecoratorMetadata": false,
   },
   "include": [
     "src",

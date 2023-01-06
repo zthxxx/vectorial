@@ -75,6 +75,25 @@ type TDocType = new <T extends object>(...args: ConstructorParameters<typeof Y.D
 export const YMap: YMapType = Y.Map as YMapType
 export const YDoc: TDocType = Y.Doc as TDocType
 
+/**
+ * @type {Y.YEvent['keys'].action}
+ */
+export enum YEventAction {
+  Add = 'add',
+  Update = 'update',
+  Delete = 'delete',
+}
+
+/**
+ * @type {Y.YEvent['delta']}
+ */
+export enum YEventDeltaType {
+  Insert = 'insert',
+  Delete = 'delete',
+  Retain = 'retain',
+  Attributes = 'attributes',
+}
+
 
 export const toSharedTypes = <T>(value: T): SharedTypes<T> => {
   switch (true) {

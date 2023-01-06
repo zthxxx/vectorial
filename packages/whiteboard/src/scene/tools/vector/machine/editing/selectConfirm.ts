@@ -9,7 +9,6 @@ import {
 import { match } from 'ts-pattern'
 import {
   PathHitType,
-  HitResult,
   HandlerType,
 } from 'vectorial'
 import {
@@ -17,9 +16,10 @@ import {
   type MouseEvent,
   type KeyEvent,
 } from '@vectorial/whiteboard/scene'
-import {
-  assignMap,
-} from '@vectorial/whiteboard/utils'
+import type {
+  AnchorHitResult,
+  HitResult,
+} from '../../types'
 import {
   normalizeMouseEvent,
   getResetStyleChanges,
@@ -66,6 +66,7 @@ export type SelectConfirmActions = {
 const selectConfirmInteract = createInteractGuard<StateContext>({
   entry: (context, { interact$, hit }: StateMouseEvent & GuardEvent) => {
     const {
+      scene,
       machine,
       vectorPath,
     } = context
@@ -77,7 +78,11 @@ const selectConfirmInteract = createInteractGuard<StateContext>({
           isDrag,
           isClickUp,
           anchorHit,
-        } = normalizeMouseEvent(event, vectorPath)
+        } = normalizeMouseEvent({
+          event,
+          vectorPath,
+          viewportScale: scene.scale,
+        })
 
         // dragBase will always be existed, code only for defense and type guard
         if (!context.dragBase) {
@@ -102,13 +107,10 @@ const selectConfirmInteract = createInteractGuard<StateContext>({
           if (
             !vectorPath.closed
             && !event.shiftKey
-            && anchorHit
+            && anchorHit?.type === PathHitType.Anchor
             && (
-              'point' in anchorHit
-              && (
-                anchorHit.point === vectorPath.anchors.at(0)
-                || anchorHit.point === vectorPath.anchors.at(-1)
-              )
+              anchorHit.point === vectorPath.anchors.at(0)
+              || anchorHit.point === vectorPath.anchors.at(-1)
             )
           ) {
             return { type: SelectConfirmEvent.ResumeCreate, event, hit: anchorHit }
@@ -157,7 +159,7 @@ export const selectConfirmActions: StateActions<StateContext, SelectConfirmActio
 
     const isMultiSelect = event.shiftKey
 
-    const anchors: HitResult[] = isMultiSelect
+    const anchors: AnchorHitResult[] = isMultiSelect
       ? selected.filter(({ point }) => point !== hit.point)
       : [hit]
 
@@ -179,8 +181,11 @@ export const selectConfirmActions: StateActions<StateContext, SelectConfirmActio
     const last = vectorPath.anchors.at(0)!
 
     if (
-      hit?.point !== first
-      && hit?.point !== last
+      hit?.type !== PathHitType.Anchor
+      || (
+        hit?.point !== first
+        && hit?.point !== last
+      )
     ) return
 
     // when `resumeCreating`, the `hit.point` only can be `first` or `last`
@@ -195,57 +200,51 @@ export const selectConfirmActions: StateActions<StateContext, SelectConfirmActio
 
   [SelectConfirmAction.ToggleHandler]: ({
     scene,
-    vectorNode,
+    vectorPath,
     changes,
     anchorNodes,
     selected,
   }, { hit }: StateMouseEvent) => {
-    const hitResult = match(hit)
-      .with({ type: PathHitType.Anchor }, (hit) => {
-        const anchor = hit.point
-        if (anchor.inHandler && anchor.outHandler) {
-          anchor.handlerType = HandlerType.None
-        } else (
-          toggleAnchorHandler(hit as HitResult & { type: PathHitType.Anchor })
-        )
-        selected.splice(0, selected.length, hit)
-        return hit
-      })
-
-      .with({ type: PathHitType.InHandler }, (hit) => {
-        hit.point.inHandler = undefined
-        selected.splice(0, selected.length, {
-          ...hit,
-          type: PathHitType.Anchor,
-        })
-        return hit
-      })
-
-      .with({ type: PathHitType.OutHandler }, (hit) => {
-        hit.point.outHandler = undefined
-        selected.splice(0, selected.length, {
-          ...hit,
-          type: PathHitType.Anchor,
-        })
-        return hit
-      })
-
-      .otherwise(() => undefined)
-
-    if (!hitResult) return
-
-    const anchors = vectorNode.binding.get('path')!.get('anchors')!
-
-    const { point, anchorIndex } = hitResult
     scene.docTransact(() => {
-      assignMap(anchors.get(anchorIndex), {
-        inHandler: point.inHandler,
-        outHandler: point.outHandler,
-        handlerType: point.handlerType,
-      })
-    })
+      const hitResult = match(hit)
+        .with({ type: PathHitType.Anchor }, (hit) => {
+          const anchor = hit.point
+          if (anchor.inHandler && anchor.outHandler) {
+            anchor.inHandler = undefined
+            anchor.outHandler = undefined
+            anchor.handlerType = HandlerType.None
+          } else (
+            toggleAnchorHandler(hit)
+          )
+          selected.splice(0, selected.length, hit)
+          return hit
+        })
 
-    changes.push(...getResetStyleChanges(anchorNodes))
-    changes.push(...getSelectedStyleChanges(selected, anchorNodes))
+        .with({ type: PathHitType.InHandler }, (hit) => {
+          hit.point.inHandler = undefined
+          selected.splice(0, selected.length, {
+            ...hit,
+            type: PathHitType.Anchor,
+          })
+          return hit
+        })
+
+        .with({ type: PathHitType.OutHandler }, (hit) => {
+          hit.point.outHandler = undefined
+          selected.splice(0, selected.length, {
+            ...hit,
+            type: PathHitType.Anchor,
+          })
+          return hit
+        })
+
+        .otherwise(() => undefined)
+
+      if (!hitResult) return
+
+      hitResult.point.redraw?.()
+      changes.push(...getResetStyleChanges(anchorNodes))
+      changes.push(...getSelectedStyleChanges(selected, anchorNodes))
+    })
   },
 }

@@ -54,7 +54,7 @@ const movingInteractGuard = createInteractGuard<StateContext>({
         const {
           isDrag,
           isClickUp,
-        } = normalizeMouseEvent(event, scene.page, scene.selected)
+        } = normalizeMouseEvent(event, scene.page, scene.selected, scene.scale)
 
         if (isDrag) {
           return { type: MovingNodeEvent.Move, event }

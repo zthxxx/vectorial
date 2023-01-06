@@ -6,4 +6,5 @@
     "Typestate",
     "xstate",
   ],
+  "typescript.tsdk": "node_modules/typescript/lib",
 }

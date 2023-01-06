@@ -1,7 +1,11 @@
 
 import { Container } from '@pixi/display'
 import { NodeType, BaseDataMixin } from '@vectorial/whiteboard/model'
-import { nanoid, SharedMap } from '@vectorial/whiteboard/utils'
+import {
+  nanoid,
+  SharedMap,
+  binding,
+} from '@vectorial/whiteboard/utils'
 import {
   Constructor,
   EmptyMixin,
@@ -34,87 +38,39 @@ export const BaseNodeMixin = <S extends Constructor>(Super?: S) => {
       this.container = new Container()
       this.binding = (binding ?? new Y.Map()) as SharedMap<BaseDataMixin>
 
-      if (!this.binding.has('id')) {
-        this.id = id ?? nanoid()
-      }
-
-      if (!this.binding.has('name')) {
-        this.name = name ?? ''
-      }
-
-      if (!this.binding.has('parent')) {
-        this.parent = parent
-      }
-
-      if (!this.binding.has('type')) {
-        this.type = type ?? NodeType.Frame
-      }
-      if (!this.binding.has('order')) {
-        this.order = order
-      }
-      if (!this.binding.has('removed')) {
-        this.removed = removed ?? false
-      }
+      this.id = id ?? nanoid()
+      this.name = name ?? ''
+      this.parent = parent
+      this.type = type ?? NodeType.Frame
+      this.order = order
+      this.removed = removed ?? false
     }
 
     clone(): BaseNodeMixinType {
       throw new Error('Not Implemented')
     }
 
-    get id(): string {
-      return this.binding.get('id')!
-    }
+    @binding()
+    accessor id!: string
 
-    set id(id: string) {
-      if (this.id === id) return
-      this.binding.set('id', id)
-    }
+    @binding()
+    accessor name!: string
 
-    get name(): string {
-      return this.binding.get('name')!
-    }
+    @binding()
+    accessor parent: BaseDataMixin['id'] | undefined
 
-    set name(name: string) {
-      if (this.name === name) return
-      this.binding.set('name', name)
-    }
+    @binding()
+    accessor type!: NodeType
 
-    get parent(): BaseDataMixin['id'] | undefined {
-      return this.binding.get('parent')!
-    }
+    @binding()
+    accessor order: string | undefined
 
-    set parent(parent: string | undefined) {
-      if (this.parent === parent) return
-      this.binding.set('parent', parent)
-    }
-
-    get type(): NodeType {
-      return this.binding.get('type')!
-    }
-
-    set type(type: NodeType) {
-      if (this.type === type) return
-      this.binding.set('type', type)
-    }
-
-    get order(): string | undefined {
-      return this.binding.get('order')
-    }
-
-    set order(order: string | undefined) {
-      if (this.order === order) return
-      this.binding.set('order', order)
-    }
-
-    get removed(): boolean | undefined {
-      return this.binding.get('removed')
-    }
-
-    set removed(removed: boolean | undefined) {
-      if (this.removed === removed) return
-      this.binding.set('removed', removed)
-      this.container.visible = !removed
-    }
+    @binding({
+      onChange(removed) {
+        this.container.visible = !removed
+      },
+    })
+    accessor removed: boolean | undefined
 
     serializeBaseData(): BaseDataMixin {
       const {

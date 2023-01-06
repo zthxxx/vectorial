@@ -9,8 +9,8 @@ import {
   identityMatrix,
 } from 'vectorial'
 import {
-  SceneNodeData,
-} from '@vectorial/whiteboard/model'
+  onSet,
+} from '@vectorial/whiteboard/utils'
 import {
   PageNode,
   SceneNode,
@@ -65,10 +65,6 @@ export class Scene {
   public usersLayer: Container
 
   protected _lastCursor: string | undefined
-  /** absolute rect to page layout */
-  protected _marquee: Rect | undefined
-  protected _selected: SelectedNodes = new Set()
-  protected _hovered?: SceneNode
 
   public events = {
     interactEvent$: new Subject<InteractEvent>(),
@@ -152,35 +148,28 @@ export class Scene {
   public set viewMatrix(matrix: Matrix) {
     this.viewport.transform.setFromMatrix(toPixiMatrix(matrix))
     this.viewport.transform.updateLocalTransform()
+
     this.events.viewMatrix$.next(matrix)
   }
 
-  public get marquee(): Rect | undefined {
-    return this._marquee
+  public get scale(): number {
+    return this.viewport.transform.scale.x
   }
 
-  public set marquee(marquee: Rect | undefined) {
-    this._marquee = marquee
+  @onSet(function(this, marquee) {
     this.events.marquee$.next(marquee)
-  }
+  })
+  accessor marquee: Rect | undefined
 
-  public get selected(): SelectedNodes {
-    return this._selected
-  }
-
-  public set selected(selected: SelectedNodes) {
-    this._selected = selected
+  @onSet(function(this, selected) {
     this.events.selected$.next(selected)
-  }
+  })
+  accessor selected: SelectedNodes = new Set()
 
-  public get hovered(): SceneNode | undefined {
-    return this._hovered
-  }
-
-  public set hovered(hovered: SceneNode | undefined) {
-    this._hovered = hovered
+  @onSet(function(this, hovered) {
     this.events.hovered$.next(hovered)
-  }
+  })
+  accessor hovered: SceneNode | undefined
 
   public use(plugin: ScenePlugin) {
     this.plugins[plugin.name] = plugin

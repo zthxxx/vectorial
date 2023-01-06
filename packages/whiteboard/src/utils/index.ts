@@ -2,13 +2,14 @@ import {
   Color,
 } from '@vectorial/whiteboard/model'
 
-
+export * from './types'
 export * from './id'
 export * from './yjs'
 export * from './logger'
 export * from './rxjs'
 export * from './tailwind'
 export * from './order'
+export * from './decorator'
 
 
 export const toPixiColor = (color: Color): number => {

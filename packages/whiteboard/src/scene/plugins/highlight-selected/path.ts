@@ -18,9 +18,6 @@ import {
 } from '@vectorial/whiteboard/nodes'
 
 
-/**
- * @TODO that interface is temporary
- */
 export interface PathStyle {
   fillColor?: number;
   fillAlpha?: number;
@@ -41,7 +38,7 @@ export enum DefaultPathColor {
   normal = 0xb0b0b0,
 }
 
-export class PathNode {
+export class HighlightPathNode {
   public id: string
   public path: VectorPath
   public container: SVGPathNode

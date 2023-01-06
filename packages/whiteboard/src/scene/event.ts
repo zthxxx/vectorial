@@ -382,12 +382,13 @@ export class EventManager {
 
       .with('mousemove', () => {
         event.mouse!.type = MouseTriggerType.Move
+        const viewportScale = this.scene.scale
 
         if (!this.dragBase) {
           if (event.dragging) event.dragging = undefined
         } else if (
           !event.dragging
-          && !isDeadDrag(this.dragBase, position)
+          && !isDeadDrag(this.dragBase, position, 8 / viewportScale)
         ) {
           event.dragging = {
             begin: { ...this.dragBase },
@@ -504,7 +505,7 @@ export class EventManager {
         event.key!.type = KeyTriggerType.Down
         return event
       })
-      
+
       .with('keyup', () => {
         event.downKeys.delete(code)
         event.key!.type = KeyTriggerType.Up
@@ -565,5 +566,5 @@ export class EventManager {
   }
 }
 
-export const isDeadDrag = (prev: Vector, next: Vector): boolean =>
-  len(sub(prev, next)) < 8
+export const isDeadDrag = (prev: Vector, next: Vector, padding: number = 8): boolean =>
+  len(sub(prev, next)) < padding

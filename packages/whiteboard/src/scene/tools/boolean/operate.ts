@@ -63,8 +63,11 @@ export const booleanOperate = (
       booleanOperationNode,
       parent,
     )
+
+    // move nodes into booleanOperationNode, with id in its children
     page.relocate(nodes, booleanOperationNode)
 
+    // recreate booleanOperation shape
     booleanOperationNode.shape = booleanOperationNode.createShape()
     nodes.forEach(node => node.clear())
     booleanOperationNode.draw()

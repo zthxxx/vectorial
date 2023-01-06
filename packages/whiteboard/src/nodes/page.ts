@@ -10,6 +10,7 @@ import {
   YMap,
   toSharedTypes,
   nanoid,
+  YEventAction,
 } from '@vectorial/whiteboard/utils'
 import {
   BaseNodeMixin,
@@ -27,7 +28,7 @@ import {
 } from './frame'
 import {
   VectorNode,
-} from './vector-path'
+} from './vector'
 import {
  BooleanOperationNode,
 } from './boolean-operation'
@@ -131,8 +132,8 @@ export class PageNode extends NodeManagerMixin(ChildrenMixin(BaseNodeMixin())) i
 
     const nodesBinding = this.binding.get('nodes')!
     for (const [key, { action }] of keys.entries()) {
-      match(action)
-        .with('delete', () => {
+      match(action as YEventAction)
+        .with(YEventAction.Delete, () => {
           const node = this.nodes[key]
           if (!node) return
           node.removed = true
@@ -145,7 +146,7 @@ export class PageNode extends NodeManagerMixin(ChildrenMixin(BaseNodeMixin())) i
           // dont remove child here, due to we are directly listening on children change
         })
 
-        .with('add', () => {
+        .with(YEventAction.Add, () => {
           const nodeBinding = nodesBinding.get(key) as unknown as YMap<SceneNode> | undefined
           if (!nodeBinding) return
           const NodeType = NodeTypeMap[nodeBinding.get('type')!]
@@ -161,7 +162,7 @@ export class PageNode extends NodeManagerMixin(ChildrenMixin(BaseNodeMixin())) i
           this.nodes[node.id] = item
         })
 
-        .with('update', () => {})
+        .with(YEventAction.Update, () => {})
 
         .exhaustive()
     }

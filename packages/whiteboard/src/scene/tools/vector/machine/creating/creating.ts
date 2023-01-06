@@ -73,6 +73,7 @@ export type CreateDoneConfirmActions = {
 const createDoneConfirmInteract = createInteractGuard<StateContext>({
   entry: (context, { interact$ }) => {
     const {
+      scene,
       vectorPath,
       machine,
     } = context
@@ -80,7 +81,11 @@ const createDoneConfirmInteract = createInteractGuard<StateContext>({
     interact$.pipe(
       filter(event => Boolean(event.mouse)),
       map((event: MouseEvent): StateEvents<CreateDoneConfirmActions> => {
-        const { anchorHit, isMove, isClickDown } = normalizeMouseEvent(event, vectorPath)
+        const { anchorHit, isMove, isClickDown } = normalizeMouseEvent({
+          event,
+          vectorPath,
+          viewportScale: scene.scale,
+        })
 
         if (isClickDown && event.isDoubleClick) {
           return { type: CreateDoneConfirmEvent.CreateDone }

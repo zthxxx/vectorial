@@ -44,7 +44,7 @@ export const emptyPath = (): PathData => ({
   parity: 1,
 })
 
-export class VectorPathProps {
+export interface VectorPathProps {
   anchors?: VectorAnchor[];
   closed?: PathData['closed'];
   position?: PathData['position'];
@@ -58,12 +58,14 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
 
   /**
    * partiy of path area used for evenodd fill rule, of which,
-   *    1: odd (fill)
-   *    0: even (not fill)
+   *    1: odd (fill / hit)
+   *    0: even (not fill / not hit)
    */
-  public parity: 1 | 0;
-  private _anchors: VectorAnchor[] = []
-  private _closed: boolean = false
+  public parity: 1 | 0
+
+  protected _hitStrokeWidth = 8
+  protected _anchors: VectorAnchor[] = []
+  protected _closed: boolean = false
 
   constructor(props: VectorPathProps = {}) {
     const {
@@ -77,18 +79,22 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
     this._closed = closed
     this.parity = parity
 
-    this.path = new paper.Path({
-      segments: anchors.map(anchor => anchor.segment),
+    this.path = this.createPath()
+    this.path.closed = closed
+  }
+
+  public createPath() {
+    return new paper.Path({
+      segments: this.anchors.map(anchor => anchor.segment),
       /**
-       * stroke and fill style only for hitTest interaction
+       * stroke and fill style only for hitTest interaction, not for render
        * strokeWidth is how near can hit while mouse close to path
        */
-      strokeWidth: 10,
+      strokeWidth: this._hitStrokeWidth,
       strokeColor: new paper.Color(0x000),
       fillColor: new paper.Color(0x000),
       fillRule: 'evenodd',
     })
-    this.path.closed = closed
   }
 
   public get anchors(): Array<VectorAnchor> {
@@ -101,6 +107,7 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
     anchors
       .filter(Boolean)
       .forEach(anchor => this.addAnchor(anchor!))
+    // resume closed flag due to reset by clear()
     this.closed = closed
   }
 
@@ -140,15 +147,15 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
   }
 
   public addAnchor(anchor: VectorAnchor) {
-    this.addAnchorAt(anchor)
+    this.addAnchorAt([anchor])
   }
 
-  public addAnchorAt(anchor: VectorAnchor, insertIndex?: number) {
+  public addAnchorAt(anchors: VectorAnchor[], insertIndex?: number) {
     const { length } = this.anchors
     const index = insertIndex ?? length
 
-    this.anchors.splice(index, 0, anchor)
-    this.path.insert(index, anchor.segment)
+    this.anchors.splice(index, 0, ...anchors)
+    this.path.insertSegments(index, anchors.map(anchor => anchor.segment))
   }
 
   public removeAnchor(anchor: VectorAnchor) {
@@ -157,11 +164,11 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
     this.removeAnchorAt(index)
   }
 
-  public removeAnchorAt(index: number) {
+  public removeAnchorAt(index: number, length = 1) {
     const anchor = this.anchors[index]
     if (!anchor) return
-    this.anchors.splice(index, 1)
-    this.path.removeSegment(index)
+    this.anchors.splice(index, length)
+    this.path.removeSegments(index, index + length)
   }
 
   public clear() {
@@ -170,14 +177,17 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
     this._anchors = []
   }
 
-  public hitAnchorTest(point: Vector): AnchorHitResult | undefined {
+  public hitAnchorTest(
+    point: Vector,
+    padding?: number,
+  ): AnchorHitResult | undefined {
     const { closed } = this
     const first = this.anchors.at(0)
     const last = this.anchors.at(-1)
 
     for (let index = 0; index < this.anchors.length; index++) {
       const anchor = this.anchors[index]
-      if (anchor.isAnchorNear(point)) {
+      if (anchor.isAnchorNear(point, padding)) {
         return {
           type: PathHitType.Anchor,
           point: anchor,
@@ -191,8 +201,15 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
     }
   }
 
-  public hitPathTest(point: Vector): PathHitResult | undefined {
+  public hitPathTest(
+    point: Vector,
+    padding?: number,
+  ): PathHitResult | undefined {
     const { closed } = this
+    if (padding && this._hitStrokeWidth !== padding) {
+      this._hitStrokeWidth = padding
+      this.path.strokeWidth = padding
+    }
 
     /**
      * http://paperjs.org/reference/path/#hittest-point
@@ -217,7 +234,7 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
       const { point, location } = hitResult
       return {
         type: PathHitType.Path,
-        point: new VectorAnchor(point),
+        point: new VectorAnchor({ position: point }),
         ends: [
           this.anchors[location.index],
           this.anchors[location.index + 1] ?? (closed ? first : last),

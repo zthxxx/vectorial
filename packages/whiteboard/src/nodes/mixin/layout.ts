@@ -12,7 +12,8 @@ import {
 } from '@vectorial/whiteboard/model'
 import {
   SharedMap,
-  toSharedTypes,
+  binding,
+  YEventAction,
 } from '@vectorial/whiteboard/utils'
 import {
   Constructor,
@@ -49,32 +50,42 @@ export const LayoutMixin = <S extends Constructor<BaseNodeMixin>>(Super: S) => {
       this.container.position.set(position.x, position.y)
       this.container.angle = rotation
 
-      if (!this.binding.get('position')) {
-        this.binding.set('position', toSharedTypes(position))
+      if (!this.position) {
+        this.position = position
       }
 
-      if (!this.binding.has('rotation')) {
-        this.binding.set('rotation', rotation)
-      }
+      this.rotation = rotation
     }
 
-    public get position(): Vector {
-      return this.binding.get('position')!.toJSON()
-    }
+    @binding({
+      onChange({ x, y }) {
+        this.container.position.set(x, y)
+      },
+      onUpdate({ value: position, action }) {
+        if (action !== YEventAction.Update) return
+        this.container.position.set(position.x, position.y)
+        this.updateRelativeTransform()
+        this.updateAbsoluteTransform()
+      },
+    })
+    accessor position: Vector = { x: 0, y: 0 }
 
-    public set position({ x, y }: Vector) {
-      this.binding.set('position', toSharedTypes({ x, y }))
-      this.container.position.set(x, y)
-    }
-
-    public get rotation(): number {
-      return this.binding.get('rotation')!
-    }
-
-    public set rotation(degree: number) {
-      this.binding.set('rotation', degree)
-      this.container.angle = degree
-    }
+    /**
+     * euler rotation in degree,
+     * rotation point is the center of the self
+     */
+    @binding({
+      onChange(degree) {
+        this.container.angle = degree
+      },
+      onUpdate({ value: rotation, action }) {
+        if (action !== YEventAction.Update) return
+        this.container.rotation = rotation
+        this.updateRelativeTransform()
+        this.updateAbsoluteTransform()
+      },
+    })
+    accessor rotation: number = 0
 
     public get absoluteTransform(): Matrix {
       if (!this._absoluteTransform) {

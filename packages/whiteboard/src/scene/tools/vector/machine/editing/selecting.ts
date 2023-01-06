@@ -9,7 +9,6 @@ import {
 import { match } from 'ts-pattern'
 import {
   PathHitType,
-  HitResult,
   math,
 } from 'vectorial'
 import {
@@ -19,9 +18,15 @@ import {
   AnchorNode,
 } from '@vectorial/whiteboard/scene'
 import {
-  assignMap,
+  BindingAnchor,
+} from '@vectorial/whiteboard/nodes'
+import {
   toSharedTypes,
 } from '@vectorial/whiteboard/utils'
+import type {
+  HitResult,
+  AnchorHitResult,
+} from '../../types'
 import {
   normalizeMouseEvent,
   getResetStyleChanges,
@@ -66,6 +71,7 @@ export type SelectingActions = {
 const selectingInteract = createInteractGuard<StateContext>({
   entry: (context, { interact$ }) => {
     const {
+      scene,
       anchorNodes,
       vectorPath,
       machine,
@@ -79,7 +85,12 @@ const selectingInteract = createInteractGuard<StateContext>({
           anchorHit,
           pathHit,
           isClickDown,
-        } = normalizeMouseEvent(event, vectorPath, anchorNodes)
+        } = normalizeMouseEvent({
+          event,
+          vectorPath,
+          anchorNodes,
+          viewportScale: scene.scale,
+        })
 
         const hit: HitResult | undefined = handlerHit ?? anchorHit ?? pathHit
 
@@ -141,7 +152,7 @@ export const selectingActions: StateActions<StateContext, SelectingActions> = {
 
     match(hit)
       .with({ type: PathHitType.Anchor }, (hit) => {
-        let anchors: HitResult[] = []
+        let anchors: AnchorHitResult[] = []
         const isSelected = anchorNodes.get(hit.point)!.style?.anchor === 'selected'
         context.dragBase = { ...hit.point.position }
 
@@ -196,29 +207,37 @@ export const selectingActions: StateActions<StateContext, SelectingActions> = {
     if (hit?.type !== PathHitType.Path) return
 
     scene.docTransact(() => {
-      const len = vectorPath.anchors.length
-      vectorPath.addAnchorAt(hit.point, hit.curveIndex + 1)
+      const anchorData = hit.point.serialize()
+      const vectorAnchor = BindingAnchor.from(
+        anchorData,
+        {
+          binding: toSharedTypes(anchorData),
+          redraw: vectorPath.redraw,
+        },
+      )
+
       const anchorNode = new AnchorNode({
-        vectorAnchor: hit.point,
+        vectorAnchor: vectorAnchor,
         absoluteTransform: vectorNode.absoluteTransform,
         viewMatrix$: scene.events.viewMatrix$,
       })
-      anchorNodes.set(hit.point, anchorNode)
+      anchorNodes.set(vectorAnchor, anchorNode)
 
-      setAnchorHandlerOnPath(hit)
+      setAnchorHandlerOnPath({
+        ...hit,
+        point: vectorAnchor,
+      })
 
-      const anchors = vectorNode.binding.get('path')!.get('anchors')!
+      vectorPath.addAnchorAt([vectorAnchor], hit.curveIndex + 1)
 
-      assignMap(anchors.get(hit.curveIndex % len), hit.ends[0].serialize())
-      assignMap(anchors.get((hit.curveIndex + 1) % len), hit.ends[1].serialize())
-      anchors.insert(hit.curveIndex + 1, [toSharedTypes(hit.point.serialize())])
-    })
-    context.dragBase = { ...hit.point.position }
+      context.dragBase = { ...hit.point.position }
 
-    selected.splice(0, selected.length, {
-      ...hit,
-      type: PathHitType.Anchor,
-      anchorIndex: hit.curveIndex + 1,
+      selected.splice(0, selected.length, {
+        ...hit,
+        type: PathHitType.Anchor,
+        point: vectorAnchor,
+        anchorIndex: hit.curveIndex + 1,
+      })
     })
     changes.push(...getResetStyleChanges(anchorNodes))
     changes.push(...getSelectedStyleChanges(selected, anchorNodes))

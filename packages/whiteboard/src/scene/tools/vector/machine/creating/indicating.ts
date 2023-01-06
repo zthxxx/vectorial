@@ -9,7 +9,7 @@ import {
 import { match } from 'ts-pattern'
 import {
   PathHitType,
-  HitResult,
+  VectorAnchor,
 } from 'vectorial'
 import {
   cursor,
@@ -20,6 +20,9 @@ import {
   type KeyEvent,
   type AnchorNode,
 } from '@vectorial/whiteboard/scene'
+import type {
+  HitResult,
+} from '../../types'
 import {
   createInteractGuard,
   normalizeMouseEvent,
@@ -71,6 +74,7 @@ export type IndicatingActions = {
 const indicatingInteract = createInteractGuard<StateContext>({
   entry: (context, { interact$ }) => {
     const {
+      scene,
       anchorNodes,
       vectorPath,
       machine,
@@ -85,7 +89,13 @@ const indicatingInteract = createInteractGuard<StateContext>({
           pathHit,
           isMove,
           isClickDown,
-        } = normalizeMouseEvent(event, vectorPath, anchorNodes)
+        } = normalizeMouseEvent({
+          event,
+          vectorPath,
+          anchorNodes,
+          viewportScale: scene.scale,
+        })
+
         const hit: HitResult | undefined = handlerHit ?? anchorHit ?? pathHit
 
         const closeTarget = context.creatingDirection === CreatingDirection.Start
@@ -95,7 +105,6 @@ const indicatingInteract = createInteractGuard<StateContext>({
         if (isClickDown) {
           if (
             anchorHit
-            && 'point' in anchorHit
             && anchorHit?.point === closeTarget
           ) {
             return { type: IndicatingEvent.ClosePath, event, hit: anchorHit }
@@ -109,7 +118,6 @@ const indicatingInteract = createInteractGuard<StateContext>({
         } else if (isMove) {
           if (
             anchorHit
-            && 'point' in anchorHit
             && anchorHit?.point === closeTarget
           ) {
             return { type: IndicatingEvent.ClosingHover, event, hit: anchorHit }
@@ -176,13 +184,13 @@ export const indicatingActions: StateActions<StateContext, IndicatingActions> = 
   }, { hit }) => {
     scene.setCursor({ icon: cursor.arrow })
 
-    if (!hit) {
+    if (!hit?.point) {
       changes.push([indicativeAnchor, undefined])
       changes.push([indicativePath, undefined])
       return
     }
 
-    indicativeAnchor.vectorAnchor = hit.point!.clone()
+    indicativeAnchor.vectorAnchor = VectorAnchor.from(hit.point.serialize())
 
     match(hit)
       .with({ type: PathHitType.Anchor }, (hit) => {
@@ -217,14 +225,6 @@ export const indicatingActions: StateActions<StateContext, IndicatingActions> = 
         )
       })
 
-      .with({ type: PathHitType.Fill }, () => {
-        indicativePath.path = vectorPath.clone()
-        changes.push(
-          [indicativeAnchor, { anchor: undefined, inHandler: undefined, outHandler: undefined }],
-          [indicativePath, { strokeWidth: 2, strokeColor: 0x18a0fb }],
-        )
-      })
-
       .exhaustive()
   },
 
@@ -237,10 +237,10 @@ export const indicatingActions: StateActions<StateContext, IndicatingActions> = 
     changes,
   }, { hit }) => {
     // hit will always be existed, code only for defense and type guard
-    if (!hit || !('point' in hit)) return
+    if (!hit || !hit.point) return
 
     scene.setCursor({ icon: cursor.pen })
-    indicativeAnchor.vectorAnchor = hit.point!.clone()
+    indicativeAnchor.vectorAnchor = VectorAnchor.from(hit.point.serialize())
 
     const first = vectorPath.anchors.at(0)
     const last = vectorPath.anchors.at(-1)
@@ -309,12 +309,9 @@ export const indicatingActions: StateActions<StateContext, IndicatingActions> = 
 
   [IndicatingAction.ClosePath]: (context, event) => {
     const {
-      vectorNode,
       vectorPath,
     } = context
     vectorPath.closed = true
-    vectorNode.binding.get('path')!.set('closed', true)
-    vectorNode.draw()
   },
 
   [IndicatingAction.Select]: (context, event) => {

@@ -8,11 +8,8 @@ import {
 import {
   math,
   Vector,
-  VectorPath,
   PathHitType,
-  HitResult,
   HandlerType,
-  PathHitResult,
 } from 'vectorial'
 import {
   type InteractEvent,
@@ -21,7 +18,14 @@ import {
   AnchorNode,
   type MouseEvent,
 } from '@vectorial/whiteboard/scene'
-
+import {
+  type BindingVectorPath,
+} from '@vectorial/whiteboard/nodes'
+import type {
+  HitResult,
+  AnchorHitResult,
+  PathHitResult,
+} from '../types'
 import {
   type GuardAction,
   type StateAction,
@@ -67,8 +71,9 @@ export const createInteractGuard = <
 
 export const getHandlerHit = (
   { mouse }: MouseEvent,
-  vectorPath?: VectorPath,
+  vectorPath?: BindingVectorPath,
   anchorNodes?: StateContext['anchorNodes'],
+  padding?: number,
 ): HitResult | undefined => {
   if (!vectorPath || !anchorNodes) return
   const point = mouse
@@ -77,8 +82,8 @@ export const getHandlerHit = (
     const anchorNode = anchorNodes.get(anchor)
     if (!anchorNode) return false
     return (
-      (anchorNode.style?.outHandler && anchor.isOutHandlerNear(point))
-      || (anchorNode.style?.inHandler && anchor.isInHandlerNear(point))
+      (anchorNode.style?.outHandler && anchor.isOutHandlerNear(point, padding))
+      || (anchorNode.style?.inHandler && anchor.isInHandlerNear(point, padding))
     )
   })
   if (index === -1) return
@@ -88,7 +93,7 @@ export const getHandlerHit = (
   const last = vectorPath.anchors.at(-1)
   const anchor = vectorPath.anchors[index]
   return {
-    type: anchor.isOutHandlerNear(point) ? PathHitType.OutHandler : PathHitType.InHandler,
+    type: anchor.isOutHandlerNear(point, padding) ? PathHitType.OutHandler : PathHitType.InHandler,
     point: anchor,
     ends: [
       vectorPath.anchors[index - 1] ?? (closed ? last : first),
@@ -98,25 +103,32 @@ export const getHandlerHit = (
   }
 }
 
-export const normalizeMouseEvent = (
+export const normalizeMouseEvent = ({
+  event,
+  vectorPath,
+  anchorNodes,
+  viewportScale,
+}: {
   event: MouseEvent,
   /** vectorPath for path or anchors hit test */
-  vectorPath?: VectorPath,
+  vectorPath?: BindingVectorPath,
   /** anchorNodes for anchors'handlers hit test */
   anchorNodes?: StateContext['anchorNodes'],
-): {
+  viewportScale: number,
+}): {
   handlerHit?: HitResult;
-  anchorHit?: HitResult;
-  pathHit?: HitResult;
+  anchorHit?: AnchorHitResult;
+  pathHit?: PathHitResult;
   isMove: boolean;
   isClickDown: boolean;
   isClickUp: boolean;
   isDrag: boolean;
 } => {
+  const hitPadding = 8 / viewportScale
   return {
-    handlerHit: getHandlerHit(event, vectorPath, anchorNodes),
-    anchorHit: vectorPath?.hitAnchorTest(event.mouse),
-    pathHit: vectorPath?.hitPathTest(event.mouse),
+    handlerHit: getHandlerHit(event, vectorPath, anchorNodes, hitPadding),
+    anchorHit: vectorPath?.hitAnchorTest(event.mouse, hitPadding),
+    pathHit: vectorPath?.hitPathTest(event.mouse, hitPadding),
 
     isMove: event.mouse.type == MouseTriggerType.Move,
     isClickDown: (

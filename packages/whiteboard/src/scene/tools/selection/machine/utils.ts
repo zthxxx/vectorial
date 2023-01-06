@@ -99,10 +99,11 @@ export const findHitPath = (
   page: PageNode,
   selected: Set<SceneNode>,
   point: Vector,
+  padding: number,
 ): SceneNode | undefined => {
   const scope = getSelectedScope(page, selected)
   for (const node of scope) {
-    if (node.hitTest(point)) {
+    if (node.hitTest(point, padding)) {
       return node
     }
   }
@@ -136,6 +137,7 @@ export const normalizeMouseEvent = (
   event: MouseEvent,
   page: PageNode,
   selected: Set<SceneNode>,
+  viewportScale: number,
 ): {
   hit?: SceneNode;
   isMove: boolean;
@@ -143,7 +145,7 @@ export const normalizeMouseEvent = (
   isClickUp: boolean;
   isDrag: boolean;
 } => ({
-  hit: findHitPath(page, selected, event.mouse),
+  hit: findHitPath(page, selected, event.mouse, 8 / viewportScale),
   isMove: event.mouse.type == MouseTriggerType.Move,
   isClickDown: (
     event.mouse.type === MouseTriggerType.Down

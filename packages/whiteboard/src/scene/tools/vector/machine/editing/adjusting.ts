@@ -9,19 +9,20 @@ import {
 import { match } from 'ts-pattern'
 import {
   PathHitType,
-  HitResult,
-  VectorAnchor,
   HandlerType,
   math,
-  AnchorHitResult,
   type Vector,
 } from 'vectorial'
 import {
+  type BindingAnchor,
+} from '@vectorial/whiteboard/nodes'
+import {
   type MouseEvent,
 } from '@vectorial/whiteboard/scene'
-import {
-  assignMap,
-} from '@vectorial/whiteboard/utils'
+import type {
+  HitResult,
+  AnchorHitResult,
+} from '../../types'
 import {
   createInteractGuard,
   normalizeMouseEvent,
@@ -55,6 +56,7 @@ export type AdjustingActions = {
 const adjustingInteract = createInteractGuard<StateContext>({
   entry: (context, { interact$ }) => {
     const {
+      scene,
       vectorPath,
       machine,
     } = context
@@ -62,7 +64,11 @@ const adjustingInteract = createInteractGuard<StateContext>({
     interact$.pipe(
       filter(event => Boolean(event.mouse)),
       map((event: MouseEvent): StateEvents<AdjustingActions> => {
-        const { isDrag, isClickUp } = normalizeMouseEvent(event, vectorPath)
+        const { isDrag, isClickUp } = normalizeMouseEvent({
+          event,
+          vectorPath,
+          viewportScale: scene.scale,
+        })
 
         if (isDrag) {
           return { type: AdjustingEditEvent.Adjust, event }
@@ -99,15 +105,13 @@ export const adjustingEditActions: StateActions<StateContext, AdjustingActions> 
     const hitResult = selected[0]
     const anchor = hitResult.point!
     const anchorNode = anchorNodes.get(anchor)!
-    const changeHandlerType = (anchor: VectorAnchor) => {
+    const changeHandlerType = (anchor: BindingAnchor) => {
       if (event.match({ modifiers: ['Alt'] })) {
         anchor.handlerType = HandlerType.Free
       } else if (event.match({ modifiers: ['Meta'] })) {
         anchor.handlerType = HandlerType.Mirror
       }
     }
-
-    const anchors = vectorNode.binding.get('path')!.get('anchors')!
 
     scene.docTransact(() => {
       match(hitResult)
@@ -117,7 +121,7 @@ export const adjustingEditActions: StateActions<StateContext, AdjustingActions> 
             const hitAnchor = selected.find(({ point }) => (
               point!.position.x === dragBase.x
               && point!.position.y === dragBase.y
-            )) as AnchorHitResult
+            ))
             if (!hitAnchor) return
 
             const size = vectorPath.anchors.length
@@ -146,13 +150,12 @@ export const adjustingEditActions: StateActions<StateContext, AdjustingActions> 
             selected.splice(0, selected.length, {
               ...hitAnchor,
               type: handlerSide,
-            } as HitResult)
+            })
 
             changes.push([anchorNode, {
               anchor: 'normal',
               [handlerSide === PathHitType.InHandler ? 'inHandler' : 'outHandler']: 'selected',
             }])
-            anchors.get(hitAnchor.anchorIndex).set('handlerType', hitAnchor.point.handlerType)
 
             return
           }
@@ -163,35 +166,26 @@ export const adjustingEditActions: StateActions<StateContext, AdjustingActions> 
             const anchorNode = anchorNodes.get(point)!
             point.position = math.add(point.position, delta)
             changes.push([anchorNode, {}])
-            assignMap(anchors.get(anchorIndex), { position: point.position })
+            vectorPath.anchors[anchorIndex].position = point.position
           })
         })
 
-        .with({ type: PathHitType.InHandler }, (hitResult) => {
+        .with({ type: PathHitType.InHandler }, () => {
           changeHandlerType(anchor)
           anchor.inHandler = math.sub(event.mouse, anchor.position)
           changes.push([anchorNode, {}])
-          assignMap(anchors.get(hitResult.anchorIndex), {
-            inHandler: anchor.inHandler,
-            outHandler: anchor.outHandler,
-            handlerType: anchor.handlerType,
-          })
         })
 
-        .with({ type: PathHitType.OutHandler }, (hitResult) => {
+        .with({ type: PathHitType.OutHandler }, () => {
           changeHandlerType(anchor)
           anchor.outHandler = math.sub(event.mouse, anchor.position)
           changes.push([anchorNode, {}])
-          assignMap(anchors.get(hitResult.anchorIndex), {
-            inHandler: anchor.inHandler,
-            outHandler: anchor.outHandler,
-            handlerType: anchor.handlerType,
-          })
         })
 
         .otherwise(() => {})
     })
 
+    vectorNode.draw()
     context.dragBase = {
       x: event.mouse.x,
       y: event.mouse.y,

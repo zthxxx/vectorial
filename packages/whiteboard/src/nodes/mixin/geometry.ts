@@ -37,6 +37,7 @@ export const GeometryMixin = <S extends Constructor<BaseNodeMixin>>(Super: S) =>
         fill = { paints: [] },
         stroke = defaultStroke(),
       } = props
+
       this.fill = proxy(fill)
       this.stroke = proxy(stroke)
 

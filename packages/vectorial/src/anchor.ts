@@ -16,6 +16,21 @@ export interface AnchorData {
   radius?: number;
 }
 
+export interface VectorAnchorProps {
+  position?: Vector;
+  handlerType?: HandlerType;
+
+  /**
+   * delta position from anchor point to incoming control handle point
+   */
+  inHandler?: Vector;
+  /**
+   * delta position from anchor point to outgoing control handle point
+   */
+  outHandler?: Vector;
+  radius?: number;
+}
+
 export class VectorAnchor implements AnchorData {
   public segment: paper.Segment
   public handlerType: HandlerType
@@ -24,15 +39,15 @@ export class VectorAnchor implements AnchorData {
    */
   public radius: number = 0
 
-  constructor(
-    { x, y }: Vector = { x: 0, y: 0 },
-    handlerType: HandlerType = HandlerType.None,
-    /**
-     * delta position from anchor point to 'incoming' / 'outgoing' control handle point
-     */
-    { inHandler, outHandler }: { inHandler?: Vector, outHandler?: Vector } = {},
-    radius: number = 0,
-  ) {
+  constructor(props: VectorAnchorProps ) {
+    const {
+      position: { x, y } = { x: 0, y: 0 },
+      handlerType = HandlerType.None,
+      inHandler,
+      outHandler,
+      radius = 0,
+    } = props
+
     this.handlerType = handlerType
     this.radius = radius
     this.segment = new paper.Segment({
@@ -107,27 +122,19 @@ export class VectorAnchor implements AnchorData {
   }
 
   public clone(): VectorAnchor {
-    return new VectorAnchor(
-      this.position,
-      this.handlerType,
-      {
-        inHandler: this.inHandler,
-        outHandler: this.outHandler,
-      },
-      this.radius,
-    )
+    return new VectorAnchor(this.serialize())
   }
 
-  public isAnchorNear(point: Vector): boolean {
-    return isNear(point, this.position)
+  public isAnchorNear(point: Vector, padding?: number): boolean {
+    return isNear(point, this.position, padding)
   }
 
-  public isInHandlerNear(point: Vector): boolean {
-    return Boolean(this.inHandler && isNear(point, add(this.position, this.inHandler)))
+  public isInHandlerNear(point: Vector, padding?: number): boolean {
+    return Boolean(this.inHandler && isNear(point, add(this.position, this.inHandler), padding))
   }
 
-  public isOutHandlerNear(point: Vector): boolean {
-    return Boolean(this.outHandler && isNear(point, add(this.position, this.outHandler)))
+  public isOutHandlerNear(point: Vector, padding?: number): boolean {
+    return Boolean(this.outHandler && isNear(point, add(this.position, this.outHandler), padding))
   }
 
   public serialize(): AnchorData {
@@ -141,14 +148,6 @@ export class VectorAnchor implements AnchorData {
   }
 
   static from(anchor: AnchorData): VectorAnchor {
-    return new VectorAnchor(
-      anchor.position,
-      anchor.handlerType,
-      {
-        inHandler: anchor.inHandler,
-        outHandler: anchor.outHandler,
-      },
-      anchor.radius,
-    )
+    return new VectorAnchor(anchor)
   }
 }

@@ -77,7 +77,7 @@ export interface LayoutMixin extends LayoutDataMixin {
 
   moveDelta(viewDelta: Vector): void;
 
-  hitTest(viewPoint: Vector): boolean;
+  hitTest(viewPoint: Vector, padding?: number): boolean;
   coverTest(viewRect: Rect): boolean;
 }
 

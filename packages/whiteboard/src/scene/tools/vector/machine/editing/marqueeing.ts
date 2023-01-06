@@ -42,6 +42,7 @@ export type MarqueeingActions = {
 const marqueeingInteract = createInteractGuard<StateContext>({
   entry: (context, { interact$ }) => {
     const {
+      scene,
       vectorPath,
       machine,
     } = context
@@ -49,7 +50,11 @@ const marqueeingInteract = createInteractGuard<StateContext>({
     interact$.pipe(
       filter(event => Boolean(event.mouse)),
       map((event: MouseEvent): StateEvents<MarqueeingActions> => {
-        const { isDrag, isClickUp } = normalizeMouseEvent(event, vectorPath)
+        const { isDrag, isClickUp } = normalizeMouseEvent({
+          event,
+          vectorPath,
+          viewportScale: scene.scale,
+        })
 
         if (isDrag) {
           return { type: MarqueeingEvent.Marquee, event }

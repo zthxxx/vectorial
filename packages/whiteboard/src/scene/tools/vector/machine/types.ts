@@ -5,14 +5,14 @@ import {
   type EventObject,
 } from 'xstate'
 import type {
-  HitResult,
-} from 'vectorial'
-import type {
   InteractEvent,
   MouseEvent,
   KeyEvent,
 } from '@vectorial/whiteboard/scene'
 import type { ToolLayer } from '../vector-tool'
+import type {
+  HitResult,
+} from '../types'
 
 
 export type StateContext = ToolLayer

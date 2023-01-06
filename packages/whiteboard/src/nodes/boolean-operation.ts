@@ -18,6 +18,8 @@ import {
   SharedMap,
   nanoid,
   toPixiColor,
+  binding,
+  YEventAction,
 } from '@vectorial/whiteboard/utils'
 import {
   BaseNodeMixin,
@@ -34,7 +36,8 @@ import {
   pixiSceneContext,
   drawPath,
   VectorNode,
-} from './vector-path'
+  BindingVectorPath,
+} from './vector'
 import { evenOddFill } from './utils'
 
 export interface BooleanOperationNodeProps extends Partial<BooleanOperationData>, LayoutMixinProps {
@@ -69,16 +72,6 @@ export class BooleanOperationNode
     /** @TODO two-way binding */
     this.shape = this.createShape()
     this.draw()
-
-    this.binding.observeDeep((events, transaction) => {
-      /**
-       * we are not set origin in transact manually,
-       * so origin will be null in local client, but be Room from remote
-       */
-      if (!transaction.origin) return
-
-      events.forEach((event) => this.bindingUpdate(event))
-    })
   }
 
   public createShape(): VectorShape {
@@ -90,7 +83,13 @@ export class BooleanOperationNode
         if (child instanceof BooleanOperationNode) {
           shape = child.createShape()
         } else if (child instanceof VectorNode) {
-          shape = child.vectorPath.clone()
+          shape = BindingVectorPath.from(
+            child.vectorPath.serialize(),
+            {
+              binding: child.vectorPath.binding,
+              redraw: this.draw,
+            },
+          )
         } else {
           throw new Error(
             `BooleanOperationNode must only contain VectorNodes or BooleanOperationNodes, not ${child.type} (id: ${child.id})`,
@@ -103,16 +102,17 @@ export class BooleanOperationNode
     })
   }
 
-  public get booleanOperator(): BooleanOperator {
-    return this.binding.get('booleanOperator')!
-  }
-
-  public set booleanOperator(operator: BooleanOperator) {
-    if (this.booleanOperator === operator) return
-    this.binding.set('booleanOperator', operator)
-    /** @TODO two-way binding */
-    this.shape.booleanOperator = operator
-  }
+  @binding({
+    onChange(operator) {
+      this.shape.booleanOperator = operator
+    },
+    onUpdate({ value: operator, action }) {
+      if (action !== YEventAction.Update) return
+      this.shape.booleanOperator = operator
+      this.draw()
+    },
+  })
+  accessor booleanOperator!: BooleanOperator
 
   public get bounds(): Rect {
     const { x, y } = this.position
@@ -147,11 +147,14 @@ export class BooleanOperationNode
     }
   }
 
-  public hitTest(viewPoint: Vector): boolean {
+  public hitTest(
+    viewPoint: Vector,
+    padding?: number
+  ): boolean {
     const point = this.toLocalPoint(viewPoint)
 
     return Boolean(
-      this.shape.hitPathTest(point)
+      this.shape.hitPathTest(point, padding)
       || this.shape.hitAreaTest(point)
     )
   }
@@ -164,7 +167,7 @@ export class BooleanOperationNode
     this.container.destroy()
   }
 
-  public draw() {
+  public draw = () => {
     const { fill, stroke } = this
     this.container.position.set(this.position.x, this.position.y)
     this.clear()
@@ -218,42 +221,5 @@ export class BooleanOperationNode
 
   public drawEnd() {
     evenOddFill(this.container)
-  }
-
-  public bindingUpdate = (event: Y.YEvent<any>) => {
-    const { changes, path, delta, keys } = event
-
-    match(path.shift())
-      .with(undefined, () => {
-        for (const [key, { action }] of keys.entries()) {
-          if (action === 'update') {
-            match(key)
-              .with('position', () => {
-                const position = this.binding.get('position')!.toJSON()
-                this.container.position.set(position.x, position.y)
-                this.updateRelativeTransform()
-                this.updateAbsoluteTransform()
-              })
-
-              .with('rotation', () => {
-                const rotation = this.binding.get('rotation')!
-                this.container.rotation = rotation
-                this.updateRelativeTransform()
-                this.updateAbsoluteTransform()
-              })
-
-              .with('booleanOperator', () => {
-                const booleanOperator = this.binding.get('booleanOperator')!
-                this.shape.booleanOperator = booleanOperator
-              })
-
-              .otherwise(() => {})
-          }
-        }
-      })
-
-      .otherwise(() => {})
-
-    this.draw()
   }
 }

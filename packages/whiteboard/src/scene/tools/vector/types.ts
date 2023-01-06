@@ -3,10 +3,22 @@ import type {
   StateMachine,
   Typestate,
 } from 'xstate'
+import type {
+  AreaHitResult,
+} from 'vectorial'
+import type {
+  AnchorHitResult,
+  PathHitResult,
+} from '@vectorial/whiteboard/nodes'
 import type { ToolLayer } from './vector-tool'
 import type {
   StateEvent,
 } from './machine'
+
+export type {
+  AnchorHitResult,
+  PathHitResult,
+} from '@vectorial/whiteboard/nodes'
 
 export type StateContext = ToolLayer
 
@@ -21,3 +33,5 @@ export enum CreatingDirection {
   Start = 'Start',
   End = 'End',
 }
+
+export type HitResult = AnchorHitResult | PathHitResult | AreaHitResult;

@@ -16,7 +16,6 @@ import {
   Vector,
   VectorPath,
   VectorAnchor,
-  HitResult,
 } from 'vectorial'
 import {
   Pen,
@@ -26,7 +25,7 @@ import {
   type Scene,
   type EventKeyMatch,
   AnchorNode,
-  PathNode,
+  HighlightPathNode,
   DefaultPathColor,
 } from '@vectorial/whiteboard/scene'
 import {
@@ -39,6 +38,8 @@ import {
 import {
   ParentNode,
   VectorNode,
+  BindingVectorPath,
+  BindingAnchor,
 } from '@vectorial/whiteboard/nodes'
 import {
   ToolDefine,
@@ -52,25 +53,26 @@ import {
 import {
   VectorToolService,
   CreatingDirection,
+  AnchorHitResult,
 } from './types'
 import { applyToLocalEvent } from './utils'
 
 
-class DrawsMap extends Map<VectorAnchor, AnchorNode> {
+class DrawsMap extends Map<BindingAnchor, AnchorNode> {
   public container: Container
 
-  constructor(entries: [VectorAnchor, AnchorNode][], container: Container) {
+  constructor(entries: [BindingAnchor, AnchorNode][], container: Container) {
     super()
     this.container = container
     entries.forEach(([key, value]) => this.set(key, value))
   }
 
-  public set(key: VectorAnchor, value: AnchorNode): this {
+  public set(key: BindingAnchor, value: AnchorNode): this {
     this.container.addChildAt(value.container, 0)
     return super.set(key, value)
   }
 
-  public delete(key: VectorAnchor): boolean {
+  public delete(key: BindingAnchor): boolean {
     this.container.removeChild(this.get(key)!.container)
     return super.delete(key)
   }
@@ -135,7 +137,6 @@ export class VectorTool extends ToolDefine {
     return parent as ParentNode
   }
 
-
   public setSelectedPath(): void {
     if (this.isActive) {
       throw new Error('Cannot set path node while tool is running')
@@ -143,6 +144,9 @@ export class VectorTool extends ToolDefine {
     this.vectorNode = this.getSelectedPath()
     if (this.vectorNode) return
 
+    /**
+     * active VectorTool without select node will create a new VectorNode
+     */
     const { scene } = this
     const path = newVectorData()
 
@@ -226,17 +230,22 @@ export class ToolLayer {
   public machine: VectorToolService
 
   public vectorNode: VectorNode
-  public vectorPath: VectorPath
-  public pathNode: PathNode
-  public anchorNodes: Map<VectorAnchor, AnchorNode>
+  public vectorPath: BindingVectorPath
+  /** for display total path */
+  public pathNode: HighlightPathNode
+  /** for store all display anchor node */
+  public anchorNodes: Map<BindingAnchor, AnchorNode>
+  /** current indicative new anchor for mouse */
   public indicativeAnchor: AnchorNode
-  public indicativePath: PathNode
+  /** current indicative new path segment while mouse move */
+  public indicativePath: HighlightPathNode
   public lastMousePosition: Vector
   public anchorNodesLayer: Container
-  public selected: HitResult[] = []
+  public selected: AnchorHitResult[] = []
+  /** indicative changes styles display object in VectorTool Layer */
   public changes: Array<
     | [AnchorNode | undefined, AnchorNode['style']]
-    | [PathNode | undefined, PathNode['style']]
+    | [HighlightPathNode | undefined, HighlightPathNode['style']]
   > = []
   /**
    * mouse drag begin position
@@ -268,7 +277,7 @@ export class ToolLayer {
     this.scene.interactLayer.addChild(this.container)
 
     this.vectorPath = this.vectorNode.vectorPath
-    this.pathNode = new PathNode({
+    this.pathNode = new HighlightPathNode({
       path: this.vectorPath,
       style: {
         strokeWidth: 2,
@@ -294,11 +303,11 @@ export class ToolLayer {
     ).subscribe()
 
     this.indicativeAnchor = new AnchorNode({
-      vectorAnchor: new VectorAnchor(lastMousePosition),
+      vectorAnchor: new VectorAnchor({ position: lastMousePosition }),
       absoluteTransform: vectorNode.absoluteTransform,
       viewMatrix$: scene.events.viewMatrix$,
     })
-    this.indicativePath = new PathNode({
+    this.indicativePath = new HighlightPathNode({
       path: new VectorPath(),
       style: {
         strokeWidth: 2,
@@ -393,7 +402,7 @@ export class ToolLayer {
     this.pathNode.destroy()
 
     this.container.removeChild(this.pathNode.container)
-    this.pathNode = new PathNode({
+    this.pathNode = new HighlightPathNode({
       path: this.vectorPath,
       style: {
         strokeWidth: 2,
@@ -407,7 +416,7 @@ export class ToolLayer {
     this.container.removeChild(this.indicativeAnchor.container)
     this.indicativeAnchor.destroy()
     this.indicativeAnchor = new AnchorNode({
-      vectorAnchor: new VectorAnchor(this.lastMousePosition),
+      vectorAnchor: new VectorAnchor({ position: this.lastMousePosition }),
       absoluteTransform: vectorNode.absoluteTransform,
       viewMatrix$: scene.events.viewMatrix$,
     })
@@ -415,7 +424,7 @@ export class ToolLayer {
 
     this.container.removeChild(this.indicativePath.container)
     this.indicativePath.destroy()
-    this.indicativePath = new PathNode({
+    this.indicativePath = new HighlightPathNode({
       path: new VectorPath(),
       style: {
         strokeWidth: 2,

@@ -1,6 +1,4 @@
 import { Graphics } from '@pixi/graphics'
-import { match } from 'ts-pattern'
-import * as Y from 'yjs'
 import {
   Rect,
   Vector,
@@ -62,16 +60,6 @@ export class FrameNode
 
     this.updateRelativeTransform()
     this.draw()
-
-    this.binding.observe((event, transaction) => {
-      /**
-       * we are not set origin in transact manually,
-       * so origin will be null in local client, but be Room from remote
-       */
-      if (!transaction.origin) return
-
-      this.bindingUpdate(event)
-    })
   }
 
   public get bounds(): Rect {
@@ -197,32 +185,5 @@ export class FrameNode
             )
         })
       }
-  }
-
-  public bindingUpdate = (event: Y.YMapEvent<any>) => {
-    const { changes, path, delta, keys } = event
-
-    for (const [key, { action }] of keys.entries()) {
-      if (action === 'update') {
-        match(key as keyof FrameData)
-          .with('position', () => {
-            const position = this.binding.get('position')!.toJSON()
-            this.container.position.set(position.x, position.y)
-            this.updateRelativeTransform()
-            this.updateAbsoluteTransform()
-          })
-
-          .with('rotation', () => {
-            const rotation = this.binding.get('rotation')!
-            this.container.rotation = rotation
-            this.updateRelativeTransform()
-            this.updateAbsoluteTransform()
-          })
-
-          .with('width', 'height', () => {
-            this.draw()
-          })
-      }
-    }
   }
 }

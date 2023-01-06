@@ -15,6 +15,9 @@ import {
   toSharedTypes,
 } from '@vectorial/whiteboard/utils'
 import {
+  BindingAnchor,
+} from '@vectorial/whiteboard/nodes'
+import {
   type MouseEvent,
   type KeyEvent,
   AnchorNode,
@@ -55,13 +58,17 @@ export type AdjustingActions = {
 const adjustingInteract = createInteractGuard<StateContext>({
   entry: (context, { interact$ }) => {
     const {
+      scene,
       machine,
     } = context
 
     interact$.pipe(
       filter(event => Boolean(event.mouse)),
       map((event: MouseEvent): StateEvents<AdjustingActions> => {
-        const { isMove, isDrag, isClickUp } = normalizeMouseEvent(event)
+        const { isMove, isDrag, isClickUp } = normalizeMouseEvent({
+          event,
+          viewportScale: scene.scale,
+        })
 
         if (isMove && isDrag) {
           return { type: AdjustingEvent.Move, event }
@@ -123,22 +130,26 @@ export const adjustingActions: StateActions<StateContext, AdjustingActions> = {
       changes,
     } = context
 
-    const vectorAnchor = indicativeAnchor.vectorAnchor.clone()
+    const anchorData = indicativeAnchor.vectorAnchor.serialize()
+    const vectorAnchor = BindingAnchor.from(
+      anchorData,
+      {
+        binding: toSharedTypes(anchorData),
+        redraw: vectorPath.redraw,
+      },
+    )
     const anchorNode = new AnchorNode({
       vectorAnchor,
       absoluteTransform: vectorNode.absoluteTransform,
       viewMatrix$: scene.events.viewMatrix$,
     })
-    const anchors = vectorNode.binding.get('path')!.get('anchors')!
 
     match(creatingDirection)
       .with(CreatingDirection.Start, () => {
-        vectorPath.addAnchorAt(vectorAnchor, 0)
-        anchors.unshift([toSharedTypes(vectorAnchor.serialize())])
+        vectorPath.addAnchorAt([vectorAnchor], 0)
       })
       .with(CreatingDirection.End, () => {
         vectorPath.addAnchor(vectorAnchor)
-        anchors.push([toSharedTypes(vectorAnchor.serialize())])
       })
       .exhaustive()
 

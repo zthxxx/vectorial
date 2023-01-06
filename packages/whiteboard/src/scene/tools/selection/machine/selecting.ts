@@ -106,7 +106,7 @@ const selectingInteractGuard = createInteractGuard<StateContext>({
           hit,
           isMove,
           isClickDown,
-        } = normalizeMouseEvent(event, scene.page, scene.selected)
+        } = normalizeMouseEvent(event, scene.page, scene.selected, scene.scale)
 
         if (isMove) {
           return { type: SelectingEvent.Move, event, hit }
@@ -140,7 +140,7 @@ const selectingInteractGuard = createInteractGuard<StateContext>({
           return { type: SelectingEvent.EnterNode }
         }
       }),
-      tap((event: StateKeyEvent) => { machine?.send(event) }),
+      tap((event) => { event && machine?.send(event) }),
     ).subscribe()
   },
 })
@@ -253,7 +253,7 @@ const selectConfirmingInteractGuard = createInteractGuard<StateContext>({
           hit,
           isDrag,
           isClickUp,
-        } = normalizeMouseEvent(event, scene.page, scene.selected)
+        } = normalizeMouseEvent(event, scene.page, scene.selected, scene.scale)
 
         if (isDrag) {
           return { type: SelectConfirmingEvent.Move, event, hit }
