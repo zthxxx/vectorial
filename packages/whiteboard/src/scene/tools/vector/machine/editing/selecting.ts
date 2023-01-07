@@ -200,6 +200,7 @@ export const selectingActions: StateActions<StateContext, SelectingActions> = {
       vectorNode,
       anchorNodes,
       vectorPath,
+      indicativePath,
       selected,
       changes,
     } = context
@@ -229,6 +230,11 @@ export const selectingActions: StateActions<StateContext, SelectingActions> = {
       })
 
       vectorPath.addAnchorAt([vectorAnchor], hit.curveIndex + 1)
+      indicativePath.path.anchors = [
+        hit.ends[0],
+        vectorAnchor,
+        hit.ends[1],
+      ]
 
       context.dragBase = { ...hit.point.position }
 
@@ -239,8 +245,11 @@ export const selectingActions: StateActions<StateContext, SelectingActions> = {
         anchorIndex: hit.curveIndex + 1,
       })
     })
-    changes.push(...getResetStyleChanges(anchorNodes))
-    changes.push(...getSelectedStyleChanges(selected, anchorNodes))
+    changes.push(
+      [indicativePath, { strokeWidth: 2, strokeColor: 0x18a0fb }],
+      ...getResetStyleChanges(anchorNodes),
+      ...getSelectedStyleChanges(selected, anchorNodes),
+    )
   },
 
   [SelectingAction.Marquee]: (context, event) => {

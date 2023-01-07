@@ -30,9 +30,11 @@ import {
 } from '../types'
 import { evenOddFill } from '../utils'
 import {
-  drawPath,
   BindingVectorPath
 } from './vector-path'
+import {
+  drawPath,
+} from './utils'
 
 
 
@@ -55,6 +57,10 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
 
   public container: SVGPathNode
   public vectorPath: BindingVectorPath
+  /**
+   * use for redraw while scene viewport scale
+   */
+  public _sceneScale: number = 1
 
   constructor(props: VectorNodeProps) {
     const {
@@ -143,7 +149,12 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
   }
 
   public draw = () => {
-    const { fill, stroke } = this
+    const {
+      fill,
+      stroke,
+      _sceneScale,
+    } = this
+
     this.clear()
     if (
       this.removed
@@ -165,6 +176,7 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
           drawPath(
             this.container,
             this.vectorPath,
+            _sceneScale,
           )
           this.drawEnd()
         })
@@ -183,6 +195,7 @@ export class VectorNode extends GeometryMixin(LayoutMixin(BlendMixin(BaseNodeMix
           drawPath(
             this.container,
             this.vectorPath,
+            _sceneScale,
           )
           this.drawEnd()
         })

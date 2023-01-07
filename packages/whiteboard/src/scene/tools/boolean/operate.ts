@@ -57,6 +57,8 @@ export const booleanOperate = (
       binding,
       page,
     })
+    // same with scene.scale, page.container is scene.viewport
+    booleanOperationNode._sceneScale = page.container.transform.scale.x
 
     const parent = getCommonAncestors(nodes, page)[0] as ParentNode ?? page
     page.insert(

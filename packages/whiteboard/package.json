@@ -30,6 +30,7 @@
     "build": "npm-run-all -s clean build:tsc build:vite",
     "build:vite": "vite build",
     "build:tsc": "tsc -p tsconfig.esm.json",
+    "audit:bundle": "PERFSEE_AUDIT=true SOURCEMAP=true npm run build:vite",
     "preview": "vite preview",
     "vercel": "vercel --cwd dist"
   },
@@ -106,6 +107,7 @@
     "@babel/plugin-proposal-decorators": "7.20.13",
     "@emotion/babel-plugin": "11.7.2",
     "@figma/plugin-typings": "1.43.0",
+    "@perfsee/rollup": "1.1.1",
     "@tweakpane/core": "^1.0.8",
     "@types/lodash-es": "4.17.6",
     "@types/node": "^18.11.18",

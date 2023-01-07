@@ -53,6 +53,10 @@ export class BooleanOperationNode
 
   public container: SVGPathNode
   public shape: VectorShape
+  /**
+   * use for redraw while scene viewport scale
+   */
+  public _sceneScale: number = 1
 
   constructor(props: BooleanOperationNodeProps) {
     const {
@@ -168,7 +172,12 @@ export class BooleanOperationNode
   }
 
   public draw = () => {
-    const { fill, stroke } = this
+    const {
+      fill,
+      stroke,
+      _sceneScale,
+    } = this
+
     this.container.position.set(this.position.x, this.position.y)
     this.clear()
 
@@ -192,6 +201,7 @@ export class BooleanOperationNode
           drawPath(
             this.container,
             path,
+            _sceneScale,
           )
         })
         this.drawEnd()
@@ -212,6 +222,7 @@ export class BooleanOperationNode
             drawPath(
               this.container,
               path,
+              _sceneScale,
             )
           })
           this.drawEnd()

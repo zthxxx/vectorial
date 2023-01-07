@@ -89,6 +89,7 @@ export interface VectorNode extends
   type: NodeType.Vector;
   clone(): VectorNode;
   vectorPath: VectorPath;
+  _sceneScale: number;
 }
 
 export interface BooleanOperationNode extends
@@ -104,6 +105,7 @@ export interface BooleanOperationNode extends
   ChildrenMixin {
     type: NodeType.BooleanOperation;
     clone(): BooleanOperationNode;
+    _sceneScale: number;
   }
 
 export interface GroupNode extends

@@ -1,4 +1,4 @@
-import { Graphics } from '@pixi/graphics'
+
 import { match } from 'ts-pattern'
 import * as Y from 'yjs'
 import {
@@ -13,7 +13,6 @@ import {
 import {
   type SharedMap,
   type SharedTypes,
-  logger,
   binding,
   YEventDeltaType,
   type YMap,
@@ -158,40 +157,6 @@ export class BindingVectorPath extends BindingMixin(VectorPath) {
   }
 }
 
-
-export const drawPath = (
-  graphics: Graphics,
-  path: VectorPath,
-) => {
-  if  (path.anchors.length < 2) {
-    logger.error('VectorPath cannot have less than 2 anchors', path)
-    return
-  }
-
-  const first = path.anchors[0]
-  graphics.moveTo(first.position.x, first.position.y)
-
-  const anchors = path.closed
-    ? [...path.anchors, first]
-    : path.anchors
-
-  // pixi graphics draw bezier curve
-  anchors.reduce((prev, curr) => {
-    graphics.bezierCurveTo(
-      prev.position.x + (prev.outHandler?.x ?? 0),
-      prev.position.y + (prev.outHandler?.y ?? 0),
-      curr.position.x + (curr.inHandler?.x ?? 0),
-      curr.position.y + (curr.inHandler?.y ?? 0),
-      curr.position.x,
-      curr.position.y
-    )
-    return curr
-  })
-
-  if (path.closed) {
-    graphics.closePath()
-  }
-}
 
 export interface AnchorHitResult {
   type: PathHitType.Anchor | PathHitType.InHandler | PathHitType.OutHandler;

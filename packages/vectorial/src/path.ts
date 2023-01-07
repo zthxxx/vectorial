@@ -10,6 +10,7 @@ import {
   AreaHitMixin,
   TransformMixin,
 } from './mixin'
+import { BezierCurve } from './bezier'
 import {
   AnchorHitResult,
   PathHitResult,
@@ -281,6 +282,17 @@ export class VectorPath extends TransformMixin(AreaMixin(EmptyMixin)) implements
     this.anchors.forEach(anchor => {
       anchor.position = add(anchor.position, delta)
     })
+  }
+
+  public pathLength(): number {
+    return this.anchors.reduce((length, anchor, index) => {
+      if (index === 0) return length
+      const prev = this.anchors[index - 1]
+      return length + BezierCurve.getLength({
+        from: prev,
+        to: anchor,
+      })
+    }, 0)
   }
 
   public clone(): VectorPath {

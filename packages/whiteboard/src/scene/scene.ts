@@ -1,7 +1,14 @@
 import * as Y from 'yjs'
 import type { Renderer } from '@pixi/core'
 import { Container } from '@pixi/display'
-import { Subject, BehaviorSubject } from 'rxjs'
+import {
+  Subject,
+  BehaviorSubject,
+} from 'rxjs'
+import {
+  tap,
+  debounceTime,
+} from 'rxjs/operators'
 import { Awareness } from 'y-protocols/awareness'
 import {
   Matrix,
@@ -12,8 +19,13 @@ import {
   onSet,
 } from '@vectorial/whiteboard/utils'
 import {
+  NodeType,
+} from '@vectorial/whiteboard/model'
+import {
   PageNode,
   SceneNode,
+  BooleanOperationNode,
+  VectorNode,
 } from '@vectorial/whiteboard/nodes'
 import {
   arrow,
@@ -65,11 +77,13 @@ export class Scene {
   public usersLayer: Container
 
   protected _lastCursor: string | undefined
+  protected _scale: number
 
   public events = {
     interactEvent$: new Subject<InteractEvent>(),
     viewMatrix$: new BehaviorSubject<Matrix>(identityMatrix()),
     marquee$: new Subject<Rect | undefined>(),
+    scale$: new Subject<number>(),
     selected$: new Subject<SelectedNodes>(),
     hovered$: new Subject<SceneNode | undefined>(),
   }
@@ -99,6 +113,7 @@ export class Scene {
     }) as Application & { renderer: Renderer }
 
     this.viewport = this.page.container
+    this._scale = 1
     this.interactLayer = new Container()
     this.usersLayer = new Container()
 
@@ -115,6 +130,11 @@ export class Scene {
     this.events.interactEvent$ = this.eventManager.interactEvent$
 
     this.setCursor({ icon: arrow })
+
+    this.events.scale$.pipe(
+      debounceTime(300),
+      tap(this.redrawVector),
+    ).subscribe()
   }
 
   public destroy() {
@@ -150,26 +170,40 @@ export class Scene {
     this.viewport.transform.updateLocalTransform()
 
     this.events.viewMatrix$.next(matrix)
+    this.scale = this.viewport.transform.scale.x
   }
 
-  public get scale(): number {
-    return this.viewport.transform.scale.x
-  }
+  @onSet(function(scale) {
+    this.events.scale$.next(scale)
+  })
+  accessor scale: number = 1
 
-  @onSet(function(this, marquee) {
+  @onSet(function(marquee) {
     this.events.marquee$.next(marquee)
   })
   accessor marquee: Rect | undefined
 
-  @onSet(function(this, selected) {
+  @onSet(function(selected) {
     this.events.selected$.next(selected)
   })
   accessor selected: SelectedNodes = new Set()
 
-  @onSet(function(this, hovered) {
+  @onSet(function(hovered) {
     this.events.hovered$.next(hovered)
   })
   accessor hovered: SceneNode | undefined
+
+  private redrawVector = () => {
+    Object.values(this.page.nodes)
+      .filter(node => (
+        node.type === NodeType.Vector
+        || node.type === NodeType.BooleanOperation
+      ))
+      .forEach((node: VectorNode | BooleanOperationNode) => {
+        node._sceneScale = this.scale
+        node.draw()
+      })
+  }
 
   public use(plugin: ScenePlugin) {
     this.plugins[plugin.name] = plugin

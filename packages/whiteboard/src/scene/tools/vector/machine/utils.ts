@@ -165,7 +165,6 @@ export const getSelectedStyleChanges = (
   const changes: StateContext['changes'] = []
 
   for (const hit of selected) {
-    if (!('ends' in hit)) return []
     const anchorNode = anchorNodes.get(hit.point)!
     selectedSet.add(anchorNode)
     changes.push([anchorNode, {
@@ -176,7 +175,6 @@ export const getSelectedStyleChanges = (
   }
 
   for (const hit of selected) {
-    if (!('ends' in hit)) return []
     hit.ends.forEach(anchor => {
       const anchorNode = anchorNodes.get(anchor)!
       if (selectedSet.has(anchorNode)) return

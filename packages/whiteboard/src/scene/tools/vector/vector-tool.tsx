@@ -159,6 +159,7 @@ export class VectorTool extends ToolDefine {
         binding,
         page: scene.page,
       })
+      this.vectorNode._sceneScale = scene.scale
 
       const parent = this.getFirstOfParent() ?? scene.page
       scene.page.insert(
