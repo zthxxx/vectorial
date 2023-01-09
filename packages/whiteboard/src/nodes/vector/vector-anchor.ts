@@ -58,7 +58,6 @@ export class BindingAnchor extends BindingMixin(VectorAnchor) {
       this.redraw?.()
     },
   })
-  // @ts-expect-error 'handlerType' is defined as a property in super VectorAnchor
   accessor handlerType: HandlerType = HandlerType.None
 
   get inHandler(): Vector | undefined {

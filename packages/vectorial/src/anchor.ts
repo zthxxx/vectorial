@@ -33,11 +33,11 @@ export interface VectorAnchorProps {
 
 export class VectorAnchor implements AnchorData {
   public segment: paper.Segment
-  public handlerType: HandlerType
   /**
    * @TODO point radius in polygen path
    */
   public radius: number = 0
+  private _handlerType!: HandlerType
 
   constructor(props: VectorAnchorProps ) {
     const {
@@ -48,13 +48,21 @@ export class VectorAnchor implements AnchorData {
       radius = 0,
     } = props
 
-    this.handlerType = handlerType
+    this._handlerType = handlerType
     this.radius = radius
     this.segment = new paper.Segment({
       point: new paper.Point(x, y),
       handleIn: inHandler && new paper.Point(inHandler),
       handleOut: outHandler && new paper.Point(outHandler),
     })
+  }
+
+  public get handlerType(): HandlerType {
+    return this._handlerType
+  }
+
+  public set handlerType(handlerType: HandlerType) {
+    this._handlerType = handlerType
   }
 
   public get position(): Vector {
