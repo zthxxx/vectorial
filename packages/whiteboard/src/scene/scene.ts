@@ -16,7 +16,7 @@ import {
   identityMatrix,
 } from 'vectorial'
 import {
-  onSet,
+  onChange,
 } from '@vectorial/whiteboard/utils'
 import {
   NodeType,
@@ -78,6 +78,7 @@ export class Scene {
 
   protected _lastCursor: string | undefined
   protected _scale: number
+  protected _hasUpdate: boolean = false
 
   public events = {
     interactEvent$: new Subject<InteractEvent>(),
@@ -110,6 +111,7 @@ export class Scene {
       backgroundAlpha: 0.1,
       antialias: true,
       autoDensity: true,
+      autoStart: false,
     }) as Application & { renderer: Renderer }
 
     this.viewport = this.page.container
@@ -131,10 +133,7 @@ export class Scene {
 
     this.setCursor({ icon: arrow })
 
-    this.events.scale$.pipe(
-      debounceTime(300),
-      tap(this.redrawVector),
-    ).subscribe()
+    this.setupReactivity()
   }
 
   public destroy() {
@@ -171,24 +170,25 @@ export class Scene {
 
     this.events.viewMatrix$.next(matrix)
     this.scale = this.viewport.transform.scale.x
+    this.update()
   }
 
-  @onSet(function(scale) {
+  @onChange(function(scale) {
     this.events.scale$.next(scale)
   })
   accessor scale: number = 1
 
-  @onSet(function(marquee) {
+  @onChange(function(marquee) {
     this.events.marquee$.next(marquee)
   })
   accessor marquee: Rect | undefined
 
-  @onSet(function(selected) {
+  @onChange(function(selected) {
     this.events.selected$.next(selected)
   })
   accessor selected: SelectedNodes = new Set()
 
-  @onSet(function(hovered) {
+  @onChange(function(hovered) {
     this.events.hovered$.next(hovered)
   })
   accessor hovered: SceneNode | undefined
@@ -221,5 +221,29 @@ export class Scene {
     if (plugin && plugin.isActive) {
       plugin.deactivate()
     }
+  }
+
+  public update = () => {
+    if (this._hasUpdate) return
+    this._hasUpdate = true
+    requestAnimationFrame(this.render)
+  }
+
+  protected render = () => {
+    if (!this._hasUpdate) return
+    this.app.render()
+    this._hasUpdate = false
+  }
+
+  protected setupReactivity() {
+    this.events.scale$.pipe(
+      debounceTime(200),
+      tap(this.redrawVector),
+      tap(this.update),
+    ).subscribe()
+
+    this.events.viewMatrix$.subscribe(this.update)
+
+    this.page.binding.observeDeep(this.update)
   }
 }

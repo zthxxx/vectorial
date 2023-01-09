@@ -2,15 +2,14 @@ import { Container } from '@pixi/display'
 import { Graphics } from '@pixi/graphics'
 import { isEqual } from 'lodash-es'
 import {
+  BehaviorSubject,
   tap,
   filter,
-} from 'rxjs/operators'
+} from 'rxjs'
 import {
   Rect,
   getPointsFromRect,
   multiply,
-  Matrix,
-  identityMatrix,
 } from 'vectorial'
 import {
   Color,
@@ -49,7 +48,13 @@ export class HighlightSelectedPlugin extends ScenePlugin {
   protected usersSelectLayer: Graphics
   protected usersBoundaryLayer: Graphics
   protected usersMarqueeLayer: Graphics
-  protected lastViewMatrix: Matrix = identityMatrix()
+
+  /** [user color, user marquee rect] */
+  protected usersMarquee$ = new BehaviorSubject<[Color, Rect][]>([])
+  /** [user color, user select node ids] */
+  protected usersSelected$ = new BehaviorSubject<[Color, string[]][]>([])
+  protected hovered$ = new BehaviorSubject<string | undefined>(undefined)
+
   protected lastUsersMarquee: [Color, Rect][] = []
   protected lastUsersSelected: [Color, string[]][] = []
 
@@ -86,6 +91,7 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     this.setupMarqueeHighlight()
     this.setupSelectionHighlight()
     this.setupViewport()
+    this.scene.awareness.on('change', this.handleAwarenessChange)
   }
 
 
@@ -117,25 +123,7 @@ export class HighlightSelectedPlugin extends ScenePlugin {
   }
 
   public drawUsersMarquee = () => {
-    const { page, awareness, viewMatrix } = this.scene
-    const updatedUsers = filterUserAwareness({
-      awareness,
-      pageId: page.id,
-    })
-
-    const usersMarquee = updatedUsers
-      .filter(([, user]) => user.marquee)
-      .map(([uid, user]) => [
-        getUidColor(uid),
-        user.marquee,
-      ] as [Color, Rect])
-
-    if (
-      isEqual(this.lastUsersMarquee, usersMarquee)
-      && isEqual(this.lastViewMatrix, viewMatrix)
-    ) return
-    this.lastUsersMarquee = usersMarquee
-
+    const usersMarquee = this.usersMarquee$.value
     this.usersMarqueeLayer.clear()
     usersMarquee.forEach(([color, marquee]) => {
       const { viewMatrix } = this.scene
@@ -145,17 +133,6 @@ export class HighlightSelectedPlugin extends ScenePlugin {
         getPointsFromRect(marquee, viewMatrix),
       )
     })
-  }
-
-  public setupMarqueeHighlight() {
-    const { awareness } = this.scene
-    const { marquee$ } = this.scene.events
-
-    marquee$.pipe(
-      tap(this.drawMarquee),
-    ).subscribe()
-
-    awareness.on('change', this.drawUsersMarquee)
   }
 
   public drawHovered = () => {
@@ -198,26 +175,9 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     )
   }
 
-  public drawUsersSelected = (forceRefresh: boolean = false) => {
-    const { page, awareness, viewMatrix } = this.scene
-    const updatedUsers = filterUserAwareness({
-      awareness,
-      pageId: page.id,
-    })
-
-    const usersSelected = updatedUsers
-      .filter(([, user]) => user.selected?.length)
-      .map(([uid, user]) => [
-        getUidColor(uid),
-        user.selected,
-      ] as [Color, string[]])
-
-    if (
-      !forceRefresh
-      && isEqual(this.lastUsersSelected, usersSelected)
-      && isEqual(this.lastViewMatrix, viewMatrix)
-    ) return
-    this.lastUsersSelected = usersSelected
+  public drawUsersSelected = () => {
+    const usersSelected = this.usersSelected$.value
+    const { page } = this.scene
 
     this.usersSelectLayer.clear()
     usersSelected.forEach(([color, selected]) => {
@@ -235,37 +195,98 @@ export class HighlightSelectedPlugin extends ScenePlugin {
     })
   }
 
+  private handleAwarenessChange = () => {
+    const { usersMarquee$, usersSelected$ } = this
+    const { page, awareness } = this.scene
+    const updatedUsers = filterUserAwareness({
+      awareness,
+      pageId: page.id,
+    })
+
+    const usersMarquee = updatedUsers
+      .filter(([, user]) => user.marquee)
+      .map(([uid, user]) => [
+        getUidColor(uid),
+        user.marquee,
+      ] as [Color, Rect])
+
+    const usersSelected = updatedUsers
+      .filter(([, user]) => user.selected?.length)
+      .map(([uid, user]) => [
+        getUidColor(uid),
+        user.selected,
+      ] as [Color, string[]])
+
+    if (!isEqual(usersMarquee, usersMarquee$.value)) {
+      usersMarquee$.next(usersMarquee)
+    }
+
+    if (!isEqual(usersSelected, usersSelected$.value)) {
+      usersSelected$.next(usersSelected)
+    }
+  }
+
+  public setupMarqueeHighlight() {
+    const { usersMarquee$ } = this
+    const { update } = this.scene
+    const { marquee$ } = this.scene.events
+
+    marquee$.pipe(
+      tap(this.drawMarquee),
+      tap(update),
+    ).subscribe()
+
+    usersMarquee$.pipe(
+      tap(this.drawUsersMarquee),
+      tap(update),
+    ).subscribe()
+  }
+
   public setupSelectionHighlight() {
-    const { awareness } = this.scene
+    const { usersSelected$ } = this
+    const { update } = this.scene
     const { selected$, hovered$ } = this.scene.events
 
     hovered$.pipe(
       filter(() => this.isActive),
-      tap(this.drawHovered),
+      filter(hovered => !this.scene.selected.has(hovered!)),
+      filter(hovered => hovered?.id !== this.hovered$.value),
+      tap(hovered => this.hovered$.next(hovered?.id)),
     ).subscribe()
+
+
+    this.hovered$.pipe(
+      tap(this.drawHovered),
+      tap(update),
+    ).subscribe()
+
 
     selected$.pipe(
       filter(() => this.isActive),
       tap(this.drawSelected),
+      tap(update),
     ).subscribe()
 
-    awareness.on('change', this.drawUsersSelected)
+    usersSelected$.pipe(
+      tap(this.drawUsersSelected),
+      tap(update),
+    ).subscribe()
   }
+
 
   public setupViewport() {
     const { viewMatrix$ } = this.scene.events
     viewMatrix$.pipe(
       tap(this.drawUsersMarquee),
-      tap(() => this.drawUsersSelected()),
+      tap(this.drawUsersSelected),
       tap(this.drawMarquee),
-      tap(viewMatrix => this.lastViewMatrix = viewMatrix),
       filter(() => this.isActive),
       tap(this.drawHovered),
       tap(this.drawSelected),
     ).subscribe()
 
     this.scene.page.binding.observeDeep(() => {
-      this.drawUsersSelected(true)
+      this.drawUsersSelected()
 
       if (!this.isActive) return
       this.drawSelected()

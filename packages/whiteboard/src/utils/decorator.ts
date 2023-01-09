@@ -18,13 +18,14 @@ export type ClassSetterDecorator<This, Value> = (
   context: ClassSetterDecoratorContext<This, Value>
 ) => typeof setter | void;
 
-export const onSet = <This, Value>(
+export const onChange = <This, Value>(
   callback: (this: This, value: Value) => void,
 ): ClassAutoAccessorDecorator<This, Value> => {
   return function(target, context) {
     return {
       get: target.get,
       set(value) {
+        if (value === target.get.call(this)) return
         target.set.call(this, value)
         callback.call(this, value)
       },

@@ -35,7 +35,7 @@ import {
 } from './components'
 
 
-export const userScene = ({ user, page }: {
+export const useScene = ({ user, page }: {
   user?: User,
   page?: PageNode;
 }) => {
@@ -90,7 +90,7 @@ export const SceneView: FC = memo(() => {
   const { pageNode } = useGetDocumentPage(id)
 
   const user = useUser()
-  const scene = userScene({ user, page: pageNode })
+  const scene = useScene({ user, page: pageNode })
 
   if (loading) {
     return (

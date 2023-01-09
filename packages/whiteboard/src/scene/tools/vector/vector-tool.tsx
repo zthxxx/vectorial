@@ -2,6 +2,7 @@ import { ReactElement } from 'react'
 import { Container } from '@pixi/display'
 import * as Y from 'yjs'
 import { Subject, Observable, from } from 'rxjs'
+import { isEqual } from 'lodash-es'
 import {
   filter,
   tap,
@@ -359,13 +360,19 @@ export class ToolLayer {
   }
 
   public drawChanges(context: StateContext) {
-    while (context.changes.length) {
-      const [item, style] = context.changes.shift() as StateContext['changes'][number]
+    const {
+      changes,
+      scene,
+    } = context
+    while (changes.length) {
+      const [item, style] = changes.shift() as StateContext['changes'][number]
       if (!item) continue
+      if (!style && !item.style) continue
       item.style = style
         ? { ...item.style, ...style }
         : undefined
       item.draw()
+      scene.update()
     }
     this.pathNode.draw()
   }
