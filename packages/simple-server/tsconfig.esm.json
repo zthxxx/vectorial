@@ -4,8 +4,8 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "es",
-    "target": "ES2021",
+    "outDir": "esm",
+    "target": "ES2022",
     "module": "ESNext",
     "noEmit": false,
     "sourceMap": true,

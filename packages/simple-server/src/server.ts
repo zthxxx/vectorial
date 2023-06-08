@@ -1,8 +1,8 @@
-import http from 'http'
+import * as http from 'http'
 import express from 'express'
 import { Server, Socket } from 'socket.io'
 import { YSocketIO, Document } from 'y-socket.io/dist/server'
-import { logger } from './logger'
+import { logger } from './logger.js'
 
 
 const host = process.env.HOST ?? 'localhost'
